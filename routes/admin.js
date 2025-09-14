@@ -4,20 +4,27 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const accountController = require('../controllers/accountController');
 
-// Dashboard routes
+// Middleware parse query cho tất cả các route bên dưới
+router.use(accountController.parseQueryMiddleware);
+router.use(adminController.parseQueryMiddleware);
+
+// Dashboard
 router.get('/dashboard', adminController.getDashboard);
-router.get('/orders/:id', adminController.getOrderDetail);
 
-// Order Management routes
-router.get('/orders', adminController.getOrderManagementPage);
-router.post('/orders/create', adminController.createOrderFromAdmin);
+// --- Account Routes ---
+router.get('/accounts', accountController.handleGetAll); // Route này sẽ xử lý cả danh sách chính và thùng rác
+router.post('/accounts/add-multiple', accountController.addMultiple);
+router.post('/accounts/soft-delete', accountController.handleSoftDelete);
+router.post('/accounts/restore', accountController.handleRestore);
+router.post('/accounts/hard-delete', accountController.handleHardDelete);
+router.post('/accounts/check-selected', accountController.checkSelected);
 
-// Account management routes
-router.get('/accounts', accountController.getAccountPage);
-router.post('/accounts/add', accountController.addAccounts);
-router.post('/accounts/delete', accountController.deleteAccounts);
-
-// Route mới để check live các account đã chọn
-router.post('/accounts/check-selected', accountController.checkSelectedAccounts);
+// --- Order Routes ---
+router.get('/orders', adminController.handleGetAll); // Route này sẽ xử lý cả danh sách chính và thùng rác
+router.get('/orders/:id', adminController.handleGetById);
+router.post('/orders/create', adminController.handleCreate);
+router.post('/orders/soft-delete', adminController.handleSoftDelete);
+router.post('/orders/restore', adminController.handleRestore);
+router.post('/orders/hard-delete', adminController.handleHardDelete);
 
 module.exports = router;

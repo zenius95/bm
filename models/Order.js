@@ -14,9 +14,11 @@ const OrderSchema = new mongoose.Schema({
     items: [ItemSchema],
     status: {
         type: String,
-        enum: ['pending', 'processing', 'completed'],
+        enum: ['pending', 'processing', 'completed', 'failed'],
         default: 'pending'
     },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date, default: null },
     createdAt: {
         type: Date,
         default: Date.now

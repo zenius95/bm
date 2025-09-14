@@ -22,13 +22,15 @@ const AccountSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING'],
+        enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING', 'ERROR'],
         default: 'UNCHECKED'
     },
+    isDeleted: { type: Boolean, default: false, index: true },
     lastCheckedAt: {
         type: Date,
         default: null
     },
+    deletedAt: { type: Date, default: null },
     createdAt: {
         type: Date,
         default: Date.now

@@ -1,112 +1,140 @@
 // controllers/accountController.js
 const Account = require('../models/Account');
+const CrudService = require('../utils/crudService');
+const createCrudController = require('./crudController');
+const ProcessRunner = require('../utils/processRunner');
 
-// Hiển thị trang quản lý account
-exports.getAccountPage = async (req, res) => {
-    try {
-        const accounts = await Account.find({}).sort({ createdAt: -1 });
-        res.render('accounts', { accounts });
-    } catch (error) {
-        console.error("Error loading accounts page:", error);
-        res.status(500).send("Could not load accounts page.");
-    }
-};
+const accountService = new CrudService(Account, {
+    searchableFields: ['uid', 'proxy']
+});
 
-// Thêm nhiều account từ textarea
-exports.addAccounts = async (req, res) => {
+const accountController = createCrudController(accountService, 'accounts', {
+    single: 'account',
+    plural: 'accounts'
+});
+
+accountController.addMultiple = async (req, res) => {
     const { accountsData } = req.body;
-    if (!accountsData) {
+    if (!accountsData || accountsData.trim() === '') {
         return res.redirect('/admin/accounts');
     }
-    const lines = accountsData.trim().split('\n');
+    const lines = accountsData.trim().split('\n').filter(line => line.trim() !== '');
     const newAccounts = [];
-    lines.forEach(line => {
+    const errors = [];
+
+    lines.forEach((line, index) => {
         const parts = line.trim().split('|');
-        if (parts.length >= 3) {
-            newAccounts.push({
-                username: parts[0],
-                password: parts[1],
-                twoFA: parts[2],
-                proxy: parts[3] || ''
-            });
+        if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) {
+            errors.push(`Dòng ${index + 1}: Sai định dạng. Yêu cầu uid|password|2fa.`);
+            return;
         }
+        newAccounts.push({
+            uid: parts[0],
+            password: parts[1],
+            twofa: parts[2],
+            proxy: parts[3] || ''
+        });
     });
+    
+    if (errors.length > 0 && newAccounts.length === 0) {
+        const errorMessage = encodeURIComponent(errors.join('\n'));
+        return res.redirect(`/admin/accounts?error=${errorMessage}`);
+    }
+
     if (newAccounts.length > 0) {
         try {
-            await Account.insertMany(newAccounts, { ordered: false });
+            const result = await Account.insertMany(newAccounts, { ordered: false });
+            const successMessage = encodeURIComponent(`Đã thêm thành công ${result.length} account.`);
+            return res.redirect(`/admin/accounts?success=${successMessage}`);
         } catch (error) {
-            console.log("Partial insert completed. Some accounts might be duplicates.");
+            let errorMessage;
+            if (error.code === 11000 && error.insertedIds) {
+                // [SỬA LỖI TẠI ĐÂY] Dùng error.insertedIds.length thay vì error.result.nInserted
+                const insertedCount = error.insertedIds.length; 
+                errorMessage = `Đã thêm ${insertedCount} account. Một số account khác bị lỗi trùng lặp UID và đã được bỏ qua.`;
+            } else {
+                errorMessage = `Lỗi server: ${error.message}`;
+            }
+            return res.redirect(`/admin/accounts?error=${encodeURIComponent(errorMessage)}`);
         }
     }
-    res.redirect('/admin/accounts');
+    
+    const errorMessage = encodeURIComponent(errors.join('\n'));
+    return res.redirect(`/admin/accounts?error=${errorMessage}`);
 };
 
-// Xóa một hoặc nhiều account
-exports.deleteAccounts = async (req, res) => {
+accountController.checkSelected = async (req, res) => {
+    const { ids, selectAll, filters } = req.body;
+    const io = req.io;
+    
+    let accountIdsToCheck = [];
+
     try {
-        let { ids } = req.body;
-        if (!ids) {
-            return res.status(400).json({ success: false, message: 'No account IDs provided.' });
+        if (selectAll) {
+            accountIdsToCheck = await accountService.findAllIds(filters);
+        } else {
+            accountIdsToCheck = ids;
         }
-        if (!Array.isArray(ids)) {
-            ids = [ids];
+
+        if (!accountIdsToCheck || accountIdsToCheck.length === 0) {
+            return res.status(400).json({ success: false, message: 'Không có account nào được chọn.' });
         }
-        await Account.deleteMany({ _id: { $in: ids } });
-        res.json({ success: true, message: 'Accounts deleted successfully.' });
-    } catch (error) {
-        console.error("Error deleting accounts:", error);
-        res.status(500).json({ success: false, message: 'Failed to delete accounts.' });
-    }
-};
+    
+        res.json({ success: true, message: `Đã bắt đầu tiến trình check live cho ${accountIdsToCheck.length} accounts.` });
 
-// Check live nhiều account
-exports.checkSelectedAccounts = async (req, res) => {
-    let { ids } = req.body;
-    const io = req.io; // Lấy io từ request
+        const checkLiveRunner = new ProcessRunner({
+            concurrency: 10,
+            delay: 500,
+            retries: 2,
+            timeout: 45000,
+            maxErrors: 20,
+        });
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ success: false, message: 'No account IDs provided.' });
-    }
+        const tasks = accountIdsToCheck.map(accountId => ({
+            id: accountId,
+            task: async () => {
+                await Account.findByIdAndUpdate(accountId, { status: 'CHECKING' });
+                io.emit('account:update', { id: accountId, status: 'CHECKING' });
+                await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 3000));
+                if (Math.random() < 0.15) {
+                    throw new Error("Lỗi ngẫu nhiên khi check live");
+                }
+                const isLive = Math.random() > 0.4;
+                return { isLive, checkedAt: new Date() }; 
+            }
+        }));
 
-    // Phản hồi ngay lập tức
-    res.json({ success: true, message: `Started checking ${ids.length} accounts.` });
+        checkLiveRunner.addTasks(tasks);
 
-    // --- BẮT ĐẦU QUÁ TRÌNH CHẠY NGẦM VÀ BÁO CÁO REAL-TIME ---
-    ids.forEach(async (accountId) => {
-        try {
-            await Account.findByIdAndUpdate(accountId, { status: 'CHECKING' });
-            // Gửi cập nhật tức thì cho client
-            io.emit('account:update', { 
-                id: accountId, 
-                status: 'CHECKING'
-            });
-
-            // MÔ PHỎNG QUÁ TRÌNH CHECK
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 3000));
-            const isLive = Math.random() > 0.4;
+        checkLiveRunner.on('task:complete', async ({ result, taskWrapper }) => {
+            const { isLive, checkedAt } = result;
             const newStatus = isLive ? 'LIVE' : 'DIE';
-            const lastCheckedAt = new Date();
-
-            await Account.findByIdAndUpdate(accountId, {
+            
+            await Account.findByIdAndUpdate(taskWrapper.id, {
                 status: newStatus,
-                lastCheckedAt: lastCheckedAt
+                lastCheckedAt: checkedAt
             });
 
-            // Gửi kết quả cuối cùng cho client
             io.emit('account:update', {
-                id: accountId,
+                id: taskWrapper.id,
                 status: newStatus,
-                lastCheckedAt: lastCheckedAt.toLocaleString('vi-VN')
+                lastCheckedAt: checkedAt.toLocaleString('vi-VN')
             });
+        });
 
-        } catch (error) {
-            console.error(`Error checking account ${accountId}:`, error);
-            await Account.findByIdAndUpdate(accountId, { status: 'UNCHECKED' });
-            // Gửi thông báo lỗi cho client
+        checkLiveRunner.on('task:error', async ({ error, taskWrapper }) => {
+            console.error(`Lỗi không thể thử lại với account ID ${taskWrapper.id}: ${error.message}`);
+            await Account.findByIdAndUpdate(taskWrapper.id, { status: 'ERROR' });
             io.emit('account:update', {
-                id: accountId,
-                status: 'UNCHECKED'
+                id: taskWrapper.id,
+                status: 'ERROR'
             });
-        }
-    });
+        });
+        
+        checkLiveRunner.start();
+    } catch (error) {
+        console.error("Error preparing check live process:", error);
+    }
 };
+
+module.exports = accountController;
