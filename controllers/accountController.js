@@ -18,33 +18,26 @@ exports.addAccounts = async (req, res) => {
     if (!accountsData) {
         return res.redirect('/admin/accounts');
     }
-
     const lines = accountsData.trim().split('\n');
     const newAccounts = [];
-    const errors = [];
-
     lines.forEach(line => {
         const parts = line.trim().split('|');
         if (parts.length >= 3) {
             newAccounts.push({
-                uid: parts[0],
+                username: parts[0],
                 password: parts[1],
-                twofa: parts[2],
-                proxy: parts[3] || '' // Proxy là tùy chọn
+                twoFA: parts[2],
+                proxy: parts[3] || ''
             });
         }
     });
-
     if (newAccounts.length > 0) {
         try {
-            // Dùng insertMany với ordered: false để bỏ qua các bản ghi lỗi (ví dụ: trùng username) và tiếp tục insert
             await Account.insertMany(newAccounts, { ordered: false });
         } catch (error) {
-            // Lỗi sẽ xảy ra nếu có username trùng, nhưng các username không trùng vẫn sẽ được thêm vào
             console.log("Partial insert completed. Some accounts might be duplicates.");
         }
     }
-    
     res.redirect('/admin/accounts');
 };
 
@@ -55,17 +48,65 @@ exports.deleteAccounts = async (req, res) => {
         if (!ids) {
             return res.status(400).json({ success: false, message: 'No account IDs provided.' });
         }
-
-        // Đảm bảo ids luôn là một mảng
         if (!Array.isArray(ids)) {
             ids = [ids];
         }
-
         await Account.deleteMany({ _id: { $in: ids } });
         res.json({ success: true, message: 'Accounts deleted successfully.' });
-
     } catch (error) {
         console.error("Error deleting accounts:", error);
         res.status(500).json({ success: false, message: 'Failed to delete accounts.' });
     }
+};
+
+// Check live nhiều account
+exports.checkSelectedAccounts = async (req, res) => {
+    let { ids } = req.body;
+    const io = req.io; // Lấy io từ request
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, message: 'No account IDs provided.' });
+    }
+
+    // Phản hồi ngay lập tức
+    res.json({ success: true, message: `Started checking ${ids.length} accounts.` });
+
+    // --- BẮT ĐẦU QUÁ TRÌNH CHẠY NGẦM VÀ BÁO CÁO REAL-TIME ---
+    ids.forEach(async (accountId) => {
+        try {
+            await Account.findByIdAndUpdate(accountId, { status: 'CHECKING' });
+            // Gửi cập nhật tức thì cho client
+            io.emit('account:update', { 
+                id: accountId, 
+                status: 'CHECKING'
+            });
+
+            // MÔ PHỎNG QUÁ TRÌNH CHECK
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 3000));
+            const isLive = Math.random() > 0.4;
+            const newStatus = isLive ? 'LIVE' : 'DIE';
+            const lastCheckedAt = new Date();
+
+            await Account.findByIdAndUpdate(accountId, {
+                status: newStatus,
+                lastCheckedAt: lastCheckedAt
+            });
+
+            // Gửi kết quả cuối cùng cho client
+            io.emit('account:update', {
+                id: accountId,
+                status: newStatus,
+                lastCheckedAt: lastCheckedAt.toLocaleString('vi-VN')
+            });
+
+        } catch (error) {
+            console.error(`Error checking account ${accountId}:`, error);
+            await Account.findByIdAndUpdate(accountId, { status: 'UNCHECKED' });
+            // Gửi thông báo lỗi cho client
+            io.emit('account:update', {
+                id: accountId,
+                status: 'UNCHECKED'
+            });
+        }
+    });
 };

@@ -65,3 +65,52 @@ exports.getOrderDetail = async (req, res) => {
         res.status(500).send("Could not load order details.");
     }
 };
+
+// GET /admin/orders - Hiển thị trang quản lý đơn hàng
+exports.getOrderManagementPage = async (req, res) => {
+    try {
+        // Lấy tất cả đơn hàng, sắp xếp từ mới nhất
+        const orders = await Order.find({}).sort({ createdAt: -1 }).lean();
+
+        // Xử lý bộ đếm cho mỗi đơn hàng
+        orders.forEach(order => {
+            order.completedItems = 0;
+            order.failedItems = 0;
+            order.items.forEach(item => {
+                if (item.status === 'completed') order.completedItems++;
+                else if (item.status === 'failed') order.failedItems++;
+            });
+        });
+
+        res.render('orders', { orders }); // Render ra view mới là orders.ejs
+    } catch (error) {
+        console.error("Error loading order management page:", error);
+        res.status(500).send("Could not load order management page.");
+    }
+};
+
+// POST /admin/orders/create - Tạo đơn hàng mới từ admin
+exports.createOrderFromAdmin = async (req, res) => {
+    try {
+        const { itemsData } = req.body;
+        if (!itemsData || itemsData.trim() === '') {
+            // Nếu không có dữ liệu, chỉ cần tải lại trang
+            return res.redirect('/admin/orders');
+        }
+
+        const items = itemsData.trim().split('\n').map(line => {
+            return { data: line.trim(), status: 'queued' };
+        });
+
+        if (items.length > 0) {
+            const order = new Order({ items });
+            await order.save();
+            await orderQueue.add('process-order', { orderId: order._id });
+        }
+        
+        res.redirect('/admin/orders');
+    } catch (error) {
+        console.error("Error creating order from admin:", error);
+        res.status(500).send("Failed to create order.");
+    }
+};

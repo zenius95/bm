@@ -6,11 +6,17 @@ const basicAuth = require('express-basic-auth');
 const config = require('./config');
 const { orderQueue } = require('./queue');
 
-// Import các routes đã được tách biệt
+// Import các routes
 const adminRoutes = require('./routes/admin');
 const orderRoutes = require('./routes/order');
 
 const app = express();
+// --- THAY ĐỔI: Khởi tạo http server và io ở đây ---
+const http = require('http');
+const { Server } = require("socket.io");
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+// --------------------------------------------------
 
 // --- Cấu hình View Engine ---
 app.set('view engine', 'ejs');
@@ -18,21 +24,25 @@ app.set('view engine', 'ejs');
 // --- Middlewares ---
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Dùng cho form HTML
+app.use(express.urlencoded({ extended: true }));
 
+// --- THAY ĐỔI: Gắn io vào mỗi request ---
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+// ---------------------------------------
 
 // --- Authentication cho Admin ---
 const adminUser = { [config.admin.user]: config.admin.password };
 const authMiddleware = basicAuth({
     users: adminUser,
     challenge: true,
-    unauthorizedResponse: 'Unauthorized access. Please login to view the admin dashboard.'
+    unauthorizedResponse: 'Unauthorized access.'
 });
 
 // --- Sử dụng Routes ---
-// Tất cả các request tới /admin/* sẽ đi qua middleware xác thực rồi mới tới adminRoutes
 app.use('/admin', authMiddleware, adminRoutes);
-// Tất cả các request tới /api/* sẽ được xử lý bởi orderRoutes
 app.use('/api', orderRoutes);
 
 // --- Các hàm kiểm tra kết nối ---
@@ -79,7 +89,8 @@ async function startServer() {
     console.log('-------------------------');
 
     if (allConnectionsOK) {
-        app.listen(config.server.port, () => {
+        // --- THAY ĐỔI: Dùng server.listen thay vì app.listen ---
+        server.listen(config.server.port, () => {
             console.log(`\n🎉 Server started successfully!`);
             console.log(`   - API is running on http://localhost:${config.server.port}`);
             console.log(`   - Admin Dashboard is available at http://localhost:${config.server.port}/admin/dashboard`);

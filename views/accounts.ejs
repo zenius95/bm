@@ -1,107 +1,178 @@
 <%- include('partials/_header.ejs', { title: 'Account Management', page: 'accounts' }) %>
 
+<main class="main-content">
+    <h1 class="display-5 fw-bold mb-4 text-white">Quản Lý Account</h1>
 
-    <main class="main-content">
-        <h1 class="display-5 fw-bold mb-4 text-white">Quản Lý Account</h1>
-
-        <div class="card mb-5">
-            <div class="card-header"><h5 class="mb-0">Thêm Account Mới</h5></div>
-            <div class="card-body">
-                <form action="/admin/accounts/add" method="POST">
-                    <div class="mb-3">
-                        <label for="accountsData" class="form-label">Nhập danh sách account (mỗi account một dòng)</label>
-                        <textarea class="form-control font-monospace" id="accountsData" name="accountsData" rows="6" placeholder="username|password|2FA_key|proxy (proxy không bắt buộc)"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary"><i class="ri-add-line me-1"></i> Thêm Accounts</button>
-                </form>
-            </div>
+    <div class="card mb-5">
+        <div class="card-header"><h5 class="mb-0">Thêm Account Mới</h5></div>
+        <div class="card-body">
+            <form action="/admin/accounts/add" method="POST">
+                <div class="mb-3">
+                    <label for="accountsData" class="form-label">Nhập danh sách account (mỗi account một dòng)</label>
+                    <textarea class="form-control font-monospace" id="accountsData" name="accountsData" rows="6" placeholder="username|password|2FA_key|proxy (proxy không bắt buộc)"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="ri-add-line me-1"></i> Thêm Accounts</button>
+            </form>
         </div>
+    </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="h4 text-white mb-0">Danh Sách Hiện Có (<%= accounts.length %>)</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 text-white mb-0">Danh Sách Hiện Có (<%= accounts.length %>)</h2>
+        <div>
+            <button class="btn btn-primary" id="checkSelectedBtn" disabled><i class="ri-refresh-line me-1"></i> Check Live mục đã chọn</button>
             <button class="btn btn-danger" id="deleteSelectedBtn" disabled><i class="ri-delete-bin-line me-1"></i> Xóa mục đã chọn</button>
         </div>
-        <div class="card">
-            <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th scope="col" class="ps-4" style="width: 50px;">
-                                <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
-                            </th>
-                            <th scope="col">Username</th>
-                            <th scope="col">Password</th>
-                            <th scope="col">2FA</th>
-                            <th scope="col">Proxy</th>
-                            <th scope="col">Ngày Tạo</th>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="ps-4" style="width: 50px;">
+                            <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
+                        </th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Password</th>
+                        <th scope="col">2FA</th>
+                        <th scope="col">Proxy</th>
+                        <th scope="col">Trạng Thái</th>
+                        <th scope="col">Check Lần Cuối</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% accounts.forEach(account => { %>
+                        <%
+                            let statusClass = 'text-bg-secondary';
+                            if (account.status === 'LIVE') statusClass = 'text-bg-success';
+                            if (account.status === 'DIE') statusClass = 'text-bg-danger';
+                            if (account.status === 'CHECKING') statusClass = 'text-bg-warning';
+                        %>
+                        <tr id="account-row-<%= account._id %>">
+                            <td class="ps-4">
+                                <input class="form-check-input account-checkbox" type="checkbox" value="<%= account._id %>">
+                            </td>
+                            <td><%= account.uid %></td>
+                            <td><%= account.password %></td>
+                            <td><%= account.twofa %></td>
+                            <td><%= account.proxy || 'N/A' %></td>
+                            <td>
+                                <div class="spinner-border spinner-border-sm text-warning d-none" role="status" id="spinner-<%= account._id %>"></div>
+                                <span class="badge <%= statusClass %>" id="status-<%= account._id %>"><%= account.status %></span>
+                            </td>
+                            <td id="lastChecked-<%= account._id %>">
+                                <% if (account.lastCheckedAt) { %>
+                                    <%= new Date(account.lastCheckedAt).toLocaleString('vi-VN') %>
+                                <% } else { %>
+                                    Chưa check
+                                <% } %>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <% accounts.forEach(account => { %>
-                            <tr>
-                                <td class="ps-4">
-                                    <input class="form-check-input account-checkbox" type="checkbox" value="<%= account._id %>">
-                                </td>
-                                <td><%= account.uid %></td>
-                                <td><%= account.password %></td>
-                                <td><%= account.twofa %></td>
-                                <td><%= account.proxy || 'N/A' %></td>
-                                <td><%= new Date(account.createdAt).toLocaleString('vi-VN') %></td>
-                            </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
+                    <% }); %>
+                </tbody>
+            </table>
         </div>
-    </main>
+    </div>
+</main>
 
-    <script>
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const accountCheckboxes = document.querySelectorAll('.account-checkbox');
-        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const accountCheckboxes = document.querySelectorAll('.account-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const checkSelectedBtn = document.getElementById('checkSelectedBtn');
 
-        function toggleDeleteButton() {
-            const anyChecked = [...accountCheckboxes].some(cb => cb.checked);
-            deleteSelectedBtn.disabled = !anyChecked;
-        }
+    function toggleActionButtons() {
+        const anyChecked = [...accountCheckboxes].some(cb => cb.checked);
+        deleteSelectedBtn.disabled = !anyChecked;
+        checkSelectedBtn.disabled = !anyChecked;
+    }
 
-        selectAllCheckbox.addEventListener('change', (e) => {
-            accountCheckboxes.forEach(cb => cb.checked = e.target.checked);
-            toggleDeleteButton();
-        });
+    selectAllCheckbox.addEventListener('change', (e) => {
+        accountCheckboxes.forEach(cb => cb.checked = e.target.checked);
+        toggleActionButtons();
+    });
 
-        accountCheckboxes.forEach(cb => {
-            cb.addEventListener('change', toggleDeleteButton);
-        });
+    accountCheckboxes.forEach(cb => {
+        cb.addEventListener('change', toggleActionButtons);
+    });
 
-        deleteSelectedBtn.addEventListener('click', async () => {
-            const selectedIds = [...accountCheckboxes]
-                .filter(cb => cb.checked)
-                .map(cb => cb.value);
-
-            if (selectedIds.length === 0) {
-                return alert('Vui lòng chọn ít nhất một account để xóa.');
-            }
-
-            if (confirm(`Bạn có chắc muốn xóa ${selectedIds.length} account đã chọn?`)) {
-                try {
-                    const response = await fetch('/admin/accounts/delete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: selectedIds })
-                    });
-                    const result = await response.json();
-                    if (result.success) {
-                        alert(result.message);
-                        window.location.reload();
-                    } else {
-                        alert(`Lỗi: ${result.message}`);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Đã có lỗi xảy ra khi xóa account.');
+    deleteSelectedBtn.addEventListener('click', async () => {
+        const selectedIds = [...accountCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+        if (selectedIds.length === 0) return alert('Vui lòng chọn ít nhất một account để xóa.');
+        if (confirm(`Bạn có chắc muốn xóa ${selectedIds.length} account đã chọn?`)) {
+            try {
+                const response = await fetch('/admin/accounts/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: selectedIds })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    window.location.reload();
+                } else {
+                    alert(`Lỗi: ${result.message}`);
                 }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Đã có lỗi xảy ra khi xóa account.');
             }
-        });
-    </script>
+        }
+    });
+    
+    checkSelectedBtn.addEventListener('click', async () => {
+        const selectedIds = [...accountCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+        if (selectedIds.length === 0) return alert('Vui lòng chọn ít nhất một account để check.');
+
+        checkSelectedBtn.disabled = true;
+        checkSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang gửi...';
+
+        try {
+            const response = await fetch('/admin/accounts/check-selected', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds })
+            });
+            const result = await response.json();
+            if (!result.success) {
+                alert(`Lỗi: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Đã có lỗi xảy ra khi bắt đầu tiến trình check.');
+        } finally {
+            checkSelectedBtn.disabled = false;
+            checkSelectedBtn.innerHTML = '<i class="ri-refresh-line me-1"></i> Check Live mục đã chọn';
+        }
+    });
+
+    // --- LOGIC REAL-TIME BẰNG SOCKET.IO ---
+    const socket = io();
+    socket.on('connect', () => {
+        console.log('Connected to server via WebSocket.');
+    });
+
+    socket.on('account:update', (data) => {
+        const { id, status, lastCheckedAt } = data;
+        const statusBadge = document.getElementById(`status-${id}`);
+        const spinner = document.getElementById(`spinner-${id}`);
+        const lastCheckedCell = document.getElementById(`lastChecked-${id}`);
+
+        if (!statusBadge || !spinner || !lastCheckedCell) return;
+
+        spinner.classList.toggle('d-none', status !== 'CHECKING');
+        statusBadge.classList.toggle('d-none', status === 'CHECKING');
+
+        statusBadge.innerText = status;
+        let statusClass = 'text-bg-secondary';
+        if (status === 'LIVE') statusClass = 'text-bg-success';
+        if (status === 'DIE') statusClass = 'text-bg-danger';
+        statusBadge.className = `badge ${statusClass}`;
+
+        if (lastCheckedAt) {
+            lastCheckedCell.innerText = lastCheckedAt;
+        }
+    });
+</script>
+
 <%- include('partials/_footer.ejs') %>

@@ -20,6 +20,15 @@ const AccountSchema = new mongoose.Schema({
         type: String,
         default: '' // Không bắt buộc
     },
+    status: {
+        type: String,
+        enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING'],
+        default: 'UNCHECKED'
+    },
+    lastCheckedAt: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

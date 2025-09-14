@@ -1,0 +1,66 @@
+<%- include('partials/_header.ejs', { title: 'Order Management', page: 'orders' }) %>
+
+<main class="main-content">
+    <h1 class="display-5 fw-bold mb-4 text-white">Quản Lý Đơn Hàng</h1>
+
+    <div class="card mb-5">
+        <div class="card-header"><h5 class="mb-0">Tạo Đơn Hàng Mới</h5></div>
+        <div class="card-body">
+            <form action="/admin/orders/create" method="POST">
+                <div class="mb-3">
+                    <label for="itemsData" class="form-label">Nhập danh sách items (mỗi item một dòng)</label>
+                    <textarea class="form-control font-monospace" id="itemsData" name="itemsData" rows="6" placeholder="Item 1...&#10;Item 2...&#10;Item 3..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="ri-add-line me-1"></i> Tạo Đơn Hàng</button>
+            </form>
+        </div>
+    </div>
+
+    <h2 class="h4 mb-3 text-white">Toàn Bộ Đơn Hàng (<%= orders.length %>)</h2>
+    <div class="card">
+        <% if (orders && orders.length > 0) { %>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="ps-4">Order ID</th>
+                            <th scope="col">Trạng Thái</th>
+                            <th scope="col" class="text-center">Items (Tổng/OK/Lỗi)</th>
+                            <th scope="col">Ngày Tạo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% orders.forEach(order => { %>
+                            <% 
+                                let statusClass = 'text-bg-secondary';
+                                if (order.status === 'processing') { statusClass = 'text-bg-warning'; }
+                                if (order.status === 'completed') { statusClass = 'text-bg-success'; }
+                                if (order.status === 'failed') { statusClass = 'text-bg-danger'; }
+                            %>
+                            <tr>
+                                <td class="ps-4 font-monospace"><a href="/admin/orders/<%= order._id %>" class="link-light fw-bold text-decoration-none"><%= order._id %></a></td>
+                                <td><span class="badge <%= statusClass %> fs-6"><%= order.status %></span></td>
+                                <td class="text-center">
+                                    <span class="fw-bold"><%= order.items.length %></span> /
+                                    <span class="text-success"><%= order.completedItems %></span> /
+                                    <span class="text-danger"><%= order.failedItems %></span>
+                                </td>
+                                <td><%= new Date(order.createdAt).toLocaleString('vi-VN') %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <div class="card-body">
+                <div class="empty-state">
+                    <div class="icon mb-3"><i class="ri-file-list-3-line"></i></div>
+                    <h4 class="text-white">Chưa có đơn hàng nào</h4>
+                    <p class="text-white-50">Hãy dùng form phía trên để tạo đơn hàng đầu tiên.</p>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</main>
+
+<%- include('partials/_footer.ejs') %>
