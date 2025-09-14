@@ -3,6 +3,21 @@
 <% const inTrash = currentQuery.inTrash === 'true' %>
 
 <main class="main-content">
+    
+    <% if (currentQuery.error) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Đã xảy ra lỗi!</strong><br>
+            <pre class="mb-0"><%= decodeURIComponent(currentQuery.error) %></pre>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+    <% if (currentQuery.success) { %>
+         <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Thành công!</strong> <%= decodeURIComponent(currentQuery.success) %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+
     <h1 class="display-5 fw-bold mb-4 text-white">
         <%= inTrash ? 'Thùng rác - Account' : 'Quản Lý Account' %>
     </h1>
@@ -170,14 +185,13 @@
             addAccountsBtn.disabled = true;
             addAccountsBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...`;
 
-            const formData = new FormData(addAccountsForm);
-            const data = Object.fromEntries(formData.entries());
-
             try {
                 const response = await fetch('/admin/accounts/add-multiple', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({
+                        accountsData: document.getElementById('accountsData').value
+                    })
                 });
 
                 const result = await response.json();
@@ -187,10 +201,10 @@
                     addAccountsForm.reset();
                     setTimeout(() => window.location.reload(), 1500);
                 } else {
-                    showToast(result.message, 'Có lỗi xảy ra!', 'error');
+                    showToast(result.message, `Lỗi (Code: ${response.status})`, 'error');
                 }
             } catch (error) {
-                showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
+                showToast('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.', 'Lỗi mạng!', 'error');
             } finally {
                 addAccountsBtn.disabled = false;
                 addAccountsBtn.innerHTML = originalBtnHtml;
@@ -276,7 +290,7 @@
         if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !enabled;
     }
 
-    async function handleAction(url, confirmMessage) {
+    async function handleAction(url, confirmMessage, reloadOnSuccess = true) {
         let payload = {};
         if (isSelectAllAcrossPages) {
             payload = {
@@ -285,7 +299,10 @@
             };
         } else {
             const selectedIds = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
-            if (selectedIds.length === 0) return;
+            if (selectedIds.length === 0) {
+                showToast('Vui lòng chọn ít nhất một mục.', 'Cảnh báo!', 'warning');
+                return;
+            };
             payload = { ids: selectedIds };
         }
 
@@ -302,13 +319,14 @@
                 
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
-                    setTimeout(() => window.location.reload(), 1500);
+                    if(reloadOnSuccess) {
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
                 } else {
-                    showToast(result.message, 'Lỗi!', 'error');
+                    showToast(result.message || 'Có lỗi xảy ra từ server.', 'Lỗi!', 'error');
                 }
-
             } catch (error) {
-                showToast('Lỗi kết nối server.', 'Lỗi!', 'error');
+                showToast('Lỗi kết nối hoặc phản hồi không hợp lệ.', 'Lỗi!', 'error');
             }
         }
     }
@@ -318,53 +336,19 @@
              handleAction('/admin/accounts/soft-delete', (count) => `Bạn có chắc muốn chuyển ${count} account vào thùng rác?`);
         });
     }
-
     if (restoreSelectedBtn) {
         restoreSelectedBtn.addEventListener('click', () => {
              handleAction('/admin/accounts/restore', (count) => `Bạn có chắc muốn khôi phục ${count} account?`);
         });
     }
-
     if (hardDeleteSelectedBtn) {
         hardDeleteSelectedBtn.addEventListener('click', () => {
             handleAction('/admin/accounts/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} account? Dữ liệu sẽ không thể phục hồi.`);
         });
     }
-    
     if (checkSelectedBtn) {
-        checkSelectedBtn.addEventListener('click', async () => {
-            let payload = {};
-            if (isSelectAllAcrossPages) {
-                 payload = {
-                    selectAll: true,
-                    filters: <%- JSON.stringify(currentQuery) %>
-                };
-            } else {
-                const selectedIds = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
-                if (selectedIds.length === 0) return;
-                payload = { ids: selectedIds };
-            }
-
-            checkSelectedBtn.disabled = true;
-            checkSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
-            try {
-                const response = await fetch('/admin/accounts/check-selected', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (result.success) {
-                    showToast(result.message, 'Đã bắt đầu', 'success');
-                } else {
-                    showToast(result.message, 'Lỗi!', 'error');
-                }
-            } catch (error) {
-                showToast('Lỗi kết nối server.', 'Lỗi!', 'error');
-            } finally {
-                checkSelectedBtn.disabled = false;
-                checkSelectedBtn.innerHTML = '<i class="ri-refresh-line me-1"></i> Check Live';
-            }
+        checkSelectedBtn.addEventListener('click', () => {
+             handleAction('/admin/accounts/check-selected', (count) => `Bạn có chắc muốn check live ${count} account?`, false);
         });
     }
 
