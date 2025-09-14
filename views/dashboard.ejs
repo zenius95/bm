@@ -1,0 +1,107 @@
+<%- include('partials/_header.ejs', { title: 'Admin Dashboard', page: 'dashboard' }) %>
+
+    <main class="main-content">
+        <h1 class="display-5 fw-bold mb-4 text-white">Dashboard</h1>
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Tổng Đơn Hàng</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-white"><%= stats.total %></h2>
+                            </div>
+                            <div class="icon text-primary"><i class="ri-stack-line"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Đang Xử Lý</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-warning"><%= stats.processing %></h2>
+                            </div>
+                            <div class="icon text-warning"><i class="ri-loader-4-line"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Hoàn Thành</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-success"><%= stats.completed %></h2>
+                            </div>
+                            <div class="icon text-success"><i class="ri-checkbox-circle-line"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Thất Bại</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-danger"><%= stats.failed %></h2>
+                            </div>
+                            <div class="icon text-danger"><i class="ri-close-circle-line"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="h4 mb-3 text-white">Đơn Hàng Gần Nhất</h2>
+        <div class="card">
+            <% if (orders && orders.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="ps-4">Order ID</th>
+                                <th scope="col">Trạng Thái</th>
+                                <th scope="col" class="text-center">Items (Tổng/OK/Lỗi)</th>
+                                <th scope="col">Ngày Tạo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% orders.forEach(order => { %>
+                                <% 
+                                    let statusClass = 'text-bg-secondary';
+                                    if (order.status === 'processing') { statusClass = 'text-bg-warning'; }
+                                    if (order.status === 'completed') { statusClass = 'text-bg-success'; }
+                                    if (order.status === 'failed') { statusClass = 'text-bg-danger'; }
+                                %>
+                                <tr>
+                                    <td class="ps-4 font-monospace"><a href="/admin/orders/<%= order._id %>" class="link-light fw-bold text-decoration-none"><%= order._id %></a></td>
+                                    <td><span class="badge <%= statusClass %> fs-6"><%= order.status %></span></td>
+                                    <td class="text-center">
+                                        <span class="fw-bold"><%= order.items.length %></span> /
+                                        <span class="text-success"><%= order.completedItems %></span> /
+                                        <span class="text-danger"><%= order.failedItems %></span>
+                                    </td>
+                                    <td><%= new Date(order.createdAt).toLocaleString('vi-VN') %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="card-body">
+                    <div class="empty-state">
+                        <div class="icon mb-3"><i class="ri-file-list-3-line"></i></div>
+                        <h4 class="text-white">Chưa có đơn hàng nào</h4>
+                        <p class="text-white-50">Hãy thử tạo một đơn hàng mới qua API, danh sách sẽ xuất hiện ở đây.</p>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </main>
+    
+<%- include('partials/_footer.ejs') %>

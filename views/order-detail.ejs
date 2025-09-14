@@ -1,0 +1,79 @@
+<%- include('partials/_header.ejs', { title: 'Order Details', page: 'dashboard' }) %>
+
+    <main class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="/admin/dashboard" class="text-decoration-none text-white-50 mb-2 d-inline-block"><i class="ri-arrow-left-line"></i> Quay lại Dashboard</a>
+                <h1 class="display-6 fw-bold mb-0 text-white">Chi Tiết Đơn Hàng</h1>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-white">Thông tin chung</h5>
+                <% 
+                    let statusClass = 'text-bg-secondary';
+                    if (order.status === 'processing') { statusClass = 'text-bg-warning'; }
+                    if (order.status === 'completed') { statusClass = 'text-bg-success'; }
+                    if (order.status === 'failed') { statusClass = 'text-bg-danger'; }
+                %>
+                <span class="badge <%= statusClass %> fs-6"><%= order.status %></span>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>ID:</strong> <span class="font-monospace text-info"><%= order._id %></span></p>
+                <p class="mb-0"><strong>Ngày tạo:</strong> <%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card h-100">
+                    <div class="card-header"><h5 class="mb-0 text-white">Danh Sách Items</h5></div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Item Data</th>
+                                    <th class="text-center">Trạng Thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% order.items.forEach(item => { %>
+                                    <tr>
+                                        <td><%= item.data %></td>
+                                        <td class="text-center">
+                                            <% if (item.status === 'completed') { %>
+                                                <span class="badge text-bg-success"><i class="ri-check-line"></i></span>
+                                            <% } else { %>
+                                                <span class="badge text-bg-secondary"><i class="ri-time-line"></i></span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-header"><h5 class="mb-0 text-white">Logs</h5></div>
+                    <div class="card-body log-container p-3">
+                        <% logs.forEach(log => { %>
+                            <div class="log-line">
+                                <span class="log-time"><%= new Date(log.timestamp).toLocaleString('vi-VN') %></span>
+                                <% if (log.level === 'INFO') { %>
+                                    <span class="text-success fw-bold">[INFO]</span>
+                                <% } else { %>
+                                    <span class="text-danger fw-bold">[ERROR]</span>
+                                <% } %>
+                                <span class="ms-2"><%= log.message %></span>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<%- include('partials/_footer.ejs') %>

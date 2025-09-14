@@ -1,0 +1,20 @@
+<aside class="sidebar d-flex flex-column flex-shrink-0 p-3">
+    <a href="/admin/dashboard" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+        <i class="ri-sound-module-fill me-2 fs-2 text-primary"></i>
+        <span class="fs-4 fw-bold">Order Admin</span>
+    </a>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item mb-2">
+            <a href="/admin/dashboard" class="nav-link <%= (typeof page !== 'undefined' && page === 'dashboard') ? 'active' : '' %>">
+                <i class="ri-dashboard-3-line me-2"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item mb-2">
+            <a href="/admin/accounts" class="nav-link <%= (typeof page !== 'undefined' && page === 'accounts') ? 'active' : '' %>">
+                <i class="ri-group-line me-2"></i> Danh Sách Account
+            </a>
+        </li>
+    </ul>
+    <hr>
+</aside>
