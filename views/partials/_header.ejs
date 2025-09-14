@@ -25,13 +25,17 @@
         .empty-state { padding: 4rem 2rem; text-align: center; border: 2px dashed var(--bs-border-color); border-radius: .5rem; }
         .empty-state .icon { font-size: 4rem; color: var(--bs-secondary); }
 
-        /* CSS CHO TOAST (MỚI) */
-        .toast-container {
-            position: fixed;
-            top: 1.5rem;
-            right: 1.5rem;
-            z-index: 1090;
+        .toast-container { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 1090; }
+
+        /* === START: THAY ĐỔI QUAN TRỌNG === */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
+        .icon-spin {
+            animation: spin 1s linear infinite;
+        }
+        /* === END: THAY ĐỔI QUAN TRỌNG === */
     </style>
 </head>
 <body>

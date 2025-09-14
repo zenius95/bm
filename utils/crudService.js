@@ -21,12 +21,19 @@ class CrudService {
             page = 1,
             limit = 20,
             sortBy = 'createdAt',
-            sortOrder = 'desc',
+            sortOrder = 'asc',
         } = queryOptions;
         
         const query = this._buildQuery(queryOptions);
 
-        const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        // Thêm _id làm tiêu chí sắp xếp phụ để đảm bảo sự ổn định tuyệt đối
+        const sortOptions = { 
+            [sortBy]: sortOrder === 'asc' ? 1 : -1,
+            _id: 1 // Luôn sắp xếp tăng dần theo _id để phá vỡ sự trùng lặp
+        };
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+
         const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
         const totalItems = await this.Model.countDocuments(query);
@@ -73,9 +80,6 @@ class CrudService {
         return this.Model.findByIdAndDelete(id);
     }
     
-    /**
-     * [SỬA LỖI] Xây dựng query từ queryOptions, loại bỏ các key không cần thiết
-     */
     _buildQuery(queryOptions = {}) {
         const query = {};
         const { search, inTrash, ...filters } = queryOptions;
@@ -89,7 +93,6 @@ class CrudService {
 
         // Lọc theo các trường cụ thể (ví dụ: status)
         for (const key in filters) {
-            // Chỉ thêm vào query nếu nó không phải là key dành riêng cho việc sắp xếp/phân trang
             if (Object.prototype.hasOwnProperty.call(filters, key) && filters[key]) {
                 const reservedKeys = ['page', 'limit', 'sortBy', 'sortOrder'];
                 if (!reservedKeys.includes(key)) {
@@ -124,8 +127,26 @@ class CrudService {
     }
 
     async findAllIds(queryOptions) {
+        const {
+            sortBy = 'createdAt',
+            sortOrder = 'asc',
+        } = queryOptions;
+
         const query = this._buildQuery(queryOptions);
-        const documents = await this.Model.find(query).select('_id').lean();
+        
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        // Thêm _id làm tiêu chí sắp xếp phụ ở đây nữa
+        const sortOptions = { 
+            [sortBy]: sortOrder === 'asc' ? 1 : -1,
+            _id: 1
+        };
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+
+        const documents = await this.Model.find(query)
+            .sort(sortOptions)
+            .select('_id')
+            .lean();
+            
         return documents.map(doc => doc._id.toString());
     }
 }

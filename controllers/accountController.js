@@ -1,8 +1,8 @@
 // controllers/accountController.js
 const Account = require('../models/Account');
-const CrudService = require('../utils/crudService'); // Sửa lại đường dẫn
-const createCrudController = require('./crudController'); // Sửa lại đường dẫn
-const ProcessRunner = require('../utils/processRunner'); // Sửa lại đường dẫn
+const CrudService = require('../utils/crudService');
+const createCrudController = require('./crudController');
+const ProcessRunner = require('../utils/processRunner');
 
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy']
@@ -16,7 +16,7 @@ const accountController = createCrudController(accountService, 'accounts', {
 accountController.addMultiple = async (req, res) => {
     const { accountsData } = req.body;
     if (!accountsData || accountsData.trim() === '') {
-        return res.redirect('/admin/accounts');
+        return res.status(400).json({ success: false, message: "Dữ liệu account trống." });
     }
     const lines = accountsData.trim().split('\n').filter(line => line.trim() !== '');
     const newAccounts = [];
@@ -37,15 +37,13 @@ accountController.addMultiple = async (req, res) => {
     });
     
     if (errors.length > 0 && newAccounts.length === 0) {
-        const errorMessage = encodeURIComponent(errors.join('\n'));
-        return res.redirect(`/admin/accounts?error=${errorMessage}`);
+        return res.status(400).json({ success: false, message: errors.join('\n') });
     }
 
     if (newAccounts.length > 0) {
         try {
             const result = await Account.insertMany(newAccounts, { ordered: false });
-            const successMessage = encodeURIComponent(`Đã thêm thành công ${result.length} account.`);
-            return res.redirect(`/admin/accounts?success=${successMessage}`);
+            return res.json({ success: true, message: `Đã thêm thành công ${result.length} account.` });
         } catch (error) {
             let errorMessage;
             if (error.code === 11000 && error.insertedIds) {
@@ -54,13 +52,13 @@ accountController.addMultiple = async (req, res) => {
             } else {
                 errorMessage = `Lỗi server: ${error.message}`;
             }
-            return res.redirect(`/admin/accounts?error=${encodeURIComponent(errorMessage)}`);
+             return res.status(500).json({ success: false, message: errorMessage });
         }
     }
     
-    const errorMessage = encodeURIComponent(errors.join('\n'));
-    return res.redirect(`/admin/accounts?error=${errorMessage}`);
+    return res.status(400).json({ success: false, message: errors.join('\n') });
 };
+
 
 accountController.checkSelected = async (req, res) => {
     const { ids, selectAll, filters } = req.body;
@@ -70,7 +68,8 @@ accountController.checkSelected = async (req, res) => {
 
     try {
         if (selectAll) {
-            accountIdsToCheck = await accountService.findAllIds(filters);
+            const queryOptions = { ...filters, sortBy: 'createdAt', sortOrder: 'asc' };
+            accountIdsToCheck = await accountService.findAllIds(queryOptions);
         } else {
             accountIdsToCheck = ids;
         }
@@ -92,13 +91,19 @@ accountController.checkSelected = async (req, res) => {
         const tasks = accountIdsToCheck.map(accountId => ({
             id: accountId,
             task: async () => {
+                const currentAccount = await Account.findById(accountId).lean();
                 await Account.findByIdAndUpdate(accountId, { status: 'CHECKING' });
-                io.emit('account:update', { id: accountId, status: 'CHECKING' });
+                io.emit('account:update', { 
+                    id: accountId, 
+                    status: 'CHECKING',
+                    dieStreak: currentAccount ? currentAccount.dieStreak : 0
+                });
+                
                 await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 3000));
                 if (Math.random() < 0.15) {
                     throw new Error("Lỗi ngẫu nhiên khi check live");
                 }
-                const isLive = Math.random() > 0.4;
+                const isLive = false;
                 return { isLive, checkedAt: new Date() }; 
             }
         }));
@@ -107,32 +112,68 @@ accountController.checkSelected = async (req, res) => {
 
         checkLiveRunner.on('task:complete', async ({ result, taskWrapper }) => {
             const { isLive, checkedAt } = result;
-            const newStatus = isLive ? 'LIVE' : 'DIE';
-            
-            await Account.findByIdAndUpdate(taskWrapper.id, {
-                status: newStatus,
-                lastCheckedAt: checkedAt
-            });
+            const accountId = taskWrapper.id;
 
-            io.emit('account:update', {
-                id: taskWrapper.id,
-                status: newStatus,
-                lastCheckedAt: checkedAt.toLocaleString('vi-VN')
-            });
+            const account = await Account.findById(accountId);
+            if (!account) return;
+
+            const updateData = {
+                lastCheckedAt: checkedAt
+            };
+
+            if (isLive) {
+                updateData.status = 'LIVE';
+                updateData.dieStreak = 0;
+            } else { 
+                updateData.status = 'DIE';
+                updateData.dieStreak = (account.dieStreak || 0) + 1;
+            }
+
+            if (updateData.dieStreak >= 5) {
+                updateData.isDeleted = true;
+                updateData.deletedAt = new Date();
+                
+                await Account.findByIdAndUpdate(accountId, updateData);
+                io.emit('account:trashed', { id: accountId, message: `Account ${account.uid} đã bị xóa do die 5 lần liên tiếp.` });
+            } else {
+                await Account.findByIdAndUpdate(accountId, updateData);
+                io.emit('account:update', {
+                    id: accountId,
+                    status: updateData.status,
+                    lastCheckedAt: checkedAt.toLocaleString('vi-VN'),
+                    dieStreak: updateData.dieStreak
+                });
+            }
         });
+
 
         checkLiveRunner.on('task:error', async ({ error, taskWrapper }) => {
             console.error(`Lỗi không thể thử lại với account ID ${taskWrapper.id}: ${error.message}`);
-            await Account.findByIdAndUpdate(taskWrapper.id, { status: 'ERROR' });
-            io.emit('account:update', {
-                id: taskWrapper.id,
-                status: 'ERROR'
-            });
+            const updatedAccount = await Account.findByIdAndUpdate(taskWrapper.id, { status: 'ERROR' }, { new: true }).lean();
+            
+            if (updatedAccount) {
+                 io.emit('account:update', {
+                    id: taskWrapper.id,
+                    status: 'ERROR',
+                    dieStreak: updatedAccount.dieStreak
+                });
+            }
         });
         
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        // Thêm event listener cho sự kiện 'end' của runner
+        checkLiveRunner.on('end', () => {
+            console.log('[ProcessRunner] All check live tasks have finished.');
+            io.emit('checklive:end', { message: 'Check live process has finished.' });
+        });
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+
         checkLiveRunner.start();
     } catch (error) {
         console.error("Error preparing check live process:", error);
+         if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Lỗi server khi chuẩn bị tiến trình check live.' });
+        }
     }
 };
 

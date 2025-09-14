@@ -25,13 +25,18 @@ const AccountSchema = new mongoose.Schema({
         enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING', 'ERROR'],
         default: 'UNCHECKED'
     },
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    dieStreak: {
+        type: Number,
+        default: 0
+    },
+    // === END: THAY ĐỔI QUAN TRỌNG ===
     isDeleted: { type: Boolean, default: false, index: true },
     lastCheckedAt: {
         type: Date,
         default: null
     },
     deletedAt: { type: Date, default: null },
-    // Trường 'createdAt' đã được xóa bỏ khỏi đây
 }, {
     timestamps: true // Tùy chọn này sẽ tự động quản lý createdAt và updatedAt
 });
