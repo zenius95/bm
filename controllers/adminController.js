@@ -4,39 +4,35 @@ const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const { orderQueue } = require('../queue');
 
-// 1. Khởi tạo Service cho Order
-const orderService = new CrudService(Order, {
-    // Order không cần tìm kiếm text
-});
+const orderService = new CrudService(Order, {});
 
-// 2. Tạo Controller từ Factory
 const orderController = createCrudController(orderService, 'orders', {
     single: 'order',
     plural: 'orders'
 });
 
-// 3. Override hoặc thêm các logic đặc thù
 orderController.handleCreate = async (req, res) => {
     try {
         const { itemsData } = req.body;
         if (!itemsData || itemsData.trim() === '') {
-            return res.redirect('/admin/orders');
+            return res.status(400).json({ success: false, message: "Dữ liệu item trống." });
         }
         const items = itemsData.trim().split('\n').map(line => ({
             data: line.trim(), status: 'queued'
         }));
+
         if (items.length > 0) {
             const order = await orderService.create({ items });
             await orderQueue.add('process-order', { orderId: order._id });
+            return res.json({ success: true, message: `Đã tạo thành công đơn hàng với ${items.length} item.` });
         }
-        res.redirect('/admin/orders');
+        return res.status(400).json({ success: false, message: "Không có item nào hợp lệ." });
     } catch (error) {
         console.error("Error creating order from admin:", error);
-        res.status(500).send("Failed to create order.");
+        return res.status(500).json({ success: false, message: "Lỗi server khi tạo đơn hàng." });
     }
 };
 
-// Logic cho trang dashboard (giữ nguyên từ file cũ)
 orderController.getDashboard = async (req, res) => {
     try {
         const total = Order.countDocuments({ isDeleted: false });

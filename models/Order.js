@@ -19,10 +19,9 @@ const OrderSchema = new mongoose.Schema({
     },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
+    // Trường 'createdAt' đã được xóa bỏ khỏi đây
+}, {
+    timestamps: true // Tùy chọn này sẽ tự động quản lý createdAt và updatedAt
 });
 
 module.exports = mongoose.model('Order', OrderSchema);

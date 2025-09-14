@@ -1,8 +1,8 @@
 // controllers/accountController.js
 const Account = require('../models/Account');
-const CrudService = require('../utils/crudService');
-const createCrudController = require('./crudController');
-const ProcessRunner = require('../utils/processRunner');
+const CrudService = require('../utils/crudService'); // Sửa lại đường dẫn
+const createCrudController = require('./crudController'); // Sửa lại đường dẫn
+const ProcessRunner = require('../utils/processRunner'); // Sửa lại đường dẫn
 
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy']
@@ -49,7 +49,6 @@ accountController.addMultiple = async (req, res) => {
         } catch (error) {
             let errorMessage;
             if (error.code === 11000 && error.insertedIds) {
-                // [SỬA LỖI TẠI ĐÂY] Dùng error.insertedIds.length thay vì error.result.nInserted
                 const insertedCount = error.insertedIds.length; 
                 errorMessage = `Đã thêm ${insertedCount} account. Một số account khác bị lỗi trùng lặp UID và đã được bỏ qua.`;
             } else {

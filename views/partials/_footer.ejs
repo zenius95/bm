@@ -1,3 +1,47 @@
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<div class="toast-container">
+        <div id="app-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i id="toast-icon" class="ri-checkbox-circle-fill me-2"></i>
+                <strong id="toast-title" class="me-auto">Thông báo</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div id="toast-body" class="toast-body"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const toastEl = document.getElementById('app-toast');
+        const toast = new bootstrap.Toast(toastEl);
+
+        function showToast(message, title = 'Thành công!', type = 'success') {
+            const toastTitle = document.getElementById('toast-title');
+            const toastBody = document.getElementById('toast-body');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastTitle.textContent = title;
+            toastBody.innerHTML = message; // Dùng innerHTML để có thể hiển thị xuống dòng
+
+            // Reset classes
+            toastEl.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-warning');
+            toastIcon.className = 'me-2';
+
+            if (type === 'success') {
+                toastEl.classList.add('text-bg-success');
+                toastIcon.classList.add('ri-checkbox-circle-fill');
+            } else if (type === 'error') {
+                toastTitle.textContent = title === 'Thành công!' ? 'Thất bại!' : title;
+                toastEl.classList.add('text-bg-danger');
+                toastIcon.classList.add('ri-error-warning-fill');
+            } else if (type === 'warning') {
+                toastTitle.textContent = title === 'Thành công!' ? 'Cảnh báo!' : title;
+                toastEl.classList.add('text-bg-warning');
+                toastIcon.classList.add('ri-alert-fill');
+            }
+            
+            toast.show();
+        }
+    </script>
 </body>
 </html>

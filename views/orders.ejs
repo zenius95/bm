@@ -11,12 +11,14 @@
     <div class="card mb-4">
         <div class="card-header"><h5 class="mb-0">Tạo Đơn Hàng Mới</h5></div>
         <div class="card-body">
-            <form action="/admin/orders/create" method="POST">
+            <form id="create-order-form">
                 <div class="mb-3">
                     <label for="itemsData" class="form-label">Nhập danh sách items (mỗi item một dòng)</label>
                     <textarea class="form-control font-monospace" id="itemsData" name="itemsData" rows="6" placeholder="Item 1...&#10;Item 2...&#10;Item 3..."></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary"><i class="ri-add-line me-1"></i> Tạo Đơn Hàng</button>
+                <button type="submit" id="create-order-btn" class="btn btn-primary">
+                    <i class="ri-add-line me-1"></i> Tạo Đơn Hàng
+                </button>
             </form>
         </div>
     </div>
@@ -27,7 +29,7 @@
             <form method="GET" action="/admin/orders" class="row g-3 align-items-center">
                  <% if (inTrash) { %>
                     <input type="hidden" name="inTrash" value="true">
-                <% } %>
+                 <% } %>
                 <div class="col-md-8">
                     <select name="status" class="form-select" onchange="this.form.submit()">
                         <option value="">-- Lọc theo trạng thái --</option>
@@ -132,7 +134,45 @@
 </main>
 
 <script>
-    // Logic chung để xử lý checkbox và bật/tắt các nút hành động
+    const createOrderForm = document.getElementById('create-order-form');
+    if (createOrderForm) {
+        const createOrderBtn = document.getElementById('create-order-btn');
+        const originalBtnHtml = createOrderBtn.innerHTML;
+
+        createOrderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            createOrderBtn.disabled = true;
+            createOrderBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tạo...`;
+
+            const formData = new FormData(createOrderForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/admin/orders/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast(result.message, 'Thành công!', 'success');
+                    createOrderForm.reset();
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(result.message, 'Có lỗi xảy ra!', 'error');
+                }
+            } catch (error) {
+                showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
+            } finally {
+                createOrderBtn.disabled = false;
+                createOrderBtn.innerHTML = originalBtnHtml;
+            }
+        });
+    }
+
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
     const softDeleteSelectedBtn = document.getElementById('softDeleteSelectedBtn');
@@ -168,10 +208,14 @@
                     body: JSON.stringify({ ids: selectedIds })
                 });
                 const result = await response.json();
-                alert(result.message);
-                if (result.success) window.location.reload();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
             } catch (error) {
-                alert('Đã có lỗi xảy ra.');
+                showToast('Lỗi kết nối server.', 'Lỗi!', 'error');
             }
         }
     }

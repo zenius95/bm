@@ -3,21 +3,6 @@
 <% const inTrash = currentQuery.inTrash === 'true' %>
 
 <main class="main-content">
-    
-    <% if (currentQuery.error) { %>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>Đã xảy ra lỗi!</strong><br>
-            <pre class="mb-0"><%= decodeURIComponent(currentQuery.error) %></pre>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    <% } %>
-    <% if (currentQuery.success) { %>
-         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <strong>Thành công!</strong> <%= decodeURIComponent(currentQuery.success) %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    <% } %>
-
     <h1 class="display-5 fw-bold mb-4 text-white">
         <%= inTrash ? 'Thùng rác - Account' : 'Quản Lý Account' %>
     </h1>
@@ -26,12 +11,14 @@
     <div class="card mb-4">
         <div class="card-header"><h5 class="mb-0">Thêm Account Mới</h5></div>
         <div class="card-body">
-            <form action="/admin/accounts/add-multiple" method="POST">
+            <form id="add-accounts-form">
                 <div class="mb-3">
                     <label for="accountsData" class="form-label">Nhập danh sách account (mỗi account một dòng)</label>
                     <textarea class="form-control font-monospace" id="accountsData" name="accountsData" rows="6" placeholder="uid|password|2fa|proxy (proxy không bắt buộc)"></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary"><i class="ri-add-line me-1"></i> Thêm Accounts</button>
+                <button type="submit" id="add-accounts-btn" class="btn btn-primary">
+                    <i class="ri-add-line me-1"></i> Thêm Accounts
+                </button>
             </form>
         </div>
     </div>
@@ -172,6 +159,45 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    const addAccountsForm = document.getElementById('add-accounts-form');
+    if (addAccountsForm) {
+        const addAccountsBtn = document.getElementById('add-accounts-btn');
+        const originalBtnHtml = addAccountsBtn.innerHTML;
+
+        addAccountsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            addAccountsBtn.disabled = true;
+            addAccountsBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...`;
+
+            const formData = new FormData(addAccountsForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/admin/accounts/add-multiple', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast(result.message, 'Thành công!', 'success');
+                    addAccountsForm.reset();
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast(result.message, 'Có lỗi xảy ra!', 'error');
+                }
+            } catch (error) {
+                showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
+            } finally {
+                addAccountsBtn.disabled = false;
+                addAccountsBtn.innerHTML = originalBtnHtml;
+            }
+        });
+    }
+
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
     const softDeleteSelectedBtn = document.getElementById('softDeleteSelectedBtn');
@@ -274,18 +300,15 @@
                 });
                 const result = await response.json();
                 
-                const queryParams = new URLSearchParams(window.location.search);
                 if (result.success) {
-                    queryParams.set('success', encodeURIComponent(result.message));
-                    queryParams.delete('error');
+                    showToast(result.message, 'Thành công!', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
                 } else {
-                    queryParams.set('error', encodeURIComponent(result.message));
-                    queryParams.delete('success');
+                    showToast(result.message, 'Lỗi!', 'error');
                 }
-                window.location.search = queryParams.toString();
 
             } catch (error) {
-                alert('Đã có lỗi xảy ra.');
+                showToast('Lỗi kết nối server.', 'Lỗi!', 'error');
             }
         }
     }
@@ -331,9 +354,13 @@
                     body: JSON.stringify(payload)
                 });
                 const result = await response.json();
-                if (!result.success) alert(`Lỗi: ${result.message}`);
+                if (result.success) {
+                    showToast(result.message, 'Đã bắt đầu', 'success');
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
             } catch (error) {
-                alert('Đã có lỗi xảy ra khi bắt đầu tiến trình check.');
+                showToast('Lỗi kết nối server.', 'Lỗi!', 'error');
             } finally {
                 checkSelectedBtn.disabled = false;
                 checkSelectedBtn.innerHTML = '<i class="ri-refresh-line me-1"></i> Check Live';
@@ -341,7 +368,6 @@
         });
     }
 
-    // --- LOGIC REAL-TIME BẰNG SOCKET.IO ---
     const socket = io();
     socket.on('connect', () => console.log('Connected to server via WebSocket.'));
     socket.on('account:update', (data) => {

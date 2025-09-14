@@ -1,41 +1,102 @@
-// controllers/orderController.js
-const mongoose = require('mongoose');
+// controllers/adminController.js
 const Order = require('../models/Order');
+const Log = require('../models/Log'); // Thêm require Log
+const CrudService = require('../utils/crudService');
+const createCrudController = require('./crudController');
 const { orderQueue } = require('../queue');
 
-// POST /api/orders - Tạo đơn hàng mới
-exports.createOrder = async (req, res) => {
+// 1. Khởi tạo Service cho Order
+const orderService = new CrudService(Order, {
+    // Order không cần tìm kiếm text
+});
+
+// 2. Tạo Controller từ Factory
+const orderController = createCrudController(orderService, 'orders', {
+    single: 'order',
+    plural: 'orders'
+});
+
+// 3. [SỬA LỖI] Ghi đè lại hàm handleGetById để trỏ đúng view và lấy thêm Log
+orderController.handleGetById = async (req, res) => {
     try {
-        const { itemsData } = req.body;
-        if (!itemsData || !Array.isArray(itemsData) || itemsData.length === 0) {
-            return res.status(400).json({ message: 'itemsData must be a non-empty array' });
+        const orderId = req.params.id;
+        const order = await orderService.getById(orderId);
+        if (!order) {
+            return res.status(404).send("Order not found.");
         }
-        const items = itemsData.map(data => ({ data, status: 'queued' }));
-        const order = new Order({ items });
-        await order.save();
-        await orderQueue.add('process-order', { orderId: order._id });
-        console.log(`[Server] Job added to queue for Order ID: ${order._id}`);
-        res.status(202).json({ message: 'Order accepted and is being processed.', order });
+        // Lấy thêm logs cho trang chi tiết
+        const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 });
+
+        // Render đúng file view 'order-detail.ejs'
+        res.render('order-detail', { order, logs });
+
     } catch (error) {
-        console.error('[Server] Error creating order:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error(`Error getting order by id:`, error);
+        res.status(500).send(`Could not load order detail.`);
     }
 };
 
-// GET /api/orders/:id - Lấy trạng thái đơn hàng
-exports.getOrderStatus = async (req, res) => {
+
+// 4. Override hoặc thêm các logic đặc thù khác
+orderController.handleCreate = async (req, res) => {
     try {
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ message: 'Invalid Order ID format' });
+        const { itemsData } = req.body;
+        if (!itemsData || itemsData.trim() === '') {
+            return res.redirect('/admin/orders');
         }
-        const order = await Order.findById(id);
-        if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+        const items = itemsData.trim().split('\n').map(line => ({
+            data: line.trim(), status: 'queued'
+        }));
+        if (items.length > 0) {
+            const order = await orderService.create({ items });
+            await orderQueue.add('process-order', { orderId: order._id });
         }
-        res.status(200).json(order);
+        res.redirect('/admin/orders');
     } catch (error) {
-        console.error(`[Server] Error fetching order ${req.params.id}:`, error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error("Error creating order from admin:", error);
+        res.status(500).send("Failed to create order.");
     }
 };
+
+// Logic cho trang dashboard (giữ nguyên từ file cũ)
+orderController.getDashboard = async (req, res) => {
+    try {
+        const total = Order.countDocuments({ isDeleted: false });
+        const processing = Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false });
+        const completed = Order.countDocuments({ status: 'completed', isDeleted: false });
+        const failed = Order.countDocuments({ status: 'failed', isDeleted: false });
+
+        const recentOrdersQuery = Order.find({ isDeleted: false })
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .lean();
+
+        const [totalCount, processingCount, completedCount, failedCount, orders] = await Promise.all([
+            total, processing, completed, failed, recentOrdersQuery
+        ]);
+
+        const stats = {
+            total: totalCount,
+            processing: processingCount,
+            completed: completedCount,
+            failed: failedCount,
+        };
+        
+        orders.forEach(order => {
+            order.completedItems = 0;
+            order.failedItems = 0;
+            order.items.forEach(item => {
+                if (item.status === 'completed') order.completedItems++;
+                else if (item.status === 'failed') order.failedItems++;
+            });
+        });
+
+        res.render('dashboard', { stats, orders });
+
+    } catch (error) {
+        console.error("Error loading admin dashboard:", error);
+        res.status(500).send("Could not load admin dashboard.");
+    }
+};
+
+module.exports = orderController;
