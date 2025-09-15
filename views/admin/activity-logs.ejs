@@ -27,6 +27,7 @@
                         <th scope="col" class="px-6 py-3">Hành động</th>
                         <th scope="col" class="px-6 py-3">Chi tiết</th>
                         <th scope="col" class="px-6 py-3">Ngữ cảnh</th>
+                        <th scope="col" class="px-6 py-3">Địa chỉ IP</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -48,11 +49,12 @@
                                         <%= log.context %>
                                     </span>
                                 </td>
-                            </tr>
+                                <td class="px-6 py-4 text-gray-400 font-mono"><%= log.ipAddress %></td>
+                                </tr>
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="6" class="text-center py-16 px-6">
+                            <td colspan="7" class="text-center py-16 px-6">
                                 <i class="ri-file-search-line text-6xl text-gray-700"></i>
                                 <h4 class="mt-4 text-xl font-semibold text-white">Không tìm thấy nhật ký nào</h4>
                                 <p class="mt-2 text-gray-400">Hãy thử thay đổi bộ lọc hoặc đợi hoạt động mới.</p>

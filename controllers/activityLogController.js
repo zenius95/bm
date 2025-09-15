@@ -13,7 +13,7 @@ const ACTION_LABELS = {
 };
 
 const activityLogService = new CrudService(ActivityLog, {
-    searchableFields: ['details', 'ipAddress'] // Chỉ tìm trong chi tiết và IP
+    searchableFields: ['details', 'ipAddress']
 });
 
 const activityLogController = createCrudController(activityLogService, 'activity-logs', {
@@ -24,7 +24,9 @@ const activityLogController = createCrudController(activityLogService, 'activity
 activityLogController.handleGetAll = async (req, res) => {
     try {
         const { page = 1, limit = 20, searchUser, searchAction } = req.query;
-        let query = { isDeleted: { $ne: true } };
+        // === START: THAY ĐỔI Ở ĐÂY ===
+        let query = {}; // Bỏ điều kiện isDeleted
+        // === END ===
 
         // Lọc theo username
         if (searchUser) {

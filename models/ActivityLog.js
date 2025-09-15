@@ -22,20 +22,13 @@ const ActivityLogSchema = new mongoose.Schema({
         type: String,
         default: 'N/A'
     },
-    // === START: THÊM TRƯỜNG MỚI ===
     context: {
         type: String,
         enum: ['Admin', 'Client'],
         default: 'Client'
-    },
-    isDeleted: { 
-        type: Boolean, 
-        default: false, 
-        index: true 
-    },
-    // === END ===
+    }
 }, {
-    timestamps: true
+    timestamps: true // Tự động thêm createdAt và updatedAt
 });
 
 module.exports = mongoose.model('ActivityLog', ActivityLogSchema);
