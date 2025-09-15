@@ -5,11 +5,13 @@ const cors = require('cors');
 const basicAuth = require('express-basic-auth');
 const config = require('./config');
 const { orderQueue } = require('./queue');
-const path = require('path')
+const path = require('path');
 
 // Import các routes
 const adminRoutes = require('./routes/admin');
 const orderRoutes = require('./routes/order');
+// const { initializeCronJobs } = require('./cronjobs'); // XÓA DÒNG NÀY
+const autoCheckManager = require('./utils/autoCheckManager'); // THÊM DÒNG NÀY
 
 const app = express();
 // --- THAY ĐỔI: Khởi tạo http server và io ở đây ---
@@ -96,6 +98,11 @@ async function startServer() {
             console.log(`\n🎉 Server started successfully!`);
             console.log(`   - API is running on http://localhost:${config.server.port}`);
             console.log(`   - Admin Dashboard is available at http://localhost:${config.server.port}/admin/dashboard`);
+            
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Khởi chạy auto check manager
+            autoCheckManager.initialize(io);
+            // === END: THAY ĐỔI QUAN TRỌNG ===
         });
     } else {
         console.error('\n❌ Failed to start server due to one or more connection errors.');

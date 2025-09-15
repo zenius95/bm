@@ -1,0 +1,148 @@
+<%- include('partials/_header.ejs', { title: 'Settings', page: 'settings' }) %>
+
+<main class="main-content">
+    <h1 class="display-5 fw-bold mb-4 text-white">Cài Đặt Hệ Thống</h1>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Tự Động Check Live Account</h5>
+            <div class="d-flex align-items-center">
+                <span class="me-2">Trạng thái:</span>
+                <span id="status-badge" class="badge text-bg-secondary">Đang tải...</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="card-text text-white-50">
+                Hệ thống sẽ tự động tìm các account có trạng thái "UNCHECKED" hoặc các account đã lâu chưa được kiểm tra để đưa vào hàng đợi check live.
+            </p>
+
+            <form id="settings-form">
+                <div class="row align-items-end g-3">
+                    <div class="col-md-4">
+                        <label for="intervalMinutes" class="form-label">Chạy lại sau mỗi (phút)</label>
+                        <input type="number" class="form-control" id="intervalMinutes" name="intervalMinutes" value="30" min="1">
+                    </div>
+                    <div class="col-md-8">
+                         <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1"></i> Lưu & Áp dụng</button>
+                    </div>
+                </div>
+            </form>
+            
+            <hr class="my-4">
+
+            <div>
+                <h6 class="text-white">Điều khiển</h6>
+                <div class="btn-group" role="group">
+                    <button id="start-btn" type="button" class="btn btn-success"><i class="ri-play-fill me-1"></i> Start</button>
+                    <button id="stop-btn" type="button" class="btn btn-danger"><i class="ri-stop-fill me-1"></i> Stop</button>
+                    <button id="restart-btn" type="button" class="btn btn-warning"><i class="ri-refresh-line me-1"></i> Restart</button>
+                </div>
+            </div>
+            
+            <div class="mt-3" id="next-run-container" style="display: none;">
+                <p class="mb-0 text-info">
+                    <i class="ri-time-line"></i> Lần chạy kế tiếp dự kiến lúc: <strong id="next-run-time"></strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('settings-form');
+        const intervalInput = document.getElementById('intervalMinutes');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const statusBadge = document.getElementById('status-badge');
+        const nextRunContainer = document.getElementById('next-run-container');
+        const nextRunTime = document.getElementById('next-run-time');
+        
+        let currentState = <%- initialState %>;
+
+        function updateUI(state) {
+            // Cập nhật trạng thái badge
+            statusBadge.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-secondary');
+            if (state.status === 'RUNNING') {
+                statusBadge.textContent = 'Đang chạy';
+                statusBadge.classList.add('text-bg-success');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                restartBtn.disabled = false;
+            } else {
+                statusBadge.textContent = 'Đã dừng';
+                statusBadge.classList.add('text-bg-danger');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                restartBtn.disabled = true;
+            }
+
+            // Cập nhật input
+            intervalInput.value = state.config.intervalMinutes;
+
+            // Cập nhật thời gian chạy kế tiếp
+            if (state.nextRun) {
+                nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
+                nextRunContainer.style.display = 'block';
+            } else {
+                nextRunContainer.style.display = 'none';
+            }
+        }
+        
+        // Cập nhật giao diện với state ban đầu
+        updateUI(currentState);
+        
+        async function updateConfig(payload) {
+            try {
+                const response = await fetch('/admin/settings/auto-check/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công', 'success');
+                    updateUI(result.data);
+                } else {
+                    showToast(result.message, 'Lỗi', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server', 'Lỗi', 'error');
+            }
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const interval = parseInt(intervalInput.value, 10);
+            if (interval > 0) {
+                updateConfig({ intervalMinutes: interval });
+            } else {
+                showToast('Thời gian phải là một số lớn hơn 0.', 'Cảnh báo', 'warning');
+            }
+        });
+        
+        startBtn.addEventListener('click', () => updateConfig({ isEnabled: true }));
+        stopBtn.addEventListener('click', () => updateConfig({ isEnabled: false }));
+        restartBtn.addEventListener('click', () => {
+             // Restart không cần gửi payload, chỉ cần gọi endpoint
+             fetch('/admin/settings/auto-check/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isEnabled: true, intervalMinutes: parseInt(intervalInput.value, 10) }) // Gửi lại config hiện tại
+                }).then(res => res.json()).then(result => {
+                    if (result.success) showToast('Đã khởi động lại dịch vụ.', 'Thành công', 'success');
+                });
+        });
+        
+        // Lắng nghe cập nhật từ server
+        const socket = io();
+        socket.on('autoCheck:statusUpdate', (state) => {
+            console.log('Received status update:', state);
+            updateUI(state);
+        });
+    });
+</script>
+
+<%- include('partials/_footer.ejs') %>
