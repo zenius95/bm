@@ -1,5 +1,7 @@
 // controllers/authController.js
 const User = require('../models/User');
+const { logActivity } = require('../utils/activityLogService'); // Thêm dòng này
+
 
 const authController = {};
 
@@ -23,6 +25,9 @@ authController.login = async (req, res) => {
             username: user.username,
             role: user.role
         };
+
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        await logActivity(user._id, 'USER_LOGIN', `Người dùng '${user.username}' đã đăng nhập thành công.`, ipAddress);
         
         if (user.role === 'admin') {
             res.redirect('/admin/dashboard');

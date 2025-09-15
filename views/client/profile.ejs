@@ -1,0 +1,55 @@
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white">Thông tin cá nhân</h1>
+        <p class="mt-1 text-gray-400">Cập nhật email và mật khẩu của Bro tại đây.</p>
+    </div>
+
+    <% if (success) { %>
+        <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg text-sm">
+            <%= success %>
+        </div>
+    <% } %>
+    <% if (error) { %>
+        <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <div class="max-w-2xl">
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+            <form action="/profile" method="POST" class="space-y-6 p-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                    <input type="text" id="username" name="username" class="form-input bg-gray-700/30 cursor-not-allowed" value="<%= user.username %>" readonly disabled>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                    <input type="email" id="email" name="email" class="form-input" value="<%= user.email %>" required>
+                </div>
+
+                <div class="pt-6 border-t border-white/10">
+                    <h3 class="text-lg font-semibold text-white">Đổi mật khẩu</h3>
+                    <p class="text-sm text-gray-400 mt-1">Để trống nếu Bro không muốn thay đổi mật khẩu.</p>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Mật khẩu mới</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="••••••••">
+                </div>
+
+                <div>
+                    <label for="passwordConfirm" class="block text-sm font-medium text-gray-300 mb-2">Xác nhận mật khẩu mới</label>
+                    <input type="password" id="passwordConfirm" name="passwordConfirm" class="form-input" placeholder="••••••••">
+                </div>
+
+                <div class="pt-6 border-t border-white/10">
+                    <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
+                        <i class="ri-save-line -ml-1 mr-2"></i>
+                        <span>Lưu thay đổi</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

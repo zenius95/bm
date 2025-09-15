@@ -107,25 +107,34 @@
                     <label for="user-email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
                     <input type="email" id="user-email" name="email" class="form-input" required>
                 </div>
-                <div>
-                    <label for="user-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                    <input type="password" id="user-password" name="password" class="form-input">
-                    <p id="password-help" class="text-xs text-gray-500 mt-1">Để trống nếu không muốn thay đổi mật khẩu.</p>
-                </div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
                         <label for="user-role" class="block text-sm font-medium text-gray-300 mb-2">Vai trò</label>
                         <select id="user-role" name="role" class="form-select">
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-                     <div>
-                        <label for="user-balance" class="block text-sm font-medium text-gray-300 mb-2">Số dư</label>
-                        <input type="number" id="user-balance" name="balance" class="form-input" value="0" min="0">
+                </div>
+
+                <div class="pt-4 border-t border-white/10" id="password-section">
+                    <label for="user-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <input type="password" id="user-password" name="password" class="form-input">
+                    <p id="password-help" class="text-xs text-gray-500 mt-1">Để trống nếu không muốn thay đổi mật khẩu.</p>
+                </div>
+
+                <div class="pt-4 border-t border-white/10" id="balance-section">
+                    <div>
+                        <label for="user-balance" class="block text-sm font-medium text-gray-300 mb-2">Số dư hiện tại</label>
+                        <input type="text" id="user-balance" name="balance" class="form-input bg-gray-700/30 cursor-not-allowed" readonly>
                     </div>
-                 </div>
-            </div>
+                    <div class="mt-4">
+                        <label for="balanceAdjustment" class="block text-sm font-medium text-gray-300 mb-2">Cộng/Trừ số dư</label>
+                        <input type="number" id="balanceAdjustment" name="balanceAdjustment" class="form-input" value="0" placeholder="Nhập số tiền để cộng hoặc trừ">
+                        <p class="text-xs text-gray-500 mt-1">Nhập số dương để cộng tiền, số âm để trừ tiền.</p>
+                    </div>
+                </div>
+                </div>
             <div class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3">
                 <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Hủy</button>
                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition">Lưu</button>
@@ -136,7 +145,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // === START: LOGIC MODAL ===
     const backdrop = document.getElementById('modal-backdrop');
     const userModal = document.getElementById('user-modal');
 
@@ -162,33 +170,36 @@ document.addEventListener('DOMContentLoaded', () => {
     userModal.querySelectorAll('.btn-cancel').forEach(btn => {
         btn.addEventListener('click', () => hideModal(userModal));
     });
-    // === END: LOGIC MODAL ===
 
     const userForm = document.getElementById('user-form');
     const modalTitle = document.getElementById('modal-title');
     const passwordHelp = document.getElementById('password-help');
+    const balanceSection = document.getElementById('balance-section');
 
     document.getElementById('add-user-btn').addEventListener('click', () => {
         userForm.reset();
         userForm.querySelector('#user-id').value = '';
         modalTitle.textContent = 'Thêm User Mới';
         passwordHelp.style.display = 'none';
+        balanceSection.style.display = 'none';
         userForm.querySelector('#user-password').setAttribute('required', 'required');
-        userForm.querySelector('#user-email').removeAttribute('disabled');
         showModal(userModal);
     });
 
     document.querySelectorAll('.btn-edit-user').forEach(btn => {
         btn.addEventListener('click', () => {
-            const { id, username, email, role, balance } = btn.dataset; // Thêm email
+            const { id, username, email, role, balance } = btn.dataset;
             userForm.reset();
             userForm.querySelector('#user-id').value = id;
             userForm.querySelector('#user-username').value = username;
-            userForm.querySelector('#user-email').value = email; // Thêm email
+            userForm.querySelector('#user-email').value = email;
             userForm.querySelector('#user-role').value = role;
-            userForm.querySelector('#user-balance').value = balance;
+            userForm.querySelector('#user-balance').value = parseInt(balance, 10).toLocaleString('vi-VN') + 'đ';
+            userForm.querySelector('#balanceAdjustment').value = 0;
+
             modalTitle.textContent = `Sửa User: ${username}`;
             passwordHelp.style.display = 'block';
+            balanceSection.style.display = 'block';
             userForm.querySelector('#user-password').removeAttribute('required');
             showModal(userModal);
         });
@@ -201,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(userForm);
         const data = Object.fromEntries(formData.entries());
 
-        if(id && !data.password) {
+        if (id && !data.password) {
             delete data.password;
         }
 
@@ -223,8 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
         }
     });
-    
-    // === START: LOGIC CHỌN VÀ HÀNH ĐỘNG HÀNG LOẠT ===
+
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
     const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
@@ -256,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
     }
 
-    if(selectAllCheckbox) {
+    if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', (e) => {
             isSelectAllAcrossPages = false;
             itemCheckboxes.forEach(cb => cb.checked = e.target.checked);
@@ -268,7 +278,9 @@ document.addEventListener('DOMContentLoaded', () => {
     itemCheckboxes.forEach(cb => {
         cb.addEventListener('change', () => {
             isSelectAllAcrossPages = false;
-            selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
+            }
             toggleActionButtons();
             updateBanners();
         });
@@ -294,9 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    async function handleBulkAction(url, confirmMessage, confirmType = 'warning') {
+    async function handleBulkAction(url, confirmMessage, confirmType = 'warning', selectedIds = []) {
         let payload = {};
-        const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+        const selectedIdsOnPage = selectedIds.length > 0 ? selectedIds : [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
 
         if (isSelectAllAcrossPages) {
             payload = { selectAll: true, filters: <%- JSON.stringify(currentQuery) %> };
@@ -340,25 +352,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Nút xóa 1 user
     document.querySelectorAll('.btn-delete-user').forEach(btn => {
         btn.addEventListener('click', async () => {
             const { id, username } = btn.dataset;
-            const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN user "${username}"?`, 'danger');
-            if (confirmed) {
-                handleBulkAction('/admin/users/hard-delete', () => ``, 'danger');
-            }
+            handleBulkAction(
+                '/admin/users/hard-delete', 
+                () => `Bạn có chắc muốn XÓA VĨNH VIỄN user "${username}"?`, 
+                'danger',
+                [id]
+            );
         });
     });
 
-    // Nút xóa hàng loạt
     if (hardDeleteSelectedBtn) {
         hardDeleteSelectedBtn.addEventListener('click', () => {
-            handleBulkAction('/admin/users/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} user? Dữ liệu sẽ không thể phục hồi.`, 'danger');
+            handleBulkAction(
+                '/admin/users/hard-delete', 
+                (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} user? Dữ liệu sẽ không thể phục hồi.`, 
+                'danger'
+            );
         });
     }
 
     toggleActionButtons();
-    // === END: LOGIC CHỌN VÀ HÀNH ĐỘNG HÀNG LOẠT ===
 });
 </script>

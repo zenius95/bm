@@ -1,0 +1,58 @@
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white">Nhật ký hoạt động</h1>
+        <p class="mt-1 text-gray-400">Theo dõi tất cả các hoạt động quan trọng trên hệ thống.</p>
+    </div>
+
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-400 uppercase bg-white/5">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Thời gian</th>
+                        <th scope="col" class="px-6 py-3">Người dùng</th>
+                        <th scope="col" class="px-6 py-3">Hành động</th>
+                        <th scope="col" class="px-6 py-3">Chi tiết</th>
+                        <th scope="col" class="px-6 py-3">Địa chỉ IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (logs && logs.length > 0) { %>
+                        <% logs.forEach(log => { %>
+                            <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
+                                <td class="px-6 py-4 font-medium text-white"><%= log.user ? log.user.username : 'N/A' %></td>
+                                <td class="px-6 py-4 font-mono text-xs text-blue-400"><%= log.action %></td>
+                                <td class="px-6 py-4 text-gray-300"><%= log.details %></td>
+                                <td class="px-6 py-4 text-gray-400 font-mono"><%= log.ipAddress %></td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="5" class="text-center py-16 px-6">
+                                <i class="ri-file-search-line text-6xl text-gray-700"></i>
+                                <h4 class="mt-4 text-xl font-semibold text-white">Không có nhật ký nào</h4>
+                                <p class="mt-2 text-gray-400">Chưa có hoạt động nào được ghi lại.</p>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <% if (pagination.totalPages > 1) { %>
+    <nav class="flex justify-center">
+        <ul class="inline-flex items-center -space-x-px">
+            <% for(let i = 1; i <= pagination.totalPages; i++) { 
+                const query = new URLSearchParams(currentQuery);
+                query.set('page', i);
+            %>
+                <li>
+                    <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
+                </li>
+            <% } %>
+        </ul>
+    </nav>
+    <% } %>
+</div>

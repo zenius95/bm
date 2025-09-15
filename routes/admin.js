@@ -6,6 +6,8 @@ const accountController = require('../controllers/accountController');
 const settingController = require('../controllers/settingController');
 const workerController = require('../controllers/workerController');
 const userController = require('../controllers/userController');
+const activityLogController = require('../controllers/activityLogController'); // Thêm dòng này
+
 
 router.use(accountController.parseQueryMiddleware);
 router.use(adminController.parseQueryMiddleware);
@@ -44,6 +46,9 @@ router.post('/workers/:id', workerController.updateWorker);
 router.delete('/workers/:id', workerController.deleteWorker);
 router.get('/workers/:id/logs', workerController.getWorkerLogs);
 router.post('/workers/:id/toggle', workerController.toggleWorker);
+
+router.get('/activity-logs', activityLogController.handleGetAll);
+
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);

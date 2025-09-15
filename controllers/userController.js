@@ -2,12 +2,11 @@
 const User = require('../models/User');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
+const { logActivity } = require('../utils/activityLogService'); // Thêm dòng này
 
 // 1. Khởi tạo Service cho User
 const userService = new CrudService(User, {
-    // === START: CẬP NHẬT TRƯỜNG TÌM KIẾM ===
     searchableFields: ['username', 'email']
-    // === END: CẬP NHẬT TRƯỜNG TÌM KIẾM ===
 });
 
 // 2. Tạo Controller từ Factory
@@ -16,10 +15,9 @@ const userController = createCrudController(userService, 'users', {
     plural: 'users'
 });
 
-// 3. Ghi đè lại các hàm cần xử lý đặc biệt (như mật khẩu, email)
+// 3. Ghi đè lại các hàm cần xử lý đặc biệt
 userController.handleCreate = async (req, res) => {
     try {
-        // === START: THÊM EMAIL VÀ VALIDATION ===
         const { username, email, password, role, balance } = req.body;
         if (!username || !password || !email) {
              return res.status(400).json({ success: false, message: "Username, Email và Password là bắt buộc." });
@@ -40,9 +38,13 @@ userController.handleCreate = async (req, res) => {
             role,
             balance: balance || 0
         });
-        // === END: THÊM EMAIL VÀ VALIDATION ===
 
         await newUser.save();
+        
+        // Ghi log tạo user mới
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        await logActivity(req.session.user.id, 'ADMIN_CREATE_USER', `Admin '${req.session.user.username}' đã tạo người dùng mới: '${newUser.username}'.`, ipAddress);
+
         return res.json({ success: true, message: `Đã tạo thành công user ${username}.` });
     } catch (error) {
         console.error("Error creating user from admin:", error);
@@ -53,34 +55,43 @@ userController.handleCreate = async (req, res) => {
 userController.handleUpdate = async (req, res) => {
     try {
         const { id } = req.params;
-        // === START: THÊM EMAIL ===
-        const { username, email, password, role, balance } = req.body;
-        // === END: THÊM EMAIL ===
+        const { username, email, password, role, balance, balanceAdjustment } = req.body;
+        const adminUserId = req.session.user.id;
+        const adminUsername = req.session.user.username;
+        const ipAddress = req.ip || req.connection.remoteAddress;
 
         const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy user.' });
         }
 
-        // === START: CẬP NHẬT VALIDATION CHO USERNAME VÀ EMAIL ===
+        const originalBalance = user.balance;
+        let newBalance = originalBalance;
+        const adjustmentAmount = parseInt(balanceAdjustment, 10);
+
+        if (!isNaN(adjustmentAmount) && adjustmentAmount !== 0) {
+            newBalance += adjustmentAmount;
+            if (newBalance < 0) {
+                return res.status(400).json({ success: false, message: 'Số dư không thể là số âm.' });
+            }
+            user.balance = newBalance;
+            
+            const actionType = adjustmentAmount > 0 ? 'Cộng tiền' : 'Trừ tiền';
+            const details = `Admin '${adminUsername}' đã ${actionType.toLowerCase()} ${Math.abs(adjustmentAmount).toLocaleString('vi-VN')}đ cho người dùng '${user.username}'. Số dư thay đổi từ ${originalBalance.toLocaleString('vi-VN')}đ thành ${newBalance.toLocaleString('vi-VN')}đ.`;
+            await logActivity(adminUserId, 'ADMIN_ADJUST_BALANCE', details, ipAddress);
+        }
+
         if (username.toLowerCase() !== user.username) {
             const existingUser = await User.findOne({ username: username.toLowerCase() });
-            if (existingUser) {
-                return res.status(400).json({ success: false, message: "Username đã tồn tại." });
-            }
+            if (existingUser) return res.status(400).json({ success: false, message: "Username đã tồn tại." });
+            user.username = username;
         }
         if (email.toLowerCase() !== user.email) {
             const existingEmail = await User.findOne({ email: email.toLowerCase() });
-            if (existingEmail) {
-                return res.status(400).json({ success: false, message: "Email đã tồn tại." });
-            }
+            if (existingEmail) return res.status(400).json({ success: false, message: "Email đã tồn tại." });
+            user.email = email;
         }
-
-        user.username = username;
-        user.email = email;
         user.role = role;
-        user.balance = balance;
-        // === END: CẬP NHẬT VALIDATION CHO USERNAME VÀ EMAIL ===
 
         if (password) {
             user.password = password;

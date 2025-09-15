@@ -11,12 +11,12 @@ const MongoStore = require('connect-mongo');
 const expressLayouts = require('express-ejs-layouts');
 
 const User = require('./models/User');
-const Worker = require('./models/Worker'); // === THÊM DÒNG NÀY ===
+const Worker = require('./models/Worker');
 const authController = require('./controllers/authController');
 const apiKeyAuthController = require('./controllers/apiKeyAuthController');
 
 const adminRoutes = require('./routes/admin');
-const clientRoutes = require('./routes/client'); // Thêm dòng này
+const clientRoutes = require('./routes/client');
 const orderRoutes = require('./routes/order');
 const workerApiRoutes = require('./routes/workerApi');
 
@@ -53,9 +53,7 @@ app.use(session({
 app.use(async (req, res, next) => {
     req.io = io;
     res.locals.user = null;
-    // === START: THÊM DÒNG NÀY ĐỂ TRUYỀN PATH VÀO VIEW ===
     res.locals.currentPath = req.originalUrl; 
-    // === END ===
     if (req.session.user) {
         try {
             const currentUser = await User.findById(req.session.user.id).lean();
@@ -71,19 +69,23 @@ app.use(async (req, res, next) => {
     next();
 });
 
+// --- Các route không cần session ---
 app.get('/login', authController.getLoginPage);
 app.post('/login', authController.login);
 app.get('/logout', authController.logout);
 
-// === START: THAY ĐỔI THỨ TỰ ROUTE ===
-// Route cho admin phải được đặt trước route của client
-app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
-// Route cho client
-app.use('/', authController.isAuthenticated, clientRoutes);
-// === END ===
-
-app.use('/api', authController.isAuthenticated, orderRoutes);
+// === START: SỬA LỖI THỨ TỰ ROUTE ===
+// Route cho worker API (dùng API Key) phải được đặt trước các route dùng session.
 app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
+
+// --- Các route cần session ---
+// Route cho admin (cần session và quyền admin)
+app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
+// Route cho client (cần session)
+app.use('/', authController.isAuthenticated, clientRoutes);
+// Route cho API chung (cần session)
+app.use('/api', authController.isAuthenticated, orderRoutes);
+// === END ===
 
 
 async function startServer() {
