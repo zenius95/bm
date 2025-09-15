@@ -21,6 +21,8 @@ async function runCheckLive(accountIds, io, options) {
 
     console.log(`[CheckLiveService] Bắt đầu tiến trình check live cho ${accountIds.length} accounts.`);
 
+    console.log(options)
+
     // === START: THAY ĐỔI QUAN TRỌNG ===
     // Sử dụng options được truyền vào
     const checkLiveRunner = new ProcessRunner({

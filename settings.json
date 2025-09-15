@@ -1,7 +1,7 @@
 {
     "autoCheck": {
         "isEnabled": false,
-        "intervalMinutes": 100,
+        "intervalMinutes": 30,
         "concurrency": 10,
         "delay": 500,
         "timeout": 45000
