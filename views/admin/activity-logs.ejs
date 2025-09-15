@@ -4,35 +4,58 @@
         <p class="mt-1 text-gray-400">Theo dõi tất cả các hoạt động quan trọng trên hệ thống.</p>
     </div>
 
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <form method="GET" action="/admin/activity-logs" class="flex flex-col md:flex-row items-center gap-3">
+            <input type="text" name="searchUser" class="form-input" placeholder="Tìm theo Username..." value="<%= currentQuery.searchUser || '' %>">
+            <input type="text" name="searchAction" class="form-input" placeholder="Tìm trong chi tiết log..." value="<%= currentQuery.searchAction || '' %>">
+            <button type="submit" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition">Lọc</button>
+        </form>
+        <div>
+            <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="ri-delete-bin-fill mr-2"></i> Xóa mục đã chọn
+            </button>
+        </div>
+    </div>
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-gray-300">
                 <thead class="text-xs text-gray-400 uppercase bg-white/5">
                     <tr>
+                        <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Thời gian</th>
                         <th scope="col" class="px-6 py-3">Người dùng</th>
                         <th scope="col" class="px-6 py-3">Hành động</th>
                         <th scope="col" class="px-6 py-3">Chi tiết</th>
-                        <th scope="col" class="px-6 py-3">Địa chỉ IP</th>
+                        <th scope="col" class="px-6 py-3">Ngữ cảnh</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% if (logs && logs.length > 0) { %>
                         <% logs.forEach(log => { %>
-                            <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                            <tr id="log-row-<%= log._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                                <td class="p-4"><input type="checkbox" value="<%= log._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
                                 <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
                                 <td class="px-6 py-4 font-medium text-white"><%= log.user ? log.user.username : 'N/A' %></td>
-                                <td class="px-6 py-4 font-mono text-xs text-blue-400"><%= log.action %></td>
+                                <td class="px-6 py-4">
+                                    <% const actionInfo = actionLabels[log.action] || { label: log.action, color: 'bg-gray-700 text-gray-300' }; %>
+                                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= actionInfo.color %>">
+                                        <%= actionInfo.label %>
+                                    </span>
+                                </td>
                                 <td class="px-6 py-4 text-gray-300"><%= log.details %></td>
-                                <td class="px-6 py-4 text-gray-400 font-mono"><%= log.ipAddress %></td>
+                                <td class="px-6 py-4">
+                                    <span class="font-semibold <%= log.context === 'Admin' ? 'text-purple-400' : 'text-cyan-400' %>">
+                                        <%= log.context %>
+                                    </span>
+                                </td>
                             </tr>
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="5" class="text-center py-16 px-6">
+                            <td colspan="6" class="text-center py-16 px-6">
                                 <i class="ri-file-search-line text-6xl text-gray-700"></i>
-                                <h4 class="mt-4 text-xl font-semibold text-white">Không có nhật ký nào</h4>
-                                <p class="mt-2 text-gray-400">Chưa có hoạt động nào được ghi lại.</p>
+                                <h4 class="mt-4 text-xl font-semibold text-white">Không tìm thấy nhật ký nào</h4>
+                                <p class="mt-2 text-gray-400">Hãy thử thay đổi bộ lọc hoặc đợi hoạt động mới.</p>
                             </td>
                         </tr>
                     <% } %>
@@ -56,3 +79,67 @@
     </nav>
     <% } %>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
+
+    function toggleActionButtons() {
+        const anyChecked = [...itemCheckboxes].some(cb => cb.checked);
+        if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
+    }
+
+    if(selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            itemCheckboxes.forEach(cb => cb.checked = e.target.checked);
+            toggleActionButtons();
+        });
+    }
+
+    itemCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
+            }
+            toggleActionButtons();
+        });
+    });
+
+    if (hardDeleteSelectedBtn) {
+        hardDeleteSelectedBtn.addEventListener('click', async () => {
+            const selectedIds = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+            if (selectedIds.length === 0) {
+                return showToast('Vui lòng chọn ít nhất một log để xóa.', 'Cảnh báo', 'warning');
+            }
+
+            const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN ${selectedIds.length} mục log? Hành động này không thể hoàn tác.`, 'danger');
+            
+            if (confirmed) {
+                try {
+                    const response = await fetch('/admin/activity-logs/hard-delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: selectedIds })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast(result.message, 'Thành công', 'success');
+                        selectedIds.forEach(id => {
+                            const row = document.getElementById(`log-row-${id}`);
+                            if (row) row.remove();
+                        });
+                        toggleActionButtons();
+                    } else {
+                        showToast(result.message, 'Lỗi', 'error');
+                    }
+                } catch (error) {
+                    showToast('Lỗi kết nối server.', 'Lỗi mạng', 'error');
+                }
+            }
+        });
+    }
+    toggleActionButtons();
+});
+</script>

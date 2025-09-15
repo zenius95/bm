@@ -36,17 +36,14 @@ clientController.updateProfile = async (req, res) => {
     try {
         const { email, password, passwordConfirm } = req.body;
         const userId = req.session.user.id;
-
         const user = await User.findById(userId);
+
         if (!user) {
             return res.redirect('/profile?error=' + encodeURIComponent('Không tìm thấy người dùng.'));
         }
 
         let hasChanges = false;
-
-        // 1. Cập nhật Email (nếu có thay đổi)
         if (email && email.toLowerCase() !== user.email) {
-            // Kiểm tra email mới có bị trùng không
             const existingEmail = await User.findOne({ email: email.toLowerCase() });
             if (existingEmail) {
                 return res.redirect('/profile?error=' + encodeURIComponent('Email này đã được sử dụng.'));
@@ -55,28 +52,26 @@ clientController.updateProfile = async (req, res) => {
             hasChanges = true;
         }
 
-        // 2. Cập nhật Mật khẩu (nếu có nhập)
         if (password) {
             if (password !== passwordConfirm) {
                 return res.redirect('/profile?error=' + encodeURIComponent('Mật khẩu xác nhận không khớp.'));
             }
-            // Model User đã có middleware tự hash password trước khi save
             user.password = password;
             hasChanges = true;
         }
 
         if (hasChanges) {
             await user.save();
-
-            // === GHI LOG CẬP NHẬT PROFILE ===
             const ipAddress = req.ip || req.connection.remoteAddress;
-            await logActivity(userId, 'PROFILE_UPDATE', `Người dùng '${user.username}' đã cập nhật thông tin cá nhân.`, ipAddress);
-
+            await logActivity(userId, 'PROFILE_UPDATE', {
+                details: `Người dùng '${user.username}' đã tự cập nhật thông tin.`,
+                ipAddress,
+                context: 'Client'
+            });
             return res.redirect('/profile?success=' + encodeURIComponent('Cập nhật thông tin thành công!'));
         }
 
         return res.redirect('/profile');
-
     } catch (error) {
         console.error("Lỗi cập nhật profile:", error);
         res.redirect('/profile?error=' + encodeURIComponent('Đã có lỗi xảy ra.'));

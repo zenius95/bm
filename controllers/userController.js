@@ -2,7 +2,7 @@
 const User = require('../models/User');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
-const { logActivity } = require('../utils/activityLogService'); // Thêm dòng này
+const { logActivity } = require('../utils/activityLogService'); // === THÊM DÒNG NÀY ===
 
 // 1. Khởi tạo Service cho User
 const userService = new CrudService(User, {
@@ -43,9 +43,13 @@ userController.handleCreate = async (req, res) => {
         
         // Ghi log tạo user mới
         const ipAddress = req.ip || req.connection.remoteAddress;
-        await logActivity(req.session.user.id, 'ADMIN_CREATE_USER', `Admin '${req.session.user.username}' đã tạo người dùng mới: '${newUser.username}'.`, ipAddress);
+        await logActivity(req.session.user.id, 'ADMIN_CREATE_USER', {
+            details: `Admin '${req.session.user.username}' đã tạo người dùng mới: '${newUser.username}'.`,
+            ipAddress,
+            context: 'Admin'
+        });
 
-        return res.json({ success: true, message: `Đã tạo thành công user ${username}.` });
+        return res.json({ success: true, message: `Đã tạo thành công user ${newUser.username}.` });
     } catch (error) {
         console.error("Error creating user from admin:", error);
         return res.status(500).json({ success: false, message: "Lỗi server khi tạo user." });
@@ -78,7 +82,11 @@ userController.handleUpdate = async (req, res) => {
             
             const actionType = adjustmentAmount > 0 ? 'Cộng tiền' : 'Trừ tiền';
             const details = `Admin '${adminUsername}' đã ${actionType.toLowerCase()} ${Math.abs(adjustmentAmount).toLocaleString('vi-VN')}đ cho người dùng '${user.username}'. Số dư thay đổi từ ${originalBalance.toLocaleString('vi-VN')}đ thành ${newBalance.toLocaleString('vi-VN')}đ.`;
-            await logActivity(adminUserId, 'ADMIN_ADJUST_BALANCE', details, ipAddress);
+            await logActivity(adminUserId, 'ADMIN_ADJUST_BALANCE', { 
+                details, 
+                ipAddress, 
+                context: 'Admin' 
+            });
         }
 
         if (username.toLowerCase() !== user.username) {
@@ -98,7 +106,7 @@ userController.handleUpdate = async (req, res) => {
         }
 
         await user.save();
-        return res.json({ success: true, message: `Cập nhật user ${username} thành công.` });
+        return res.json({ success: true, message: `Cập nhật user ${user.username} thành công.` });
     } catch (error) {
         console.error(`Error updating user ${req.params.id}:`, error);
         return res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật user.' });
