@@ -1,25 +1,55 @@
 // utils/autoCheckManager.js
-const settingsService = require('./settingsService'); // THAY ĐỔI
+const fs = require('fs').promises;
+const path = require('path');
 const Account = require('../models/Account');
 const { runCheckLive } = require('./checkLiveService');
 const EventEmitter = require('events');
+
+const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 
 class AutoCheckManager extends EventEmitter {
     constructor() {
         super();
         this.io = null;
         this.timer = null;
-        this.config = {}; // Sẽ được load từ settingsService
-        this.status = 'STOPPED';
+        this.config = {
+            isEnabled: false,
+            intervalMinutes: 30
+        };
+        this.status = 'STOPPED'; // STOPPED, RUNNING, PENDING
         this.nextRun = null;
         this.isJobRunning = false;
     }
 
-    // THAY ĐỔI: Hàm initialize giờ đơn giản hơn
-    initialize(io) {
+    async _loadConfig() {
+        try {
+            const data = await fs.readFile(SETTINGS_FILE_PATH, 'utf-8');
+            console.log('[AutoCheck] Loaded config from settings.json');
+            return JSON.parse(data);
+        } catch (error) {
+            if (error.code === 'ENOENT') { // File not found
+                console.log('[AutoCheck] settings.json not found. Using and creating default config.');
+                await this._saveConfig(); // Tạo file với config mặc định
+                return this.config;
+            }
+            console.error('[AutoCheck] Error reading settings.json:', error);
+            return this.config; // Trả về default nếu có lỗi khác
+        }
+    }
+
+    async _saveConfig() {
+        try {
+            await fs.writeFile(SETTINGS_FILE_PATH, JSON.stringify(this.config, null, 4));
+        } catch (error) {
+            console.error('[AutoCheck] Failed to save settings.json:', error);
+        }
+    }
+
+    async initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Check Manager...');
-        this.config = settingsService.get('autoCheck', { isEnabled: false, intervalMinutes: 30 });
+        const savedConfig = await this._loadConfig();
+        this.config = { ...this.config, ...savedConfig };
 
         if (this.config.isEnabled) {
             this.start();
@@ -27,28 +57,36 @@ class AutoCheckManager extends EventEmitter {
             this.emitStatus();
         }
     }
-
-    // THAY ĐỔI: updateConfig giờ chỉ cần cập nhật settingsService
+    
     async updateConfig(newConfig) {
-        const oldConfig = { ...this.config };
+        const wasEnabled = this.config.isEnabled;
+        const oldInterval = this.config.intervalMinutes;
+
         this.config = { ...this.config, ...newConfig };
-        
-        await settingsService.update('autoCheck', this.config);
-        
+        await this._saveConfig();
         console.log(`[AutoCheck] Config updated: ${JSON.stringify(this.config)}`);
 
-        const wasEnabled = oldConfig.isEnabled;
         const isNowEnabled = this.config.isEnabled;
-        const intervalChanged = this.config.intervalMinutes !== oldConfig.intervalMinutes;
+        const intervalChanged = this.config.intervalMinutes !== oldInterval;
 
-        if (wasEnabled && !isNowEnabled) this.stop();
-        else if (!wasEnabled && isNowEnabled) this.start();
-        else if (wasEnabled && isNowEnabled && intervalChanged) this.restart();
-        else this.emitStatus();
+        if (wasEnabled && !isNowEnabled) {
+            this.stop();
+        } else if (!wasEnabled && isNowEnabled) {
+            this.start();
+        } else if (wasEnabled && isNowEnabled && intervalChanged) {
+            this.restart();
+        } else {
+            this.emitStatus();
+        }
     }
 
-    start() {
-        if (this.timer) clearInterval(this.timer);
+    async start() {
+        if (this.timer) {
+            clearInterval(this.timer);
+        }
+        
+        this.config.isEnabled = true;
+        await this._saveConfig();
         
         const intervalMs = this.config.intervalMinutes * 60 * 1000;
         console.log(`[AutoCheck] Service started. Interval: ${this.config.intervalMinutes} minutes.`);
@@ -62,6 +100,7 @@ class AutoCheckManager extends EventEmitter {
             try {
                 this.isJobRunning = true;
                 this.emitStatus();
+                console.log(`[AutoCheck] Starting scheduled check at ${new Date().toLocaleTimeString()}`);
                 await this.executeCheck();
             } catch(e) {
                 console.error('[AutoCheck] Error during scheduled check:', e);
@@ -76,11 +115,13 @@ class AutoCheckManager extends EventEmitter {
         this.updateNextRunTime();
     }
 
-    stop() {
+    async stop() {
         if (this.timer) {
             clearInterval(this.timer);
             this.timer = null;
         }
+        this.config.isEnabled = false;
+        await this._saveConfig();
         this.status = 'STOPPED';
         this.nextRun = null;
         console.log('[AutoCheck] Service stopped.');
@@ -89,23 +130,36 @@ class AutoCheckManager extends EventEmitter {
 
     restart() {
         console.log('[AutoCheck] Restarting service...');
-        this.stop();
+        // Stop không cần save config vì start ngay sau đó sẽ làm
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.status = 'STOPPED';
+        this.nextRun = null;
+        
         setTimeout(() => this.start(), 200);
     }
     
     async executeCheck() {
-        // ... (logic executeCheck không thay đổi)
         const uncheckedAccounts = await Account.find({ status: 'UNCHECKED', isDeleted: { $ne: true } }).limit(50).lean();
         let accountsToCheck = [...uncheckedAccounts];
         const remainingLimit = 50 - uncheckedAccounts.length;
+
         if (remainingLimit > 0) {
             const otherAccounts = await Account.find({
-                status: { $nin: ['UNCHECKED', 'CHECKING'] }, isDeleted: { $ne: true }
-            }).sort({ lastCheckedAt: 1 }).limit(remainingLimit).lean();
+                status: { $nin: ['UNCHECKED', 'CHECKING'] },
+                isDeleted: { $ne: true }
+            })
+            .sort({ lastCheckedAt: 1 })
+            .limit(remainingLimit)
+            .lean();
             accountsToCheck.push(...otherAccounts);
         }
+
         if (accountsToCheck.length > 0) {
-            await runCheckLive(accountsToCheck.map(a => a._id.toString()), this.io);
+            const accountIds = accountsToCheck.map(acc => acc._id.toString());
+            await runCheckLive(accountIds, this.io);
         } else {
             console.log('[AutoCheck] No accounts to check in this run.');
         }

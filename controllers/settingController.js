@@ -2,15 +2,12 @@
 const autoCheckManager = require('../utils/autoCheckManager');
 const settingsService = require('../utils/settingsService');
 
-const settingController = {}; // Tạo một object rỗng
+const settingController = {};
 
-// Render trang cài đặt
 settingController.getSettingsPage = async (req, res) => {
     try {
         res.render('settings', {
-            // Lấy tất cả setting để sau này dễ mở rộng
             settings: settingsService.getAll(),
-            // Vẫn truyền initial state cho autoCheck để không phải sửa JS ở view
             initialState: JSON.stringify(autoCheckManager.getStatus()) 
         });
     } catch (error) {
@@ -24,22 +21,30 @@ settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
 };
 
-// Cập nhật cấu hình
+// === START: THAY ĐỔI QUAN TRỌNG ===
+// Cập nhật để xử lý thêm các trường mới
 settingController.updateAutoCheckConfig = async (req, res) => {
     try {
-        const { isEnabled, intervalMinutes } = req.body;
+        const { isEnabled, intervalMinutes, concurrency, delay, timeout } = req.body;
         const configToUpdate = {};
 
         if (typeof isEnabled === 'boolean') {
             configToUpdate.isEnabled = isEnabled;
         }
 
-        const interval = parseInt(intervalMinutes, 10);
-        if (!isNaN(interval) && interval > 0) {
-            configToUpdate.intervalMinutes = interval;
-        }
+        const parseAndValidate = (val, min = 0) => {
+            const num = parseInt(val, 10);
+            return !isNaN(num) && num >= min ? num : undefined;
+        };
+
+        configToUpdate.intervalMinutes = parseAndValidate(intervalMinutes, 1);
+        configToUpdate.concurrency = parseAndValidate(concurrency, 1);
+        configToUpdate.delay = parseAndValidate(delay, 0);
+        configToUpdate.timeout = parseAndValidate(timeout, 1000);
         
-        // Giao toàn bộ việc xử lý cho manager
+        // Loại bỏ các giá trị undefined
+        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+        
         await autoCheckManager.updateConfig(configToUpdate);
 
         res.json({ success: true, message: 'Cập nhật cài đặt thành công.', data: autoCheckManager.getStatus() });
@@ -48,5 +53,6 @@ settingController.updateAutoCheckConfig = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+// === END: THAY ĐỔI QUAN TRỌNG ===
 
-module.exports = settingController; // Export cả object sau khi đã định nghĩa xong tất cả các hàm
+module.exports = settingController;

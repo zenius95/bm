@@ -1,61 +1,145 @@
 <%- include('partials/_header.ejs', { title: 'Settings', page: 'settings' }) %>
 
+<style>
+    /* CSS nhỏ để làm cho menu đẹp hơn */
+    .settings-nav .nav-link {
+        color: var(--bs-body-color);
+        font-weight: 500;
+        padding: .75rem 1.25rem;
+    }
+    .settings-nav .nav-link.active {
+        color: var(--bs-primary);
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        border-left: 3px solid var(--bs-primary);
+    }
+    .settings-nav .nav-link:hover:not(.active) {
+        background-color: var(--bs-dark);
+    }
+</style>
+
 <main class="main-content">
     <h1 class="display-5 fw-bold mb-4 text-white">Cài Đặt Hệ Thống</h1>
 
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Tự Động Check Live Account</h5>
-            <div class="d-flex align-items-center">
-                <span class="me-2">Trạng thái:</span>
-                 <span id="status-badge" class="badge text-bg-secondary">Đang tải...</span>
-            </div>
-        </div>
-        <div class="card-body">
-            <p class="card-text text-white-50">
-                Hệ thống sẽ tự động tìm các account có trạng thái "UNCHECKED" hoặc các account đã lâu chưa được kiểm tra để đưa vào hàng đợi check live.
-            </p>
-
-            <form id="settings-form">
-                <div class="row align-items-end g-3">
-                    <div class="col-md-4">
-                        <label for="intervalMinutes" class="form-label">Chạy lại sau mỗi (phút)</label>
-                         <input type="number" class="form-control" id="intervalMinutes" name="intervalMinutes" value="<%= settings.autoCheck.intervalMinutes %>" min="1">
-                    </div>
-                    <div class="col-md-8">
-                         <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1"></i> Lưu & Áp dụng</button>
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-body p-2">
+                    <div class="nav flex-column nav-pills settings-nav" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                        <a class="nav-link active" id="v-pills-autocheck-tab" data-bs-toggle="pill" href="#v-pills-autocheck" role="tab" aria-controls="v-pills-autocheck" aria-selected="true">
+                            <i class="ri-refresh-line me-2"></i> Tự Động Check Live
+                        </a>
+                        <a class="nav-link" id="v-pills-notifications-tab" data-bs-toggle="pill" href="#v-pills-notifications" role="tab" aria-controls="v-pills-notifications" aria-selected="false">
+                            <i class="ri-notification-3-line me-2"></i> Thông báo (Ví dụ)
+                        </a>
+                        <a class="nav-link" id="v-pills-api-tab" data-bs-toggle="pill" href="#v-pills-api" role="tab" aria-controls="v-pills-api" aria-selected="false">
+                            <i class="ri-key-2-line me-2"></i> API Keys (Ví dụ)
+                        </a>
                     </div>
                 </div>
-            </form>
-            
-            <hr class="my-4">
-
-            <div>
-                <h6 class="text-white">Điều khiển</h6>
-                 <div class="btn-group" role="group">
-                    <button id="start-btn" type="button" class="btn btn-success"><i class="ri-play-fill me-1"></i> Start</button>
-                    <button id="stop-btn" type="button" class="btn btn-danger"><i class="ri-stop-fill me-1"></i> Stop</button>
-                    <button id="restart-btn" type="button" class="btn btn-warning"><i class="ri-refresh-line me-1"></i> Restart</button>
-                 </div>
             </div>
-            
-            <div class="mt-3" id="next-run-container" style="display: none;">
-                <p class="mb-0 text-info">
-                    <i class="ri-time-line"></i> Lần chạy kế tiếp dự kiến lúc: <strong id="next-run-time"></strong>
-                </p>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="tab-content" id="v-pills-tabContent">
+                
+                <div class="tab-pane fade show active" id="v-pills-autocheck" role="tabpanel" aria-labelledby="v-pills-autocheck-tab">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Cài Đặt Tự Động Check Live Account</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="settings-form">
+                                <div class="mb-4">
+                                    <h6 class="text-white">Trạng thái & Điều khiển</h6>
+                                    <div class="d-flex align-items-center p-3 rounded" style="background-color: var(--bs-dark);">
+                                        <div class="flex-grow-1">
+                                            <strong>Trạng thái: </strong>
+                                            <span id="status-badge" class="badge text-bg-secondary">Đang tải...</span>
+                                            <div class="mt-2 text-info small" id="next-run-container" style="display: none;">
+                                                <i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="next-run-time"></strong>
+                                            </div>
+                                        </div>
+                                        <div class="btn-group" role="group">
+                                            <button id="start-btn" type="button" class="btn btn-sm btn-success"><i class="ri-play-fill me-1"></i> Start</button>
+                                            <button id="stop-btn" type="button" class="btn btn-sm btn-danger"><i class="ri-stop-fill me-1"></i> Stop</button>
+                                            <button id="restart-btn" type="button" class="btn btn-sm btn-warning"><i class="ri-refresh-line me-1"></i> Restart</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+
+                                <div class="mt-4">
+                                    <h6 class="text-white">Cấu hình chi tiết</h6>
+                                    <p class="text-white-50 small">Tinh chỉnh các thông số của tiến trình check live tự động.</p>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="intervalMinutes" class="form-label">Chạy lại sau mỗi (phút)</label>
+                                            <input type="number" class="form-control" id="intervalMinutes" value="<%= settings.autoCheck.intervalMinutes %>" min="1" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="concurrency" class="form-label">Số luồng chạy đồng thời</label>
+                                            <input type="number" class="form-control" id="concurrency" value="<%= settings.autoCheck.concurrency %>" min="1" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="delay" class="form-label">Delay giữa các task (ms)</label>
+                                            <input type="number" class="form-control" id="delay" value="<%= settings.autoCheck.delay %>" min="0" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="timeout" class="form-label">Timeout mỗi task (ms)</label>
+                                            <input type="number" class="form-control" id="timeout" value="<%= settings.autoCheck.timeout %>" min="1000" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 border-top pt-3">
+                                    <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1"></i> Lưu Cấu Hình</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-notifications" role="tabpanel" aria-labelledby="v-pills-notifications-tab">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Cài đặt Thông báo</h5></div>
+                        <div class="card-body">
+                            <div class="empty-state">
+                                <div class="icon mb-3"><i class="ri-notification-off-line"></i></div>
+                                <h4 class="text-white">Tính năng đang phát triển</h4>
+                                <p class="text-white-50">Khu vực này sẽ dành cho các cài đặt về thông báo qua email, telegram...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-api" role="tabpanel" aria-labelledby="v-pills-api-tab">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Quản lý API Keys</h5></div>
+                        <div class="card-body">
+                            <div class="empty-state">
+                                <div class="icon mb-3"><i class="ri-key-2-line"></i></div>
+                                <h4 class="text-white">Tính năng đang phát triển</h4>
+                                <p class="text-white-50">Khu vực này sẽ dành cho việc quản lý các API key của bên thứ ba.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
-
-    </main>
+</main>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // Toàn bộ script ở đây không cần thay đổi
+    // Toàn bộ script ở đây không cần thay đổi, nó sẽ tự động hoạt động với giao diện mới.
     document.addEventListener('DOMContentLoaded', () => {
-        // ... (script cũ vẫn hoạt động tốt)
         const form = document.getElementById('settings-form');
         const intervalInput = document.getElementById('intervalMinutes');
+        const concurrencyInput = document.getElementById('concurrency');
+        const delayInput = document.getElementById('delay');
+        const timeoutInput = document.getElementById('timeout');
+        
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
         const restartBtn = document.getElementById('restart-btn');
@@ -82,6 +166,9 @@
             }
 
             intervalInput.value = state.config.intervalMinutes;
+            concurrencyInput.value = state.config.concurrency;
+            delayInput.value = state.config.delay;
+            timeoutInput.value = state.config.timeout;
 
             if (state.nextRun && !state.isJobRunning) {
                 nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
@@ -114,24 +201,31 @@
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const interval = parseInt(intervalInput.value, 10);
-            if (interval > 0) {
-                updateConfig({ intervalMinutes: interval });
-            } else {
-                showToast('Thời gian phải là một số lớn hơn 0.', 'Cảnh báo', 'warning');
-            }
+            updateConfig({
+                intervalMinutes: intervalInput.value,
+                concurrency: concurrencyInput.value,
+                delay: delayInput.value,
+                timeout: timeoutInput.value
+            });
         });
         
         startBtn.addEventListener('click', () => updateConfig({ isEnabled: true }));
         stopBtn.addEventListener('click', () => updateConfig({ isEnabled: false }));
+        
         restartBtn.addEventListener('click', () => {
              fetch('/admin/settings/auto-check/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ isEnabled: true, intervalMinutes: parseInt(intervalInput.value, 10) })
-                }).then(res => res.json()).then(result => {
-                    if (result.success) showToast('Đã khởi động lại dịch vụ.', 'Thành công', 'success');
-                });
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    isEnabled: true, 
+                    intervalMinutes: intervalInput.value,
+                    concurrency: concurrencyInput.value,
+                    delay: delayInput.value,
+                    timeout: timeoutInput.value
+                })
+            }).then(res => res.json()).then(result => {
+                if (result.success) showToast('Đã khởi động lại dịch vụ.', 'Thành công', 'success');
+            });
         });
         
         const socket = io();

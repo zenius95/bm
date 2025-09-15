@@ -9,13 +9,13 @@ const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 const DEFAULT_SETTINGS = {
     autoCheck: {
         isEnabled: false,
-        intervalMinutes: 30
-    },
-    // Ví dụ: sau này có thể thêm mục setting mới
-    // notifications: {
-    //     emailOnCompletion: false,
-    //     adminEmail: "admin@example.com"
-    // }
+        intervalMinutes: 30,
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        concurrency: 10, // Số luồng
+        delay: 500,      // Delay giữa các task (ms)
+        timeout: 45000   // Timeout cho mỗi task (ms)
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+    }
 };
 
 class SettingsService extends EventEmitter {
@@ -27,8 +27,19 @@ class SettingsService extends EventEmitter {
     async initialize() {
         try {
             const fileContent = await fs.readFile(SETTINGS_FILE_PATH, 'utf-8');
-            this._data = JSON.parse(fileContent);
+            const fileData = JSON.parse(fileContent);
+            // Gộp setting mặc định và setting đã lưu để đảm bảo không thiếu key mới
+            this._data = {
+                ...DEFAULT_SETTINGS,
+                ...fileData,
+                autoCheck: {
+                    ...DEFAULT_SETTINGS.autoCheck,
+                    ...(fileData.autoCheck || {})
+                }
+            };
             console.log('[SettingsService] Loaded config from settings.json');
+            // Ghi lại file nếu có thêm key mới từ default
+            await this._save();
         } catch (error) {
             if (error.code === 'ENOENT') {
                 console.log('[SettingsService] settings.json not found. Creating with default values.');
@@ -59,11 +70,6 @@ class SettingsService extends EventEmitter {
     
     getAll() {
         return this._data;
-    }
-
-    async set(key, value) {
-        this._data[key] = value;
-        await this._save();
     }
     
     async update(key, partialValue) {
