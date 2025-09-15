@@ -1,44 +1,63 @@
-// routes/admin.js
+// routes/order.js
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/adminController');
-const accountController = require('../controllers/accountController');
-const settingController = require('../controllers/settingController');
-const workerController = require('../controllers/workerController');
+const orderController = require('../controllers/orderController');
+const Log = require('../models/Log');
+const os = require('os-utils');
+const itemProcessorManager = require('../utils/itemProcessorManager');
 
-// Middleware parse query cho tất cả các route bên dưới
-router.use(accountController.parseQueryMiddleware);
-router.use(adminController.parseQueryMiddleware);
+// API tạo và lấy thông tin order công khai
+router.post('/orders', orderController.createOrder);
+router.get('/orders/:id', orderController.getOrderStatus);
+router.get('/orders/:id/logs', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const logs = await Log.find({ orderId: id }).sort({ timestamp: 'asc' });
+        res.status(200).json(logs);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
 
-// Dashboard
-router.get('/dashboard', adminController.getDashboard);
+// API để worker báo cáo trạng thái
+router.get('/status', (req, res) => {
+    os.cpuUsage((cpuPercent) => {
+        const itemProcessorStats = itemProcessorManager.getStatus();
+        const systemStats = {
+            cpu: (cpuPercent * 100).toFixed(2),
+            freeMem: os.freemem().toFixed(0),
+            totalMem: os.totalmem().toFixed(0)
+        };
+        res.json({
+            success: true,
+            data: {
+                itemProcessor: itemProcessorStats,
+                system: systemStats
+            }
+        });
+    });
+});
 
-// --- Account Routes ---
-router.get('/accounts', accountController.handleGetAll);
-router.post('/accounts/add-multiple', accountController.addMultiple);
-router.post('/accounts/soft-delete', accountController.handleSoftDelete);
-router.post('/accounts/restore', accountController.handleRestore);
-router.post('/accounts/hard-delete', accountController.handleHardDelete);
-router.post('/accounts/check-selected', accountController.checkSelected);
+// API để worker tiếp nhận và xử lý một item
+router.post('/process-item', async (req, res) => {
+    try {
+        const { orderId, itemId, itemData } = req.body;
+        if (!orderId || !itemId || !itemData) {
+            return res.status(400).json({ success: false, message: 'Thiếu thông tin item.' });
+        }
 
-// --- Order Routes ---
-router.get('/orders', adminController.handleGetAll);
-router.get('/orders/:id', adminController.handleGetById);
-router.post('/orders/create', adminController.handleCreate);
-router.post('/orders/soft-delete', adminController.handleSoftDelete);
-router.post('/orders/restore', adminController.handleRestore);
-router.post('/orders/hard-delete', adminController.handleHardDelete);
+        // Báo cho Tổng hành dinh biết là đã nhận lệnh
+        res.status(202).json({ success: true, message: 'Đã nhận item, bắt đầu xử lý.' });
 
-// --- Worker Management Route ---
-router.get('/workers', workerController.getWorkersPage);
-router.post('/workers', workerController.addWorker);
+        // Chạy xử lý trong nền
+        itemProcessorManager.processSingleItem(orderId, itemId, itemData);
 
-// --- Settings Routes ---
-router.get('/settings', settingController.getSettingsPage);
-// Auto Check
-router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
-router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
-// Item Processor
-router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
+    } catch (error) {
+        console.error('[API /process-item] Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Lỗi server khi tiếp nhận item.' });
+        }
+    }
+});
 
 module.exports = router;

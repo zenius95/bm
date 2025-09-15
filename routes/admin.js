@@ -32,6 +32,8 @@ router.post('/orders/hard-delete', adminController.handleHardDelete);
 // --- Worker Management Route ---
 router.get('/workers', workerController.getWorkersPage);
 router.post('/workers', workerController.addWorker);
+router.post('/workers/:id', workerController.updateWorker);
+router.delete('/workers/:id', workerController.deleteWorker);
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
