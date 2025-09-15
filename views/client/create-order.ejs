@@ -1,0 +1,98 @@
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white">Tạo Đơn Hàng Mới</h1>
+        <p class="mt-1 text-gray-400">Nhập danh sách các item Bro muốn xử lý và xem chi phí ước tính.</p>
+    </div>
+
+    <% if (error) { %>
+        <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <form action="/create-order" method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div class="lg:col-span-2 bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+            <div class="p-6">
+                <label for="itemsData" class="block text-sm font-medium text-gray-300 mb-2">
+                    <i class="ri-file-list-3-line mr-1"></i>
+                    Danh sách Items (mỗi item một dòng)
+                </label>
+                <textarea name="itemsData" id="itemsData" rows="12" required class="form-input font-mono text-sm" placeholder="Item 1...&#10;Item 2...&#10;Item 3..."></textarea>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 sticky top-8">
+            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 space-y-4">
+                <h3 class="text-lg font-bold text-white border-b border-white/10 pb-3">Chi Tiết Giao Dịch</h3>
+                
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Số dư hiện tại</span>
+                        <span class="font-semibold text-green-400 text-base"><%= user.balance.toLocaleString('vi-VN') %>đ</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Đơn giá</span>
+                        <span class="font-mono text-gray-300"><%= pricePerItem.toLocaleString('vi-VN') %>đ / item</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-gray-400">Số lượng Items</span>
+                        <span id="item-count" class="font-semibold text-white">0</span>
+                    </div>
+                </div>
+
+                <div class="border-t border-dashed border-white/10 pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-base font-medium text-white">TỔNG CHI PHÍ</span>
+                        <span id="total-cost" class="text-2xl font-bold text-yellow-400">0đ</span>
+                    </div>
+                </div>
+
+                <div id="balance-warning" class="bg-red-500/10 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden">
+                    <i class="ri-error-warning-line mr-1"></i> Số dư của Bro không đủ.
+                </div>
+                
+                <button type="submit" id="create-order-btn" class="w-full mt-2 inline-flex items-center justify-center px-5 py-3 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                    <i class="ri-send-plane-2-line -ml-1 mr-2"></i>
+                    <span>Xác Nhận & Bắt Đầu</span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const itemsData = document.getElementById('itemsData');
+    const itemCountEl = document.getElementById('item-count');
+    const totalCostEl = document.getElementById('total-cost');
+    const createOrderBtn = document.getElementById('create-order-btn');
+    const balanceWarning = document.getElementById('balance-warning');
+
+    const pricePerItem = <%= pricePerItem %>;
+    const userBalance = <%= user.balance %>;
+
+    function updateCost() {
+        const lines = itemsData.value.trim().split('\n').filter(line => line.trim() !== '');
+        const count = lines.length;
+        const totalCost = count * pricePerItem;
+
+        itemCountEl.textContent = count;
+        totalCostEl.textContent = totalCost.toLocaleString('vi-VN') + 'đ';
+
+        if (totalCost > userBalance) {
+            totalCostEl.classList.add('text-red-400');
+            totalCostEl.classList.remove('text-yellow-400');
+            balanceWarning.classList.remove('hidden');
+            createOrderBtn.disabled = true;
+        } else {
+            totalCostEl.classList.remove('text-red-400');
+            totalCostEl.classList.add('text-yellow-400');
+            balanceWarning.classList.add('hidden');
+            createOrderBtn.disabled = count === 0;
+        }
+    }
+
+    itemsData.addEventListener('input', updateCost);
+    updateCost();
+});
+</script>

@@ -1,0 +1,75 @@
+<div class="space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Lịch Sử Đơn Hàng</h1>
+            <p class="mt-1 text-gray-400">Theo dõi tất cả các đơn hàng Bro đã tạo.</p>
+        </div>
+        <a href="/create-order" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
+            <i class="ri-add-line -ml-1 mr-2"></i>
+            <span>Tạo Đơn Hàng Mới</span>
+        </a>
+    </div>
+
+    <% if (orders && orders.length > 0) { %>
+        <div class="space-y-4">
+            <% orders.forEach(order => { %>
+                <a href="/orders/<%= order._id %>" class="block bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 group">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3">
+                                <% 
+                                    let statusConfig = { text: 'Pending', icon: 'ri-time-line', color: 'gray' };
+                                    if (order.status === 'processing') statusConfig = { text: 'Processing', icon: 'ri-loader-4-line animate-spin', color: 'yellow' };
+                                    if (order.status === 'completed') statusConfig = { text: 'Completed', icon: 'ri-checkbox-circle-line', color: 'green' };
+                                %>
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-<%= statusConfig.color %>-500/20 text-<%= statusConfig.color %>-300"><%= statusConfig.text %></span>
+                                <p class="font-mono text-sm text-white group-hover:text-blue-300 transition-colors">ID: <%= order._id %></p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
+                        </div>
+                        
+                        <%# === START: THAY ĐỔI QUAN TRỌNG (Loại bỏ thanh tiến trình) === %>
+                        <div class="flex items-center gap-4 text-center">
+                             <div>
+                                <p class="text-lg font-bold text-white"><%= order.items.length %></p>
+                                <p class="text-xs text-gray-400">Tổng</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-green-400"><%= order.completedItems %></p>
+                                <p class="text-xs text-gray-400">OK</p>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-red-400"><%= order.failedItems %></p>
+                                <p class="text-xs text-gray-400">Lỗi</p>
+                            </div>
+                        </div>
+                        <%# === END: THAY ĐỔI QUAN TRỌNG === %>
+
+                        <div class="text-right">
+                            <p class="text-xs text-gray-400">Tổng chi phí</p>
+                            <p class="text-lg font-bold font-mono text-yellow-400"><%= order.totalCost.toLocaleString('vi-VN') %>đ</p>
+                        </div>
+                    </div>
+                </a>
+            <% }); %>
+        </div>
+    <% } else { %>
+        <div class="text-center py-20 px-6 bg-white/5 backdrop-blur-lg border border-dashed border-white/10 rounded-xl">
+            <i class="ri-file-search-line text-6xl text-gray-700"></i>
+            <h4 class="mt-4 text-xl font-semibold text-white">Bro chưa có đơn hàng nào</h4>
+            <p class="mt-2 text-gray-400">Hãy bắt đầu bằng cách tạo đơn hàng đầu tiên của Bro!</p>
+        </div>
+    <% } %>
+    
+    <% if (pagination.totalPages > 1) { %>
+    <nav class="flex justify-center">
+        <ul class="inline-flex items-center -space-x-px">
+            <% for(let i = 1; i <= pagination.totalPages; i++) { %>
+                <li>
+                    <a href="?page=<%= i %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
+                </li>
+             <% } %>
+        </ul>
+    </nav>
+    <% } %>
+</div>

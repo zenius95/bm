@@ -54,6 +54,9 @@ router.post('/activity-logs/hard-delete', activityLogController.handleHardDelete
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
 router.post('/settings/api-key/update', settingController.updateMasterApiKey);
+// === START: THAY ĐỔI QUAN TRỌNG ===
+router.post('/settings/order/config', settingController.updateOrderConfig);
+// === END: THAY ĐỔI QUAN TRỌNG ===
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);

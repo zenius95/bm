@@ -8,37 +8,40 @@
         <h2 class="text-xl font-semibold text-white mb-4">Thống kê Đơn Hàng</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
+                 <div class="flex items-center justify-between">
                     <span class="text-sm font-medium text-gray-400">Tổng Đơn Hàng</span>
                     <i class="ri-stack-line text-2xl text-blue-400"></i>
                 </div>
-               
- <p class="mt-2 text-3xl font-bold text-white"><%= orderStats.total %></p>
+                <%# === START: THAY ĐỔI QUAN TRỌNG === %>
+                <p id="order-stats-total" class="mt-2 text-3xl font-bold text-white"><%= orderStats.total %></p>
+                <%# === END: THAY ĐỔI QUAN TRỌNG === %>
             </div>
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-yellow-400/50 hover:shadow-2xl hover:shadow-yellow-500/10 transform hover:-translate-y-1">
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-medium text-gray-400">Đang Xử Lý</span>
-            
-         <i class="ri-loader-4-line text-2xl text-yellow-400"></i>
+                    <i class="ri-loader-4-line text-2xl text-yellow-400"></i>
                 </div>
-                <p class="mt-2 text-3xl font-bold text-yellow-400"><%= orderStats.processing %></p>
+                <%# === START: THAY ĐỔI QUAN TRỌNG === %>
+                <p id="order-stats-processing" class="mt-2 text-3xl font-bold text-yellow-400"><%= orderStats.processing %></p>
+                <%# === END: THAY ĐỔI QUAN TRỌNG === %>
             </div>
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
-              
-   <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Hoàn Thành</span>
+               <div class="flex items-center justify-between">
+                   <span class="text-sm font-medium text-gray-400">Hoàn Thành</span>
                     <i class="ri-checkbox-circle-line text-2xl text-green-400"></i>
                 </div>
-                <p class="mt-2 text-3xl font-bold text-green-400"><%= orderStats.completed %></p>
-          
-   </div>
+                <%# === START: THAY ĐỔI QUAN TRỌNG === %>
+                <p id="order-stats-completed" class="mt-2 text-3xl font-bold text-green-400"><%= orderStats.completed %></p>
+                <%# === END: THAY ĐỔI QUAN TRỌNG === %>
+           </div>
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-red-400/50 hover:shadow-2xl hover:shadow-red-500/10 transform hover:-translate-y-1">
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-medium text-gray-400">Thất Bại</span>
                     <i class="ri-close-circle-line text-2xl text-red-400"></i>
-       
-         </div>
-                <p class="mt-2 text-3xl font-bold text-red-400"><%= orderStats.failed %></p>
+               </div>
+                <%# === START: THAY ĐỔI QUAN TRỌNG === %>
+                <p id="order-stats-failed" class="mt-2 text-3xl font-bold text-red-400"><%= orderStats.failed %></p>
+                <%# === END: THAY ĐỔI QUAN TRỌNG === %>
             </div>
         </div>
     </div>
@@ -51,31 +54,26 @@
                     <span class="text-sm font-medium text-gray-400">Tổng Account</span>
                     <i class="ri-group-line text-2xl text-blue-400"></i>
                 </div>
-      
-           <p class="mt-2 text-3xl font-bold text-white"><%= accountStats.total %></p>
+                <p class="mt-2 text-3xl font-bold text-white"><%= accountStats.total %></p>
             </div>
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-medium text-gray-400">Live</span>
-     
-                <i class="ri-shield-check-line text-2xl text-green-400"></i>
+                   <i class="ri-shield-check-line text-2xl text-green-400"></i>
                 </div>
                 <p class="mt-2 text-3xl font-bold text-green-400"><%= accountStats.live %></p>
             </div>
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-red-400/50 hover:shadow-2xl hover:shadow-red-500/10 transform hover:-translate-y-1">
-       
-         <div class="flex items-center justify-between">
+                 <div class="flex items-center justify-between">
                     <span class="text-sm font-medium text-gray-400">Die</span>
                     <i class="ri-skull-line text-2xl text-red-400"></i>
                 </div>
                 <p class="mt-2 text-3xl font-bold text-red-400"><%= accountStats.die %></p>
-    
-         </div>
+            </div>
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-gray-400/50 hover:shadow-2xl hover:shadow-gray-500/10 transform hover:-translate-y-1">
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-medium text-gray-400">Chưa check</span>
                     <i class="ri-question-mark text-2xl text-gray-400"></i>
- 
                 </div>
                 <p class="mt-2 text-3xl font-bold text-gray-400"><%= accountStats.unchecked %></p>
             </div>
@@ -85,16 +83,16 @@
     <div>
         <h2 class="text-xl font-semibold text-white mb-4">Thống kê Người Dùng</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-purple-400/50 hover:shadow-2xl hover:shadow-purple-500/10 transform hover:-translate-y-1">
+               <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-purple-400/50 hover:shadow-2xl hover:shadow-purple-500/10 transform hover:-translate-y-1">
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-medium text-gray-400">Tổng User</span>
                     <i class="ri-team-line text-2xl text-purple-400"></i>
-                </div>
+               </div>
                 <p class="mt-2 text-3xl font-bold text-white"><%= userStats.total %></p>
             </div>
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Admin</span>
+                 <span class="text-sm font-medium text-gray-400">Admin</span>
                     <i class="ri-shield-user-line text-2xl text-green-400"></i>
                 </div>
                 <p class="mt-2 text-3xl font-bold text-green-400"><%= userStats.admins %></p>
@@ -112,66 +110,81 @@
     <div>
         <h2 class="text-xl font-semibold text-white mb-4">Đơn Hàng Gần Nhất</h2>
         <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
-  
            <% if (orders && orders.length > 0) { %>
-                <div class="overflow-x-auto">
+               <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-300">
                         <thead class="text-xs text-gray-400 uppercase bg-white/5">
-             
-                <tr>
-                                <th scope="col" class="px-6 py-3">Order ID</th>
+                            <tr>
+                                 <th scope="col" class="px-6 py-3">Order ID</th>
+                                <th scope="col" class="px-6 py-3">User</th>
                                 <th scope="col" class="px-6 py-3">Trạng Thái</th>
-             
-                     <th scope="col" class="px-6 py-3 text-center">Items (Tổng/OK/Lỗi)</th>
+                                <th scope="col" class="px-6 py-3 text-center">Items (Tổng/OK/Lỗi)</th>
                                 <th scope="col" class="px-6 py-3">Ngày Tạo</th>
                             </tr>
-            
-             </thead>
-                        <tbody>
+                         </thead>
+                       <tbody>
                             <% orders.forEach(order => { %>
-                                
- <% 
-                                    let statusClass = 'bg-gray-700 text-gray-300';
- if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
-                                    if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
- if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
+                                <% 
+                                   let statusClass = 'bg-gray-700 text-gray-300';
+                                   if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                                   if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
+                                   if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
                                 %>
                                 <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                     <td class="px-6 py-4 font-mono font-medium text-white">
-              
-                           <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
+                                       <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
                                     </td>
-                               
-      <td class="px-6 py-4">
+                                    <td class="px-6 py-4 font-semibold text-white">
+                                        <%= order.user ? order.user.username : 'N/A' %>
+                                    </td>
+                                    <td class="px-6 py-4">
                                         <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
                                     </td>
-       
-                              <td class="px-6 py-4 text-center">
+                                    <td class="px-6 py-4 text-center">
                                         <span class="font-bold text-white"><%= order.items.length %></span> /
-                       
-                  <span class="text-green-400"><%= order.completedItems %></span> /
+                                        <span class="text-green-400"><%= order.completedItems %></span> /
                                         <span class="text-red-400"><%= order.failedItems %></span>
-                                    
- </td>
+                                    </td>
                                     <td class="px-6 py-4 text-gray-400">
                                         <%= new Date(order.createdAt).toLocaleString('vi-VN') %>
-                  
-                   </td>
+                                    </td>
                                 </tr>
-                            <% });
- %>
+                            <% }); %>
                         </tbody>
                     </table>
                 </div>
             <% } else { %>
                 <div class="text-center py-16 px-6">
-     
-                <i class="ri-file-list-3-line text-6xl text-gray-700"></i>
+                    <i class="ri-file-list-3-line text-6xl text-gray-700"></i>
                     <h4 class="mt-4 text-xl font-semibold text-white">Chưa có đơn hàng nào</h4>
                     <p class="mt-2 text-gray-400">Hãy thử tạo một đơn hàng mới qua API, danh sách sẽ xuất hiện ở đây.</p>
-                </div>
- 
+                 </div>
             <% } %>
         </div>
     </div>
 </div>
+
+<%# === START: THAY ĐỔI QUAN TRỌNG === %>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const socket = io();
+    socket.on('connect', () => console.log('Connected to dashboard socket.'));
+
+    socket.on('dashboard:stats:update', (data) => {
+        if (data.orderStats) {
+            const stats = data.orderStats;
+            const totalEl = document.getElementById('order-stats-total');
+            const processingEl = document.getElementById('order-stats-processing');
+            const completedEl = document.getElementById('order-stats-completed');
+            const failedEl = document.getElementById('order-stats-failed');
+
+            if (stats.total !== undefined && totalEl) totalEl.textContent = stats.total;
+            if (stats.processing !== undefined && processingEl) processingEl.textContent = stats.processing;
+            if (stats.completed !== undefined && completedEl) completedEl.textContent = stats.completed;
+            if (stats.failed !== undefined && failedEl) failedEl.textContent = stats.failed;
+        }
+    });
+});
+</script>
+<%# === END: THAY ĐỔI QUAN TRỌNG === %>

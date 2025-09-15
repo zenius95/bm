@@ -4,11 +4,15 @@ class CrudService {
      * @param {mongoose.Model} Model - Mongoose model
      * @param {Object} options - Các tùy chọn
      * @param {string[]} options.searchableFields - Các trường có thể tìm kiếm
+     * @param {Object | string} options.populateFields - Tùy chọn populate cho Mongoose
      */
     constructor(Model, options = {}) {
         this.Model = Model;
         this.options = {
             searchableFields: [],
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            populateFields: null, 
+            // === END: THAY ĐỔI QUAN TRỌNG ===
             ...options
         };
     }
@@ -21,7 +25,7 @@ class CrudService {
             page = 1,
             limit = 20,
             sortBy = 'createdAt',
-            sortOrder = 'asc',
+            sortOrder = 'desc', // Thay đổi mặc định thành 'desc' cho hợp lý hơn
         } = queryOptions;
         
         const query = this._buildQuery(queryOptions);
@@ -34,11 +38,20 @@ class CrudService {
         const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
         const totalItems = await this.Model.countDocuments(query);
-        const data = await this.Model.find(query)
+        
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        let queryBuilder = this.Model.find(query);
+
+        if (this.options.populateFields) {
+            queryBuilder = queryBuilder.populate(this.options.populateFields);
+        }
+        
+        const data = await queryBuilder
             .sort(sortOptions)
             .skip(skip)
             .limit(parseInt(limit, 10))
             .lean();
+        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         return {
             data,
@@ -52,7 +65,13 @@ class CrudService {
     }
     
     async getById(id) {
-        return this.Model.findById(id).lean();
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        let queryBuilder = this.Model.findById(id);
+        if (this.options.populateFields) {
+            queryBuilder = queryBuilder.populate(this.options.populateFields);
+        }
+        return queryBuilder.lean();
+        // === END: THAY ĐỔI QUAN TRỌNG ===
     }
 
     async create(data) {
@@ -77,14 +96,11 @@ class CrudService {
         return this.Model.findByIdAndDelete(id);
     }
     
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     _buildQuery(queryOptions = {}) {
         const { search, inTrash, ...filters } = queryOptions;
         
-        // Nếu đang xem thùng rác, chỉ lọc theo isDeleted và bỏ qua các filter khác
         if (inTrash === 'true' || inTrash === true) {
             const trashQuery = { isDeleted: true };
-            // Vẫn cho phép tìm kiếm trong thùng rác
             if (search && this.options.searchableFields.length > 0) {
                 trashQuery.$or = this.options.searchableFields.map(field => ({
                     [field]: { $regex: search, $options: 'i' }
@@ -93,7 +109,6 @@ class CrudService {
             return trashQuery;
         }
 
-        // Logic cho chế độ xem thông thường
         const query = { isDeleted: { $ne: true } };
 
         for (const key in filters) {
@@ -112,7 +127,6 @@ class CrudService {
         }
         return query;
     }
-    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     // --- CÁC HÀM HÀNG LOẠT ---
     async softDeleteMany(queryOptions) {

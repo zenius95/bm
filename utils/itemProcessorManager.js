@@ -6,6 +6,8 @@ const Order = require('../models/Order');
 const Log = require('../models/Log');
 const fetch = require('node-fetch');
 const Worker = require('../models/Worker');
+const User = require('../models/User'); 
+const { logActivity } = require('./activityLogService');
 
 class ItemProcessorManager extends EventEmitter {
     constructor() {
@@ -91,9 +93,7 @@ class ItemProcessorManager extends EventEmitter {
             for (const order of ordersWithQueuedItems) {
                  if (order.status === 'pending') {
                     await Order.findByIdAndUpdate(order._id, { status: 'processing' });
-                    // === START: THAY ĐỔI QUAN TRỌNG ===
                     if(this.io) this.io.emit('order:update', { id: order._id.toString(), status: 'processing' });
-                    // === END: THAY ĐỔI QUAN TRỌNG ===
                     await this.writeLog(order._id, 'INFO', `Order status updated to 'processing'.`);
                 }
 
@@ -114,14 +114,12 @@ class ItemProcessorManager extends EventEmitter {
     }
 
     async dispatchItemToWorker(worker, orderId, item) {
-        // === START: THAY ĐỔI CÁCH LẤY THÔNG TIN XÁC THỰC ===
         const { url, apiKey } = worker;
         if (!apiKey) {
             console.error(`Worker ${worker.name} is missing an API Key. Skipping.`);
             await this.writeLog(orderId, 'ERROR', `Worker ${worker.name} is missing an API Key.`);
             return;
         }
-        // === END: THAY ĐỔI CÁCH LẤY THÔNG TIN XÁC THỰC ===
 
         try {
             const updatedOrder = await Order.findOneAndUpdate(
@@ -137,7 +135,6 @@ class ItemProcessorManager extends EventEmitter {
                 this.io.emit('itemProcessor:log', logMessage);
             }
             
-            // === START: THAY ĐỔI URL VÀ HEADER ===
             const response = await fetch(`${url}/worker-api/process-item`, {
                 method: 'POST',
                 headers: { 
@@ -151,7 +148,6 @@ class ItemProcessorManager extends EventEmitter {
                 }),
                 timeout: 10000
             });
-            // === END: THAY ĐỔI URL VÀ HEADER ===
             
             if (!response.ok || response.status !== 202) {
                 throw new Error(`Worker returned status ${response.status}`);
@@ -173,45 +169,130 @@ class ItemProcessorManager extends EventEmitter {
             await this.writeLog(orderId, 'INFO', `Worker started processing item ${itemId}. Data: "${itemData}"`);
             
             await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+
+            if (itemData.trim() === 'lỗi') {
+                throw new Error("Giả lập lỗi xử lý item.");
+            }
     
-            await Order.updateOne(
+            // === START: TỐI ƯU HÓA ===
+            const updatedOrder = await Order.findOneAndUpdate(
                 { "_id": orderId, "items._id": itemId },
-                { "$set": { "items.$.status": "completed" } }
-            );
+                { "$set": { "items.$.status": "completed" } },
+                { new: true } // Trả về document đã được cập nhật
+            ).lean();
+            // === END: TỐI ƯU HÓA ===
+
             await this.writeLog(orderId, 'INFO', `Item ${itemId} completed successfully.`);
             if(this.io) this.io.emit('itemProcessor:log', `✔ Hoàn thành item ${itemId.slice(-6)}`);
     
-            await this.checkOrderCompletion(orderId);
+            this.updateAndEmitItemCounts(updatedOrder);
+            await this.checkOrderCompletion(updatedOrder);
 
         } catch(error) {
             console.error(`[Worker] Error processing item ${itemId}:`, error);
-            await Order.updateOne(
+
+            // === START: TỐI ƯU HÓA ===
+            const updatedOrderAfterFail = await Order.findOneAndUpdate(
                 { "_id": orderId, "items._id": itemId },
-                { "$set": { "items.$.status": "failed" } }
-            );
+                { "$set": { "items.$.status": "failed" } },
+                { new: true } // Trả về document đã được cập nhật
+            ).lean();
+            // === END: TỐI ƯU HÓA ===
+
             await this.writeLog(orderId, 'ERROR', `Item ${itemId} failed. Error: ${error.message}`);
+            
+            if (updatedOrderAfterFail) {
+                await this.refundUserForItem(updatedOrderAfterFail, itemId, error.message);
+                this.updateAndEmitItemCounts(updatedOrderAfterFail);
+                await this.checkOrderCompletion(updatedOrderAfterFail);
+            }
         }
     }
     
-    async checkOrderCompletion(orderId) {
-        const order = await Order.findById(orderId);
-        if (!order || order.status === 'completed' || order.status === 'failed') return;
+    // === START: TỐI ƯU HÓA (Hàm không cần async và không cần query DB) ===
+    updateAndEmitItemCounts(order) {
+        if (!order) return;
+
+        const completedItems = order.items.filter(item => item.status === 'completed').length;
+        const failedItems = order.items.filter(item => item.status === 'failed').length;
+
+        this.io.emit('order:item_update', {
+            id: order._id.toString(),
+            completedItems,
+            failedItems
+        });
+    }
+    // === END: TỐI ƯU HÓA ===
+
+    async refundUserForItem(order, itemId, reason) {
+        try {
+            const refundAmount = order.pricePerItem;
+            if (refundAmount <= 0) return;
+
+            // === START: TỐI ƯU HÓA (Sử dụng toán tử $inc để cập nhật an toàn) ===
+            const updatedUser = await User.findByIdAndUpdate(
+                order.user,
+                { $inc: { balance: refundAmount } },
+                { new: true } // Trả về user đã được cập nhật
+            ).lean();
+            // === END: TỐI ƯU HÓA ===
+
+            if (!updatedUser) {
+                await this.writeLog(order._id, 'ERROR', `Refund failed for item ${itemId}. User ${order.user} not found.`);
+                return;
+            }
+            
+            const originalBalance = updatedUser.balance - refundAmount;
+            const logDetails = `Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user '${updatedUser.username}' do item trong đơn hàng #${order._id.toString().slice(-6)} thất bại. Lý do: ${reason}. Số dư thay đổi: ${originalBalance.toLocaleString('vi-VN')}đ -> ${updatedUser.balance.toLocaleString('vi-VN')}đ.`;
+
+            await this.writeLog(order._id, 'INFO', `Refunded ${refundAmount} to user ${updatedUser.username}.`);
+            await logActivity(updatedUser._id, 'ORDER_REFUND', {
+                details: logDetails,
+                context: 'Admin'
+            });
+
+            console.log(`[Refund] ${logDetails}`);
+            if(this.io) this.io.emit('itemProcessor:log', `💰 Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong>${updatedUser.username}</strong> (đơn hàng ...${order._id.toString().slice(-6)})`);
+
+        } catch (e) {
+            console.error(`[Refund] CRITICAL ERROR during refund for order ${order._id}:`, e);
+            await this.writeLog(order._id, 'ERROR', `CRITICAL: Refund failed for item ${itemId}. Error: ${e.message}`);
+        }
+    }
+    
+    // === START: TỐI ƯU HÓA (Nhận vào object 'order' thay vì 'orderId') ===
+    async checkOrderCompletion(order) {
+        if (!order || order.status === 'completed') return;
         
         const pendingItems = order.items.filter(item => ['queued', 'processing'].includes(item.status));
         
         if (pendingItems.length === 0) {
-            const hasFailedItems = order.items.some(item => item.status === 'failed');
-            const finalStatus = hasFailedItems ? 'failed' : 'completed';
+            const finalStatus = 'completed';
             
-            await Order.findByIdAndUpdate(orderId, { status: finalStatus });
-            // === START: THAY ĐỔI QUAN TRỌNG ===
-            if(this.io) this.io.emit('order:update', { id: orderId.toString(), status: finalStatus });
-            // === END: THAY ĐỔI QUAN TRỌNG ===
-            const logMessage = `🎉 Order ${orderId.toString().slice(-6)} đã HOÀN THÀNH (status: ${finalStatus})!`;
+            await Order.findByIdAndUpdate(order._id, { status: finalStatus });
+            if(this.io) this.io.emit('order:update', { id: order._id.toString(), status: finalStatus });
+            
+            const [ totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount ] = await Promise.all([
+                 Order.countDocuments({ isDeleted: false }),
+                 Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false }),
+                 Order.countDocuments({ status: 'completed', isDeleted: false }),
+                 Order.countDocuments({ status: 'failed', isDeleted: false })
+            ]);
+            this.io.emit('dashboard:stats:update', { 
+                orderStats: {
+                    total: totalOrderCount,
+                    processing: processingOrderCount,
+                    completed: completedOrderCount,
+                    failed: failedOrderCount
+                }
+            });
+
+            const logMessage = `🎉 Order ${order._id.toString().slice(-6)} đã HOÀN THÀNH (status: ${finalStatus})!`;
             if(this.io) this.io.emit('itemProcessor:log', logMessage);
-            await this.writeLog(orderId, 'INFO', `Order has been fully processed with final status: ${finalStatus}.`);
+            await this.writeLog(order._id, 'INFO', `Order has been fully processed with final status: ${finalStatus}.`);
         }
     }
+    // === END: TỐI ƯU HÓA ===
 
     getStatus() {
         return {

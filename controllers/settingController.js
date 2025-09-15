@@ -44,6 +44,25 @@ settingController.updateMasterApiKey = async (req, res) => {
     }
 };
 
+// === START: THAY ĐỔI QUAN TRỌNG ===
+settingController.updateOrderConfig = async (req, res) => {
+    try {
+        const { pricePerItem } = req.body;
+        const price = parseInt(pricePerItem, 10);
+
+        if (isNaN(price) || price < 0) {
+            return res.status(400).json({ success: false, message: 'Giá tiền không hợp lệ.' });
+        }
+
+        await settingsService.update('order', { pricePerItem: price });
+        res.json({ success: true, message: 'Cập nhật cài đặt đơn hàng thành công.' });
+    } catch (error) {
+        console.error("Error updating order config:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// === END: THAY ĐỔI QUAN TRỌNG ===
+
 settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
 };

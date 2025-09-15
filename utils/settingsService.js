@@ -7,7 +7,12 @@ const crypto = require('crypto'); // Thêm module crypto của Node.js
 const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 
 const DEFAULT_SETTINGS = {
-    masterApiKey: '', // Thêm dòng này
+    masterApiKey: '',
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    order: {
+        pricePerItem: 100 // Giá mặc định là 100
+    },
+    // === END: THAY ĐỔI QUAN TRỌNG ===
     autoCheck: {
         isEnabled: false,
         intervalMinutes: 30,
@@ -36,8 +41,11 @@ class SettingsService extends EventEmitter {
             this._data = {
                 ...DEFAULT_SETTINGS,
                 ...fileData,
+                // === START: THAY ĐỔI QUAN TRỌNG (Đảm bảo object không bị ghi đè) ===
+                order: { ...DEFAULT_SETTINGS.order, ...(fileData.order || {}) },
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) }
+                // === END: THAY ĐỔI QUAN TRỌNG ===
             };
             console.log('[SettingsService] Loaded config from settings.json');
 
@@ -83,7 +91,7 @@ class SettingsService extends EventEmitter {
     }
     
     async update(key, value) {
-        if (this._data[key] && typeof this._data[key] === 'object' && typeof value === 'object') {
+        if (this._data[key] && typeof this._data[key] === 'object' && !Array.isArray(value) && value !== null) {
             this._data[key] = { ...this._data[key], ...value };
         } else {
             this._data[key] = value;

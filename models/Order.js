@@ -11,6 +11,23 @@ const ItemSchema = new mongoose.Schema({
 });
 
 const OrderSchema = new mongoose.Schema({
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true
+    },
+    totalCost: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    pricePerItem: {
+        type: Number,
+        required: true
+    },
+    // === END: THAY ĐỔI QUAN TRỌNG ===
     items: [ItemSchema],
     status: {
         type: String,
@@ -19,9 +36,8 @@ const OrderSchema = new mongoose.Schema({
     },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },
-    // Trường 'createdAt' đã được xóa bỏ khỏi đây
 }, {
-    timestamps: true // Tùy chọn này sẽ tự động quản lý createdAt và updatedAt
+    timestamps: true 
 });
 
 module.exports = mongoose.model('Order', OrderSchema);
