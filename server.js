@@ -5,6 +5,9 @@ const cors = require('cors');
 const basicAuth = require('express-basic-auth');
 const config = require('./config');
 const path = require('path');
+const os = require('os-utils');
+const Worker = require('./models/Worker');
+const workerMonitor = require('./utils/workerMonitor');
 
 const adminRoutes = require('./routes/admin');
 const orderRoutes = require('./routes/order');
@@ -58,6 +61,9 @@ async function startServer() {
             process.exit(1);
         });
 
+    // Khởi tạo worker cục bộ
+    await Worker.initializeLocalWorker();
+
     server.listen(config.server.port, () => {
         console.log(`\n🎉 Server started successfully!`);
         console.log(`   - API is running on http://localhost:${config.server.port}`);
@@ -66,6 +72,7 @@ async function startServer() {
         // Khởi tạo các manager
         autoCheckManager.initialize(io);
         itemProcessorManager.initialize(io);
+        workerMonitor.initialize(io); // Khởi động trạm giám sát
     });
 }
 

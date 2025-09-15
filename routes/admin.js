@@ -4,6 +4,7 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const accountController = require('../controllers/accountController');
 const settingController = require('../controllers/settingController');
+const workerController = require('../controllers/workerController');
 
 // Middleware parse query cho tất cả các route bên dưới
 router.use(accountController.parseQueryMiddleware);
@@ -28,10 +29,9 @@ router.post('/orders/soft-delete', adminController.handleSoftDelete);
 router.post('/orders/restore', adminController.handleRestore);
 router.post('/orders/hard-delete', adminController.handleHardDelete);
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
 // --- Worker Management Route ---
-router.get('/workers', settingController.getWorkersPage);
-// === END: THAY ĐỔI QUAN TRỌNG ===
+router.get('/workers', workerController.getWorkersPage);
+router.post('/workers', workerController.addWorker);
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
@@ -40,6 +40,5 @@ router.post('/settings/auto-check/config', settingController.updateAutoCheckConf
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 // Item Processor
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
-
 
 module.exports = router;
