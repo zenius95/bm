@@ -29,7 +29,7 @@ const createCrudController = (crudService, viewName, options = {}) => {
             if (!item) {
                 return res.status(404).send(`${single} not found.`);
             }
-            res.render(`${viewName}-detail`, { [single]: item }); 
+            res.render(`admin/${viewName}-detail`, { [single]: item }); 
         } catch (error) {
             console.error(`Error getting ${single} by id:`, error);
             res.status(500).send(`Could not load ${single}.`);
@@ -39,7 +39,7 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleCreate = async (req, res) => {
         try {
             await crudService.create(req.body);
-            res.redirect(`/admin/${plural}`);
+            res.redirect(`admin/${plural}`);
         } catch (error) {
             console.error(`Error creating ${single}:`, error);
             res.status(500).send(`Could not create ${single}.`);
@@ -49,7 +49,7 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleUpdate = async (req, res) => {
         try {
             await crudService.update(req.params.id, req.body);
-            res.redirect(`/admin/${plural}`);
+            res.redirect(`admin/${plural}`);
         } catch (error) {
             console.error(`Error updating ${single}:`, error);
             res.status(500).send(`Could not update ${single}.`);
