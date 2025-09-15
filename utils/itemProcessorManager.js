@@ -157,8 +157,11 @@ class ItemProcessorManager extends EventEmitter {
             { "_id": orderId, "items._id": itemId },
             { "$set": { "items.$.status": "processing" } }
         );
+        
         // GIẢ LẬP CÔNG VIỆC
         await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2000));
+
+
         await Order.updateOne(
             { "_id": orderId, "items._id": itemId },
             { "$set": { "items.$.status": "completed" } }
