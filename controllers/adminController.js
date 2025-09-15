@@ -12,8 +12,8 @@ const orderService = new CrudService(Order, {
 
 // 2. Tạo Controller từ Factory
 const adminOrderController = createCrudController(orderService, 'orders', {
-    single: 'order',
-    plural: 'orders'
+    single: 'admin/order',
+    plural: 'admin/orders'
 });
 
 // 3. Ghi đè lại hàm handleGetById để trỏ đúng view và lấy thêm Log
@@ -25,7 +25,7 @@ adminOrderController.handleGetById = async (req, res) => {
             return res.status(404).send("Order not found.");
         }
         const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 });
-        res.render('order-detail', { order, logs });
+        res.render('admin/order-detail', { order, logs });
     } catch (error) {
         console.error(`Error getting order by id:`, error);
         res.status(500).send(`Could not load order detail.`);
@@ -125,7 +125,7 @@ adminOrderController.getDashboard = async (req, res) => {
         });
 
         // Truyền userStats vào view
-        res.render('dashboard', { orderStats, accountStats, userStats, orders });
+        res.render('admin/dashboard', { orderStats, accountStats, userStats, orders });
 
     } catch (error) {
         console.error("Error loading admin dashboard:", error);

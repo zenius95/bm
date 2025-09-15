@@ -10,8 +10,8 @@ const accountService = new CrudService(Account, {
 });
 
 const accountController = createCrudController(accountService, 'accounts', {
-    single: 'account',
-    plural: 'accounts'
+    single: 'admin/account',
+    plural: 'admin/accounts'
 });
 
 accountController.addMultiple = async (req, res) => {

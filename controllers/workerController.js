@@ -20,7 +20,7 @@ workerController.getWorkersPage = async (req, res) => {
             };
         }
 
-        res.render('workers', {
+        res.render('admin/workers', {
             workers,
             page: 'workers',
             initialState: {

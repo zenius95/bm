@@ -1,0 +1,368 @@
+<%- include('partials/_header.ejs', { title: 'User Management', page: 'users' }) %>
+
+<div class="space-y-8">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Quản Lý User</h1>
+            <p class="mt-1 text-gray-400">Quản lý tài khoản người dùng và admin.</p>
+        </div>
+        <div>
+             <button id="add-user-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
+                <i class="ri-user-add-line -ml-1 mr-2"></i>
+                <span>Thêm User</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <form method="GET" action="/admin/users" class="flex flex-col md:flex-row items-center gap-3">
+            <input type="text" name="search" class="form-input" placeholder="Tìm theo Username, Email..." value="<%= currentQuery.search || '' %>" onchange="this.form.submit()">
+            <select name="role" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Lọc theo vai trò --</option>
+                <option value="user" <%= currentQuery.role === 'user' ? 'selected' : '' %>>User</option>
+                <option value="admin" <%= currentQuery.role === 'admin' ? 'selected' : '' %>>Admin</option>
+            </select>
+        </form>
+        <div>
+            <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa mục đã chọn</button>
+        </div>
+    </div>
+    <% if (pagination.totalPages > 1) { %>
+        <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
+            <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+        </div>
+        <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
+            <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+        </div>
+    <% } %>
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-400 uppercase bg-white/5">
+                    <tr>
+                        <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
+                        <th scope="col" class="px-6 py-3">Username</th>
+                        <th scope="col" class="px-6 py-3">Email</th>
+                        <th scope="col" class="px-6 py-3">Vai trò</th>
+                        <th scope="col" class="px-6 py-3">Số dư</th>
+                        <th scope="col" class="px-6 py-3">Ngày tạo</th>
+                        <th scope="col" class="px-6 py-3">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% users.forEach(user => { %>
+                        <tr id="user-row-<%= user._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                            <td class="p-4"><input type="checkbox" value="<%= user._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
+                            <td class="px-6 py-4 font-medium text-white"><%= user.username %></td>
+                            <td class="px-6 py-4 text-gray-400"><%= user.email %></td>
+                            <td class="px-6 py-4">
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= user.role === 'admin' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400' %>">
+                                    <%= user.role %>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-yellow-400"><%= user.balance.toLocaleString('vi-VN') %></td>
+                            <td class="px-6 py-4 text-gray-400"><%= new Date(user.createdAt).toLocaleString('vi-VN') %></td>
+                            <td class="px-6 py-4">
+                                <button class="btn-edit-user p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Sửa" data-id="<%= user._id %>" data-username="<%= user.username %>" data-email="<%= user.email %>" data-role="<%= user.role %>" data-balance="<%= user.balance %>"><i class="ri-pencil-line"></i></button>
+                                <button class="btn-delete-user p-2 rounded-md hover:bg-white/10 text-red-400 transition" title="Xóa" data-id="<%= user._id %>" data-username="<%= user.username %>"><i class="ri-delete-bin-line"></i></button>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <% if (pagination.totalPages > 1) { %>
+    <nav class="flex justify-center">
+        <ul class="inline-flex items-center -space-x-px">
+            <% for(let i = 1; i <= pagination.totalPages; i++) { 
+                const query = new URLSearchParams(currentQuery);
+                query.set('page', i);
+            %>
+                <li>
+                    <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
+                </li>
+            <% } %>
+        </ul>
+    </nav>
+    <% } %>
+    </div>
+
+<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
+
+<div id="user-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-lg p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
+    <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20">
+        <form id="user-form">
+            <input type="hidden" id="user-id" name="id">
+            <div class="p-6 border-b border-white/10">
+                <h3 id="modal-title" class="text-xl font-bold text-white">Thêm User Mới</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label for="user-username" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                    <input type="text" id="user-username" name="username" class="form-input" required>
+                </div>
+                <div>
+                    <label for="user-email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                    <input type="email" id="user-email" name="email" class="form-input" required>
+                </div>
+                <div>
+                    <label for="user-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <input type="password" id="user-password" name="password" class="form-input">
+                    <p id="password-help" class="text-xs text-gray-500 mt-1">Để trống nếu không muốn thay đổi mật khẩu.</p>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div>
+                        <label for="user-role" class="block text-sm font-medium text-gray-300 mb-2">Vai trò</label>
+                        <select id="user-role" name="role" class="form-select">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label for="user-balance" class="block text-sm font-medium text-gray-300 mb-2">Số dư</label>
+                        <input type="number" id="user-balance" name="balance" class="form-input" value="0" min="0">
+                    </div>
+                 </div>
+            </div>
+            <div class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3">
+                <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Hủy</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition">Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // === START: LOGIC MODAL ===
+    const backdrop = document.getElementById('modal-backdrop');
+    const userModal = document.getElementById('user-modal');
+
+    const showModal = (modalEl) => {
+        backdrop.classList.remove('hidden');
+        modalEl.classList.remove('hidden');
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            modalEl.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    };
+
+    const hideModal = (modalEl) => {
+        backdrop.classList.add('opacity-0');
+        modalEl.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+            backdrop.classList.add('hidden');
+            modalEl.classList.add('hidden');
+        }, 300);
+    };
+
+    backdrop.addEventListener('click', () => hideModal(userModal));
+    userModal.querySelectorAll('.btn-cancel').forEach(btn => {
+        btn.addEventListener('click', () => hideModal(userModal));
+    });
+    // === END: LOGIC MODAL ===
+
+    const userForm = document.getElementById('user-form');
+    const modalTitle = document.getElementById('modal-title');
+    const passwordHelp = document.getElementById('password-help');
+
+    document.getElementById('add-user-btn').addEventListener('click', () => {
+        userForm.reset();
+        userForm.querySelector('#user-id').value = '';
+        modalTitle.textContent = 'Thêm User Mới';
+        passwordHelp.style.display = 'none';
+        userForm.querySelector('#user-password').setAttribute('required', 'required');
+        userForm.querySelector('#user-email').removeAttribute('disabled');
+        showModal(userModal);
+    });
+
+    document.querySelectorAll('.btn-edit-user').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const { id, username, email, role, balance } = btn.dataset; // Thêm email
+            userForm.reset();
+            userForm.querySelector('#user-id').value = id;
+            userForm.querySelector('#user-username').value = username;
+            userForm.querySelector('#user-email').value = email; // Thêm email
+            userForm.querySelector('#user-role').value = role;
+            userForm.querySelector('#user-balance').value = balance;
+            modalTitle.textContent = `Sửa User: ${username}`;
+            passwordHelp.style.display = 'block';
+            userForm.querySelector('#user-password').removeAttribute('required');
+            showModal(userModal);
+        });
+    });
+
+    userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = userForm.querySelector('#user-id').value;
+        const url = id ? `/admin/users/update/${id}` : '/admin/users/create';
+        const formData = new FormData(userForm);
+        const data = Object.fromEntries(formData.entries());
+
+        if(id && !data.password) {
+            delete data.password;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message, 'Thành công!', 'success');
+                hideModal(userModal);
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.message, 'Lỗi!', 'error');
+            }
+        } catch (error) {
+            showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
+        }
+    });
+    
+    // === START: LOGIC CHỌN VÀ HÀNH ĐỘNG HÀNG LOẠT ===
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
+    const selectAllBanner = document.getElementById('select-all-banner');
+    const clearSelectionBanner = document.getElementById('clear-selection-banner');
+    const selectAllMatchingItemsLink = document.getElementById('select-all-matching-items');
+    const clearSelectionLink = document.getElementById('clear-selection');
+    const itemsOnPageCountSpan = document.getElementById('items-on-page-count');
+    let isSelectAllAcrossPages = false;
+
+    function updateBanners() {
+        if (!selectAllBanner) return;
+        const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
+        if (isSelectAllAcrossPages) {
+            selectAllBanner.classList.add('hidden');
+            clearSelectionBanner.classList.remove('hidden');
+        } else if (allCheckedOnPage) {
+            itemsOnPageCountSpan.textContent = itemCheckboxes.length;
+            selectAllBanner.classList.remove('hidden');
+            clearSelectionBanner.classList.add('hidden');
+        } else {
+            selectAllBanner.classList.add('hidden');
+            clearSelectionBanner.classList.add('hidden');
+        }
+    }
+
+    function toggleActionButtons() {
+        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
+        if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
+    }
+
+    if(selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            isSelectAllAcrossPages = false;
+            itemCheckboxes.forEach(cb => cb.checked = e.target.checked);
+            toggleActionButtons();
+            updateBanners();
+        });
+    }
+
+    itemCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            isSelectAllAcrossPages = false;
+            selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
+            toggleActionButtons();
+            updateBanners();
+        });
+    });
+
+    if (selectAllMatchingItemsLink) {
+        selectAllMatchingItemsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSelectAllAcrossPages = true;
+            toggleActionButtons();
+            updateBanners();
+        });
+    }
+
+    if(clearSelectionLink) {
+        clearSelectionLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSelectAllAcrossPages = false;
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            itemCheckboxes.forEach(cb => cb.checked = false);
+            toggleActionButtons();
+            updateBanners();
+        });
+    }
+    
+    async function handleBulkAction(url, confirmMessage, confirmType = 'warning') {
+        let payload = {};
+        const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+
+        if (isSelectAllAcrossPages) {
+            payload = { selectAll: true, filters: <%- JSON.stringify(currentQuery) %> };
+        } else {
+            if (selectedIdsOnPage.length === 0) {
+                showToast('Vui lòng chọn ít nhất một mục.', 'Cảnh báo!', 'warning');
+                return;
+            };
+            payload = { ids: selectedIdsOnPage };
+        }
+        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : selectedIdsOnPage.length;
+
+        const confirmed = await showConfirm(confirmMessage(totalCount), confirmType);
+        if (confirmed) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                    if (payload.selectAll) {
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        payload.ids.forEach(id => {
+                            const row = document.getElementById(`user-row-${id}`);
+                            if (row) row.remove();
+                        });
+                        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                        toggleActionButtons();
+                        updateBanners();
+                    }
+                } else {
+                    showToast(result.message || 'Có lỗi xảy ra từ server.', 'Lỗi!', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối hoặc phản hồi không hợp lệ.', 'Lỗi!', 'error');
+            }
+        }
+    }
+    
+    // Nút xóa 1 user
+    document.querySelectorAll('.btn-delete-user').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const { id, username } = btn.dataset;
+            const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN user "${username}"?`, 'danger');
+            if (confirmed) {
+                handleBulkAction('/admin/users/hard-delete', () => ``, 'danger');
+            }
+        });
+    });
+
+    // Nút xóa hàng loạt
+    if (hardDeleteSelectedBtn) {
+        hardDeleteSelectedBtn.addEventListener('click', () => {
+            handleBulkAction('/admin/users/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} user? Dữ liệu sẽ không thể phục hồi.`, 'danger');
+        });
+    }
+
+    toggleActionButtons();
+    // === END: LOGIC CHỌN VÀ HÀNH ĐỘNG HÀNG LOẠT ===
+});
+</script>
+
+<%- include('partials/_footer.ejs') %>

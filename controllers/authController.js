@@ -5,7 +5,8 @@ const authController = {};
 
 // Hiển thị trang đăng nhập
 authController.getLoginPage = (req, res) => {
-    res.render('login', { layout: false }); // layout: false để không dùng sidebar, header
+    // === THAY ĐỔI Ở ĐÂY ===
+    res.render('client/login', { layout: false, error: req.query.error });
 };
 
 // Xử lý đăng nhập
@@ -14,17 +15,16 @@ authController.login = async (req, res) => {
         const { username, password } = req.body;
         const user = await User.findOne({ username: username.toLowerCase(), isDeleted: false });
 
-        if (!user) {
-            return res.redirect('/login?error=Invalid credentials');
+        if (!user || !(await user.comparePassword(password))) {
+            // === THAY ĐỔI Ở ĐÂY: Truyền lỗi qua query string ===
+            return res.redirect('/login?error=' + encodeURIComponent('Sai tên đăng nhập hoặc mật khẩu.'));
+        }
+        
+        // === THAY ĐỔI Ở ĐÂY: Kiểm tra quyền admin ===
+        if (user.role !== 'admin') {
+            return res.redirect('/login?error=' + encodeURIComponent('Chỉ có quản trị viên mới được đăng nhập.'));
         }
 
-        const isMatch = await user.comparePassword(password);
-
-        if (!isMatch) {
-            return res.redirect('/login?error=Invalid credentials');
-        }
-
-        // Lưu thông tin user vào session
         req.session.user = {
             id: user._id,
             username: user.username,
@@ -35,7 +35,7 @@ authController.login = async (req, res) => {
 
     } catch (error) {
         console.error("Login error:", error);
-        res.redirect('/login?error=Server error');
+        res.redirect('/login?error=' + encodeURIComponent('Lỗi server.'));
     }
 };
 
@@ -45,7 +45,7 @@ authController.logout = (req, res) => {
         if (err) {
             return res.redirect('/admin/dashboard');
         }
-        res.clearCookie('connect.sid'); // Tên cookie mặc định của express-session
+        res.clearCookie('connect.sid');
         res.redirect('/login');
     });
 };
@@ -63,9 +63,7 @@ authController.isAdmin = (req, res, next) => {
     if (req.session.user && req.session.user.role === 'admin') {
         return next();
     }
-    // Có thể chuyển hướng đến trang báo lỗi "không có quyền"
     res.status(403).send('Forbidden: Admins only');
 };
-
 
 module.exports = authController;

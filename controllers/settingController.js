@@ -8,7 +8,7 @@ const settingController = {};
 
 settingController.getSettingsPage = async (req, res) => {
     try {
-        res.render('settings', {
+        res.render('admin/settings', {
             settings: settingsService.getAll(),
             initialState: JSON.stringify({
                 autoCheck: autoCheckManager.getStatus(),

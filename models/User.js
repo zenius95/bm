@@ -10,6 +10,16 @@ const UserSchema = new mongoose.Schema({
         trim: true,
         lowercase: true
     },
+    // === START: THÊM TRƯỜNG MỚI ===
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+        match: [/\S+@\S+\.\S+/, 'is invalid']
+    },
+    // === END: THÊM TRƯỜNG MỚI ===
     password: {
         type: String,
         required: true,
