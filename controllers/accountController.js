@@ -3,6 +3,8 @@ const Account = require('../models/Account');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const ProcessRunner = require('../utils/processRunner');
+const {delayTimeout, getSetting} = require('../../src/core.js')
+const runInsta = require('../../src/runInsta.js')
 
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy']
@@ -98,12 +100,48 @@ accountController.checkSelected = async (req, res) => {
                     status: 'CHECKING',
                     dieStreak: currentAccount ? currentAccount.dieStreak : 0
                 });
-                
-                await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 3000));
-                if (Math.random() < 0.15) {
-                    throw new Error("Lỗi ngẫu nhiên khi check live");
-                }
-                const isLive = false;
+
+                let isLive = false;
+
+                // try {
+
+                //     const setting = {
+                //         timeout: {value: 100000},
+                //         khangBm: {value: false},
+                //         userAgent: {value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0'}
+                //     }
+
+                //     await runInsta({
+                //         setting,
+                //         type: 'instagram',
+                //         mode: 'normal',
+                //         item: {
+                //             id: currentAccount._id,
+                //             uid: currentAccount.uid,
+                //             password: currentAccount.password,
+                //             twofa: currentAccount.twofa,
+                //             proxyKey: ''
+                //         }
+                //     }, (action, data) => {
+
+                //         console.log(action, data)
+
+                //         if (action === 'message' && data.message === 'Đăng nhập thành công') {
+
+                //             isLive = true
+
+                //         }
+
+                //     })
+
+
+                // } catch (err) {
+
+                //     console.log(err)
+
+                //     throw new Error(err);
+                // }
+
                 return { isLive, checkedAt: new Date() }; 
             }
         }));
