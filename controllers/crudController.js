@@ -2,8 +2,9 @@
 const createCrudController = (crudService, viewName, options = {}) => {
     const { single, plural } = options;
 
+    // Helper function để render view trong thư mục admin
     const renderData = (res, path, data) => {
-        res.render(path, { ...data, currentQuery: res.locals.currentQuery });
+        res.render(`admin/${path}`, { ...data, currentQuery: res.locals.currentQuery });
     };
     
     const parseQueryMiddleware = (req, res, next) => {
@@ -16,6 +17,7 @@ const createCrudController = (crudService, viewName, options = {}) => {
             const { data, pagination } = await crudService.find(req.query);
             const trashCount = await crudService.Model.countDocuments({ isDeleted: true });
 
+            // Sửa ở đây: Truyền viewName (ví dụ: 'accounts') vào helper
             renderData(res, viewName, { [plural]: data, pagination, trashCount });
         } catch (error) {
             console.error(`Error getting all ${plural}:`, error);
@@ -29,7 +31,8 @@ const createCrudController = (crudService, viewName, options = {}) => {
             if (!item) {
                 return res.status(404).send(`${single} not found.`);
             }
-            res.render(`admin/${viewName}-detail`, { [single]: item }); 
+            // Sửa ở đây: Render view chi tiết từ thư mục admin
+            res.render(`admin/${viewName.replace(/s$/, '')}-detail`, { [single]: item }); 
         } catch (error) {
             console.error(`Error getting ${single} by id:`, error);
             res.status(500).send(`Could not load ${single}.`);
@@ -39,7 +42,8 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleCreate = async (req, res) => {
         try {
             await crudService.create(req.body);
-            res.redirect(`admin/${plural}`);
+            // Sửa ở đây: Chuyển hướng đến đúng URL admin
+            res.redirect(`/admin/${plural}`);
         } catch (error) {
             console.error(`Error creating ${single}:`, error);
             res.status(500).send(`Could not create ${single}.`);
@@ -49,14 +53,14 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleUpdate = async (req, res) => {
         try {
             await crudService.update(req.params.id, req.body);
-            res.redirect(`admin/${plural}`);
+            // Sửa ở đây: Chuyển hướng đến đúng URL admin
+            res.redirect(`/admin/${plural}`);
         } catch (error) {
             console.error(`Error updating ${single}:`, error);
             res.status(500).send(`Could not update ${single}.`);
         }
     };
 
-    // === START: THAY ĐỔI QUAN TRỌNG - BỔ SUNG REALTIME UPDATE CHO THÙNG RÁC ===
     const handleSoftDelete = async (req, res) => {
         try {
             let modifiedCount = 0;
@@ -70,10 +74,8 @@ const createCrudController = (crudService, viewName, options = {}) => {
                     modifiedCount = ids.length;
                 }
             }
-            // Sau khi xóa, đếm lại và bắn sự kiện socket
             const newTrashCount = await crudService.Model.countDocuments({ isDeleted: true });
             req.io.emit(`${viewName}:trash:update`, { newTrashCount });
-
             res.json({ success: true, message: `Đã chuyển ${modifiedCount} mục vào thùng rác.` });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
@@ -93,10 +95,8 @@ const createCrudController = (crudService, viewName, options = {}) => {
                     modifiedCount = ids.length;
                 }
             }
-            // Sau khi khôi phục, đếm lại và bắn sự kiện socket
             const newTrashCount = await crudService.Model.countDocuments({ isDeleted: true });
             req.io.emit(`${viewName}:trash:update`, { newTrashCount });
-
             res.json({ success: true, message: `Đã khôi phục ${modifiedCount} mục.` });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
@@ -116,16 +116,13 @@ const createCrudController = (crudService, viewName, options = {}) => {
                     deletedCount = ids.length;
                 }
             }
-            // Sau khi xóa vĩnh viễn, đếm lại và bắn sự kiện socket
             const newTrashCount = await crudService.Model.countDocuments({ isDeleted: true });
             req.io.emit(`${viewName}:trash:update`, { newTrashCount });
-            
             res.json({ success: true, message: `Đã xóa vĩnh viễn ${deletedCount} mục.` });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }
     };
-    // === END: THAY ĐỔI QUAN TRỌNG ===
     
     return {
         parseQueryMiddleware,

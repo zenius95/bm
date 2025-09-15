@@ -9,10 +9,12 @@ const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy']
 });
 
+// === SỬA Ở ĐÂY ===
 const accountController = createCrudController(accountService, 'accounts', {
-    single: 'admin/account',
-    plural: 'admin/accounts'
+    single: 'account',
+    plural: 'accounts'
 });
+
 
 accountController.addMultiple = async (req, res) => {
     const { accountsData } = req.body;

@@ -12,8 +12,8 @@ const userService = new CrudService(User, {
 
 // 2. Tạo Controller từ Factory
 const userController = createCrudController(userService, 'users', {
-    single: 'admin/user',
-    plural: 'admin/users'
+    single: 'user',
+    plural: 'users'
 });
 
 // 3. Ghi đè lại các hàm cần xử lý đặc biệt (như mật khẩu, email)
