@@ -9,118 +9,59 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div class="lg:col-span-1">
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-2 sticky top-8">
-                <div class="nav flex-col nav-pills space-y-1" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer nav-link active" id="v-pills-processor-tab" data-bs-toggle="pill" href="#v-pills-processor" role="tab" aria-controls="v-pills-processor" aria-selected="true">
+                <div class="space-y-1" id="settings-tab-list">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-processor" role="tab">
                         <i class="ri-cpu-line w-5 h-5 mr-3"></i> Xử Lý Đơn Hàng
                     </a>
-                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer nav-link" id="v-pills-autocheck-tab" data-bs-toggle="pill" href="#v-pills-autocheck" role="tab" aria-controls="v-pills-autocheck" aria-selected="false">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autocheck" role="tab">
                         <i class="ri-refresh-line w-5 h-5 mr-3"></i> Tự Động Check Live
                     </a>
-                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer nav-link" id="v-pills-notifications-tab" data-bs-toggle="pill" href="#v-pills-notifications" role="tab" aria-controls="v-pills-notifications" aria-selected="false">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-notifications" role="tab">
                         <i class="ri-notification-3-line w-5 h-5 mr-3"></i> Thông báo (Ví dụ)
                     </a>
-                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer nav-link" id="v-pills-api-tab" data-bs-toggle="pill" href="#v-pills-api" role="tab" aria-controls="v-pills-api" aria-selected="false">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-api" role="tab">
                         <i class="ri-key-2-line w-5 h-5 mr-3"></i> API Keys (Ví dụ)
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="lg:col-span-3">
-            <div class="tab-content" id="v-pills-tabContent">
-                
-                <div class="tab-pane fade show active" id="v-pills-processor" role="tabpanel" aria-labelledby="v-pills-processor-tab">
-                    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-                        <div class="p-6 border-b border-white/10">
-                            <h3 class="text-lg font-semibold text-white">Cài Đặt Tiến Trình Xử Lý Item Đơn Hàng</h3>
-                        </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                <form id="processor-settings-form" class="space-y-6">
-                                    <div>
-                                        <h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
-                                        <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
-                                            <div>
-                                                <strong class="text-sm">Trạng thái: </strong>
-                                                <span id="proc-status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
-                                                <div class="mt-2 text-sm text-gray-400 flex items-center gap-4">
-                                                    <span><i class="ri-loader-2-line"></i> Đang chạy: <strong id="proc-active-tasks" class="text-white">0</strong></span>
-                                                    <span><i class="ri-inbox-line"></i> Chờ: <strong id="proc-queued-tasks" class="text-white">0</strong></span>
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <button id="proc-start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
-                                                <button id="proc-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                     <div>
-                                        <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label for="proc-concurrency" class="block text-sm text-gray-300 mb-1">Số item đồng thời</label>
-                                                <input type="number" id="proc-concurrency" class="w-full text-sm bg-gray-900/50 border-white/20 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<%= settings.itemProcessor.concurrency %>" min="1">
-                                            </div>
-                                             <div>
-                                                <label for="proc-pollingInterval" class="block text-sm text-gray-300 mb-1">Quét DB mỗi (giây)</label>
-                                                <input type="number" id="proc-pollingInterval" class="w-full text-sm bg-gray-900/50 border-white/20 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<%= settings.itemProcessor.pollingInterval %>" min="1">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="pt-6 border-t border-white/10">
-                                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
-                                    </div>
-                                </form>
-                                <div>
-                                    <h4 class="font-semibold text-gray-200 mb-2">Logs thời gian thực</h4>
-                                    <div id="processor-logs" class="p-3 bg-gray-950/70 rounded-lg h-64 overflow-y-auto font-mono text-xs text-gray-300 border border-white/10">
-                                        <div class="text-gray-500">Đang chờ kết nối...</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <div class="lg:col-span-3" id="settings-tab-content">
+            <div id="tab-processor" role="tabpanel" class="tab-pane">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+                    <div class="p-6 border-b border-white/10">
+                        <h3 class="text-lg font-semibold text-white">Cài Đặt Tiến Trình Xử Lý Item Đơn Hàng</h3>
                     </div>
-                </div>
-                
-                <div class="tab-pane fade" id="v-pills-autocheck" role="tabpanel">
-                     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-                        <div class="p-6 border-b border-white/10"><h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Check Live Account</h3></div>
-                        <div class="p-6">
-                            <form id="settings-form" class="space-y-6">
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <form id="processor-settings-form" class="space-y-6">
                                 <div>
                                     <h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
                                     <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
                                         <div>
                                             <strong class="text-sm">Trạng thái: </strong>
-                                            <span id="status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
-                                            <div id="next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
-                                                <i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="next-run-time" class="text-white"></strong>
+                                            <span id="proc-status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
+                                            <div class="mt-2 text-sm text-gray-400 flex items-center gap-4">
+                                                <span><i class="ri-loader-2-line"></i> Đang chạy: <strong id="proc-active-tasks" class="text-white">0</strong></span>
+                                                <span><i class="ri-inbox-line"></i> Chờ: <strong id="proc-queued-tasks" class="text-white">0</strong></span>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <button id="start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
-                                            <button id="stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
+                                            <button id="proc-start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
+                                            <button id="proc-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
                                     <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label for="intervalMinutes" class="block text-sm text-gray-300 mb-1">Chạy lại sau (phút)</label>
-                                            <input type="number" id="intervalMinutes" class="w-full text-sm bg-gray-900/50 border-white/20 rounded-md" value="<%= settings.autoCheck.intervalMinutes %>" min="1">
+                                            <label for="proc-concurrency" class="block text-sm text-gray-300 mb-1">Số item đồng thời</label>
+                                            <input type="number" id="proc-concurrency" class="form-input text-sm" value="<%= settings.itemProcessor.concurrency %>" min="1">
                                         </div>
                                         <div>
-                                            <label for="concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
-                                            <input type="number" id="concurrency" class="w-full text-sm bg-gray-900/50 border-white/20 rounded-md" value="<%= settings.autoCheck.concurrency %>" min="1">
-                                        </div>
-                                        <div>
-                                            <label for="delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task (ms)</label>
-                                            <input type="number" id="delay" class="w-full text-sm bg-gray-900/50 border-white/20 rounded-md" value="<%= settings.autoCheck.delay %>" min="0">
-                                        </div>
-                                        <div>
-                                            <label for="timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi task (ms)</label>
-                                            <input type="number" id="timeout" class="w-full text-sm bg-gray-900/50 border-white/20 rounded-md" value="<%= settings.autoCheck.timeout %>" min="1000">
+                                            <label for="proc-pollingInterval" class="block text-sm text-gray-300 mb-1">Quét DB mỗi (giây)</label>
+                                            <input type="number" id="proc-pollingInterval" class="form-input text-sm" value="<%= settings.itemProcessor.pollingInterval %>" min="1">
                                         </div>
                                     </div>
                                 </div>
@@ -128,62 +69,129 @@
                                     <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
                                 </div>
                             </form>
+                            <div>
+                                <h4 class="font-semibold text-gray-200 mb-2">Logs thời gian thực</h4>
+                                <div id="processor-logs" class="p-3 bg-gray-950/70 rounded-lg h-64 overflow-y-auto font-mono text-xs text-gray-300 border border-white/10">
+                                    <div class="text-gray-500">Đang chờ kết nối...</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="tab-pane fade" id="v-pills-notifications" role="tabpanel">
-                    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
-                        <i class="ri-notification-off-line text-6xl text-gray-700"></i>
-                        <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
-                        <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho các cài đặt về thông báo qua email, telegram...</p>
+            </div>
+
+            <div id="tab-autocheck" role="tabpanel" class="tab-pane hidden">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+                    <div class="p-6 border-b border-white/10"><h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Check Live Account</h3></div>
+                    <div class="p-6">
+                        <form id="settings-form" class="space-y-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
+                                <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
+                                    <div>
+                                        <strong class="text-sm">Trạng thái: </strong>
+                                        <span id="status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
+                                        <div id="next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
+                                            <i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="next-run-time" class="text-white"></strong>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button id="start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
+                                        <button id="stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="intervalMinutes" class="block text-sm text-gray-300 mb-1">Chạy lại sau (phút)</label>
+                                        <input type="number" id="intervalMinutes" class="form-input text-sm" value="<%= settings.autoCheck.intervalMinutes %>" min="1">
+                                    </div>
+                                    <div>
+                                        <label for="concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
+                                        <input type="number" id="concurrency" class="form-input text-sm" value="<%= settings.autoCheck.concurrency %>" min="1">
+                                    </div>
+                                    <div>
+                                        <label for="delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task (ms)</label>
+                                        <input type="number" id="delay" class="form-input text-sm" value="<%= settings.autoCheck.delay %>" min="0">
+                                    </div>
+                                    <div>
+                                        <label for="timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi task (ms)</label>
+                                        <input type="number" id="timeout" class="form-input text-sm" value="<%= settings.autoCheck.timeout %>" min="1000">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-6 border-t border-white/10">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="v-pills-api" role="tabpanel">
-                     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
-                        <i class="ri-key-2-line text-6xl text-gray-700"></i>
-                        <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
-                        <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho việc quản lý các API key của bên thứ ba.</p>
-                    </div>
+            </div>
+
+            <div id="tab-notifications" role="tabpanel" class="tab-pane hidden">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
+                    <i class="ri-notification-off-line text-6xl text-gray-700"></i>
+                    <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
+                    <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho các cài đặt về thông báo qua email, telegram...</p>
+                </div>
+            </div>
+            <div id="tab-api" role="tabpanel" class="tab-pane hidden">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
+                    <i class="ri-key-2-line text-6xl text-gray-700"></i>
+                    <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
+                    <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho việc quản lý các API key của bên thứ ba.</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // === Tab Styling Logic ===
-    const navLinks = document.querySelectorAll('.nav-link[data-bs-toggle="pill"]');
-    const activeClass = 'text-white bg-blue-600/50';
-    const inactiveClass = 'text-gray-400 hover:bg-white/10 hover:text-white';
-    
-    // Function to update tab styles
-    function updateTabStyles() {
-        navLinks.forEach(link => {
-            if (link.classList.contains('active')) {
-                link.classList.add(...activeClass.split(' '));
-                link.classList.remove(...inactiveClass.split(' '));
+    // === NEW Tailwind Tab Logic ===
+    const tabLinks = document.querySelectorAll('#settings-tab-list a[role="tab"]');
+    const tabPanes = document.querySelectorAll('#settings-tab-content .tab-pane');
+    const activeClasses = ['text-white', 'bg-blue-600/50'];
+    const inactiveClasses = ['text-gray-400', 'hover:bg-white/10', 'hover:text-white'];
+
+    function activateTab(targetId) {
+        tabLinks.forEach(link => {
+            const linkTarget = link.getAttribute('data-tab-target');
+            if (linkTarget === targetId) {
+                link.classList.add(...activeClasses);
+                link.classList.remove(...inactiveClasses);
             } else {
-                link.classList.add(...inactiveClass.split(' '));
-                link.classList.remove(...activeClass.split(' '));
+                link.classList.remove(...activeClasses);
+                link.classList.add(...inactiveClasses);
+            }
+        });
+
+        tabPanes.forEach(pane => {
+            if (pane.id === targetId.substring(1)) { // remove '#' from targetId
+                pane.classList.remove('hidden');
+            } else {
+                pane.classList.add('hidden');
             }
         });
     }
 
-    // Add event listeners to update styles on tab change
-    navLinks.forEach(link => {
-        link.addEventListener('shown.bs.tab', updateTabStyles);
+    tabLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('data-tab-target');
+            activateTab(targetId);
+        });
     });
 
-    // Initial style update
-    updateTabStyles();
-
+    // Activate the first tab by default
+    if (tabLinks.length > 0) {
+        activateTab(tabLinks[0].getAttribute('data-tab-target'));
+    }
 
     // === Original Settings Logic (No changes needed here) ===
     const initialState = <%- initialState %>;
-    
     // --- Item Processor ---
     const procForm = document.getElementById('processor-settings-form');
     const procConcurrencyInput = document.getElementById('proc-concurrency');
@@ -336,7 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('autoCheck:statusUpdate', (state) => updateUI(state));
     socket.on('itemProcessor:statusUpdate', (state) => updateProcUI(state));
     socket.on('itemProcessor:log', (message) => addLogMessage(message));
-    
     if (procLogs) {
         procLogs.innerHTML = '';
         addLogMessage('Đã kết nối với server.');
