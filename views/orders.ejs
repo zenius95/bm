@@ -48,13 +48,14 @@
                 <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
                 <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
             <% } else { %>
-                <a href="/admin/orders?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<%= trashCount %>)</a>
+                <%# === START: THAY ĐỔI QUAN TRỌNG === %>
+                <a href="/admin/orders?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
+                <%# === END: THAY ĐỔI QUAN TRỌNG === %>
                 <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
             <% } %>
         </div>
     </div>
     
-    <%# === START: SỬA LỖI HIỂN THỊ BANNER === %>
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
             Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
@@ -65,7 +66,6 @@
             <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
         </div>
     <% } %>
-    <%# === END: SỬA LỖI HIỂN THỊ BANNER === %>
 
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
         <% if (orders && orders.length > 0) { %>
@@ -90,7 +90,7 @@
                                 if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
                                 if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
                             %>
-                            <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                            <tr id="order-row-<%= order._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                 <td class="p-4">
                                     <input type="checkbox" value="<%= order._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
                                 </td>
@@ -98,7 +98,9 @@
                                     <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= inTrash ? 'bg-gray-700 text-gray-300' : statusClass %>"><%= inTrash ? 'DELETED' : order.status %></span>
+                                    <span id="status-<%= order._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full <%= inTrash ? 'bg-gray-700 text-gray-300' : statusClass %>">
+                                        <%= inTrash ? 'DELETED' : order.status %>
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 text-center text-white font-semibold">
                                     <%= order.items.length %>
@@ -136,6 +138,7 @@
     <% } %>
 </div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const createOrderForm = document.getElementById('create-order-form');
@@ -145,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createOrderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             createOrderBtn.disabled = true;
-            createOrderBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tạo...`;
+            createOrderBtn.innerHTML = `<i class="ri-loader-4-line animate-spin -ml-1 mr-2"></i> Đang tạo...`;
             try {
                 const response = await fetch('/admin/orders/create', {
                     method: 'POST',
@@ -156,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok) {
                     showToast(result.message, 'Thành công!', 'success');
                     createOrderForm.reset();
-                    setTimeout(() => window.location.reload(), 1500);
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast(result.message, 'Có lỗi xảy ra!', 'error');
                 }
@@ -242,19 +245,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function handleAction(url, confirmMessage, confirmType = 'warning', reloadOnSuccess = true) {
+    async function handleAction(url, confirmMessage, confirmType = 'warning') {
         let payload = {};
+        const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+
         if (isSelectAllAcrossPages) {
             payload = { selectAll: true, filters: <%- JSON.stringify(currentQuery) %> };
         } else {
-            const selectedIds = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
-            if (selectedIds.length === 0) {
+            if (selectedIdsOnPage.length === 0) {
                 showToast('Vui lòng chọn ít nhất một mục.', 'Cảnh báo!', 'warning');
                 return;
             };
-            payload = { ids: selectedIds };
+            payload = { ids: selectedIdsOnPage };
         }
-        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : payload.ids.length;
+        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : selectedIdsOnPage.length;
 
         const confirmed = await showConfirm(confirmMessage(totalCount), confirmType);
         if (confirmed) {
@@ -267,8 +271,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
-                    if (reloadOnSuccess) {
-                        setTimeout(() => window.location.reload(), 1500);
+                    
+                    if (payload.selectAll) {
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        payload.ids.forEach(id => {
+                            const row = document.getElementById(`order-row-${id}`);
+                            if (row) row.remove();
+                        });
+                        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                        toggleActionButtons();
+                        updateBanners();
                     }
                 } else {
                     showToast(result.message, 'Lỗi!', 'error');
@@ -294,6 +307,32 @@ document.addEventListener('DOMContentLoaded', () => {
             handleAction('/admin/orders/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} đơn hàng? Dữ liệu sẽ không thể phục hồi.`, 'danger');
         });
     }
+
+    const socket = io();
+    socket.on('connect', () => console.log('Connected to server for real-time order updates.'));
+    
+    socket.on('order:update', (data) => {
+        const { id, status } = data;
+        const statusBadge = document.getElementById(`status-${id}`);
+        if (!statusBadge) return;
+
+        let statusClass = 'bg-gray-700 text-gray-300';
+        if (status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+        if (status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
+        if (status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
+
+        statusBadge.textContent = status;
+        statusBadge.className = `px-2.5 py-1 text-xs font-semibold rounded-full ${statusClass}`;
+    });
+
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    socket.on('orders:trash:update', (data) => {
+        const trashCountSpan = document.getElementById('trash-count');
+        if (trashCountSpan) {
+            trashCountSpan.textContent = data.newTrashCount;
+        }
+    });
+    // === END: THAY ĐỔI QUAN TRỌNG ===
 });
 </script>
 

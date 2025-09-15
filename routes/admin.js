@@ -5,10 +5,11 @@ const adminController = require('../controllers/adminController');
 const accountController = require('../controllers/accountController');
 const settingController = require('../controllers/settingController');
 const workerController = require('../controllers/workerController');
+const userController = require('../controllers/userController');
 
-// Middleware parse query cho tất cả các route bên dưới
 router.use(accountController.parseQueryMiddleware);
 router.use(adminController.parseQueryMiddleware);
+router.use(userController.parseQueryMiddleware);
 
 // Dashboard
 router.get('/dashboard', adminController.getDashboard);
@@ -29,24 +30,25 @@ router.post('/orders/soft-delete', adminController.handleSoftDelete);
 router.post('/orders/restore', adminController.handleRestore);
 router.post('/orders/hard-delete', adminController.handleHardDelete);
 
+// --- User Management Routes ---
+router.get('/users', userController.handleGetAll);
+router.post('/users/create', userController.handleCreate);
+router.post('/users/update/:id', userController.handleUpdate); 
+router.post('/users/hard-delete', userController.handleHardDelete);
+
 // --- Worker Management Route ---
 router.get('/workers', workerController.getWorkersPage);
 router.post('/workers', workerController.addWorker);
 router.post('/workers/:id', workerController.updateWorker);
 router.delete('/workers/:id', workerController.deleteWorker);
 router.get('/workers/:id/logs', workerController.getWorkerLogs);
-// === START: THAY ĐỔI QUAN TRỌNG ===
 router.post('/workers/:id/toggle', workerController.toggleWorker);
-// === END: THAY ĐỔI QUAN TRỌNG ===
-
-
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
-// Auto Check
+router.post('/settings/api-key/update', settingController.updateMasterApiKey); // Thêm route này
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
-// Item Processor
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
 
 module.exports = router;

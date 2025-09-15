@@ -10,23 +10,43 @@
         <div class="lg:col-span-1">
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-2 sticky top-8">
                 <div class="space-y-1" id="settings-tab-list">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-security" role="tab">
+                        <i class="ri-shield-keyhole-line w-5 h-5 mr-3"></i> Bảo Mật & API
+                    </a>
                     <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autocheck" role="tab">
                         <i class="ri-refresh-line w-5 h-5 mr-3"></i> Tự Động Check Live
                     </a>
                     <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-processor" role="tab">
                         <i class="ri-database-2-line w-5 h-5 mr-3"></i> Tiến Trình Xử Lý
                     </a>
-                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-notifications" role="tab">
-                        <i class="ri-notification-3-line w-5 h-5 mr-3"></i> Thông báo (Ví dụ)
-                    </a>
-                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-api" role="tab">
-                        <i class="ri-key-2-line w-5 h-5 mr-3"></i> API Keys (Ví dụ)
-                    </a>
                 </div>
             </div>
         </div>
 
         <div class="lg:col-span-3" id="settings-tab-content">
+            
+            <div id="tab-security" role="tabpanel" class="tab-pane">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+                    <div class="p-6 border-b border-white/10"><h3 class="text-lg font-semibold text-white">Master API Key</h3></div>
+                    <div class="p-6">
+                        <form id="api-key-form" class="space-y-6">
+                            <div>
+                                <label for="masterApiKey" class="block text-sm text-gray-300 mb-1">API Key Chính Của Server</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="masterApiKey" class="form-input font-mono" value="<%= settings.masterApiKey %>" readonly>
+                                    <button type="button" id="copy-api-key-btn" class="p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg transition" title="Copy"><i class="ri-file-copy-line"></i></button>
+                                    <button type="button" id="regenerate-api-key-btn" class="p-3 bg-blue-600/80 hover:bg-blue-600 rounded-lg transition" title="Tạo key mới"><i class="ri-refresh-line"></i></button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">API key này được dùng để xác thực kết nối giữa các server worker. Worker cục bộ sẽ tự động dùng key này.</p>
+                            </div>
+                             <div class="pt-6 border-t border-white/10">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu API Key</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <div id="tab-autocheck" role="tabpanel" class="tab-pane">
                 <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
                     <div class="p-6 border-b border-white/10"><h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Check Live Account</h3></div>
@@ -50,7 +70,7 @@
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label for="intervalMinutes" class="block text-sm text-gray-300 mb-1">Chạy lại sau (phút)</label>
                                         <input type="number" id="intervalMinutes" class="form-input text-sm" value="<%= settings.autoCheck.intervalMinutes %>" min="1">
@@ -58,6 +78,11 @@
                                     <div>
                                         <label for="concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
                                         <input type="number" id="concurrency" class="form-input text-sm" value="<%= settings.autoCheck.concurrency %>" min="1">
+                                    </div>
+                                    <div>
+                                        <label for="batchSize" class="block text-sm text-gray-300 mb-1">Số account mỗi lượt</label>
+                                        <input type="number" id="batchSize" class="form-input text-sm" value="<%= settings.autoCheck.batchSize %>" min="0">
+                                        <p class="text-xs text-gray-500 mt-1">Nhập 0 để không giới hạn.</p>
                                     </div>
                                     <div>
                                         <label for="delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task (ms)</label>
@@ -110,32 +135,14 @@
                     </div>
                 </div>
             </div>
-
-            <div id="tab-notifications" role="tabpanel" class="tab-pane hidden">
-                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
-                    <i class="ri-notification-off-line text-6xl text-gray-700"></i>
-                    <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
-                    <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho các cài đặt về thông báo qua email, telegram...</p>
-                </div>
-            </div>
-            <div id="tab-api" role="tabpanel" class="tab-pane hidden">
-                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
-                    <i class="ri-key-2-line text-6xl text-gray-700"></i>
-                    <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
-                    <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho việc quản lý các API key của bên thứ ba.</p>
-                </div>
-            </div>
         </div>
     </div>
 </div>
 
-<%# === START: THÊM DÒNG NÀY VÀO === %>
 <script src="/socket.io/socket.io.js"></script>
-<%# === END: THÊM DÒNG NÀY VÀO === %>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // === NEW Tailwind Tab Logic ===
+    // === Tab Logic ===
     const tabLinks = document.querySelectorAll('#settings-tab-list a[role="tab"]');
     const tabPanes = document.querySelectorAll('#settings-tab-content .tab-pane');
     const activeClasses = ['text-white', 'bg-blue-600/50'];
@@ -153,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         tabPanes.forEach(pane => {
-            if (pane.id === targetId.substring(1)) { // remove '#' from targetId
+            if (pane.id === targetId.substring(1)) {
                 pane.classList.remove('hidden');
             } else {
                 pane.classList.add('hidden');
@@ -164,18 +171,53 @@ document.addEventListener('DOMContentLoaded', () => {
     tabLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const targetId = link.getAttribute('data-tab-target');
-            activateTab(targetId);
+            activateTab(link.getAttribute('data-tab-target'));
         });
     });
-    // Activate the first tab by default
     if (tabLinks.length > 0) {
         activateTab(tabLinks[0].getAttribute('data-tab-target'));
     }
 
-    // === Settings Logic ===
     const initialState = <%- initialState %>;
     const socket = io();
+
+    // --- Security & API Key ---
+    const apiKeyForm = document.getElementById('api-key-form');
+    if(apiKeyForm) {
+        const apiKeyInput = document.getElementById('masterApiKey');
+        const regenerateBtn = document.getElementById('regenerate-api-key-btn');
+        const copyBtn = document.getElementById('copy-api-key-btn');
+
+        regenerateBtn.addEventListener('click', () => {
+            // Chỉ tạo key ở client để hiển thị, không lưu ngay
+            apiKeyInput.value = [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+        });
+
+        copyBtn.addEventListener('click', () => {
+            apiKeyInput.select();
+            document.execCommand('copy');
+            showToast('Đã copy API Key!', 'Thành công', 'success');
+        });
+        
+        apiKeyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch('/admin/settings/api-key/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ masterApiKey: apiKeyInput.value })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
+            }
+        });
+    }
 
     // --- Auto Check Live ---
     const autoCheckForm = document.getElementById('autocheck-settings-form');
@@ -184,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const concurrencyInput = document.getElementById('concurrency');
         const delayInput = document.getElementById('delay');
         const timeoutInput = document.getElementById('timeout');
+        const batchSizeInput = document.getElementById('batchSize'); 
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
         const statusBadge = document.getElementById('status-badge');
@@ -192,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function updateAutoCheckUI(state) {
             if (!state) return;
-            statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full '; // Reset classes
+            statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full '; 
             if (state.status === 'RUNNING') {
                 statusBadge.textContent = state.isJobRunning ? 'Đang check...' : 'Đang chạy';
                 statusBadge.classList.add('bg-green-500/20', 'text-green-300');
@@ -208,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
             concurrencyInput.value = state.config.concurrency;
             delayInput.value = state.config.delay;
             timeoutInput.value = state.config.timeout;
+            batchSizeInput.value = state.config.batchSize;
             if (state.nextRun && !state.isJobRunning) {
                 nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
                 nextRunContainer.style.display = 'block';
@@ -241,7 +285,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 intervalMinutes: intervalInput.value,
                 concurrency: concurrencyInput.value,
                 delay: delayInput.value,
-                timeout: timeoutInput.value
+                timeout: timeoutInput.value,
+                batchSize: batchSizeInput.value
             });
         });
         startBtn.addEventListener('click', () => updateAutoCheckConfig({ isEnabled: true }));

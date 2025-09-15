@@ -2,22 +2,24 @@
 const fs = require('fs').promises;
 const path = require('path');
 const EventEmitter = require('events');
+const crypto = require('crypto'); // Thêm module crypto của Node.js
 
 const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 
-// Cấu trúc mặc định cho settings, dễ dàng thêm mục mới ở đây
 const DEFAULT_SETTINGS = {
+    masterApiKey: '', // Thêm dòng này
     autoCheck: {
         isEnabled: false,
         intervalMinutes: 30,
         concurrency: 10,
         delay: 500,
-        timeout: 45000
+        timeout: 45000,
+        batchSize: 50
     },
     itemProcessor: {
         isEnabled: false,
-        concurrency: 10,      // Số item xử lý đồng thời
-        pollingInterval: 5    // Quét DB mỗi 5 giây
+        concurrency: 10,
+        pollingInterval: 5
     }
 };
 
@@ -31,26 +33,27 @@ class SettingsService extends EventEmitter {
         try {
             const fileContent = await fs.readFile(SETTINGS_FILE_PATH, 'utf-8');
             const fileData = JSON.parse(fileContent);
-            // Gộp setting mặc định và setting đã lưu để đảm bảo không thiếu key mới
             this._data = {
                 ...DEFAULT_SETTINGS,
                 ...fileData,
-                autoCheck: {
-                    ...DEFAULT_SETTINGS.autoCheck,
-                    ...(fileData.autoCheck || {})
-                },
-                itemProcessor: {
-                    ...DEFAULT_SETTINGS.itemProcessor,
-                    ...(fileData.itemProcessor || {})
-                }
+                autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
+                itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) }
             };
             console.log('[SettingsService] Loaded config from settings.json');
-            // Ghi lại file nếu có thêm key mới từ default
-            await this._save();
+
+            // === START: TỰ ĐỘNG TẠO API KEY NẾU CHƯA CÓ ===
+            if (!this._data.masterApiKey) {
+                console.log('[SettingsService] Master API Key not found. Generating a new one...');
+                this._data.masterApiKey = crypto.randomBytes(32).toString('hex');
+                await this._save();
+            }
+            // === END: TỰ ĐỘNG TẠO API KEY NẾU CHƯA CÓ ===
+
         } catch (error) {
             if (error.code === 'ENOENT') {
                 console.log('[SettingsService] settings.json not found. Creating with default values.');
                 this._data = DEFAULT_SETTINGS;
+                this._data.masterApiKey = crypto.randomBytes(32).toString('hex'); // Tạo key cho file mới
                 await this._save();
             } else {
                 console.error('[SettingsService] Error reading settings.json:', error);
@@ -62,7 +65,7 @@ class SettingsService extends EventEmitter {
     async _save() {
         try {
             await fs.writeFile(SETTINGS_FILE_PATH, JSON.stringify(this._data, null, 4));
-            this.emit('updated', this._data); // Thông báo cho các module khác khi có thay đổi
+            this.emit('updated', this._data);
         } catch (error) {
             console.error('[SettingsService] Failed to save settings.json:', error);
         }
@@ -79,15 +82,14 @@ class SettingsService extends EventEmitter {
         return this._data;
     }
     
-    async update(key, partialValue) {
-        if (this._data[key] && typeof this._data[key] === 'object') {
-            this._data[key] = { ...this._data[key], ...partialValue };
+    async update(key, value) {
+        if (this._data[key] && typeof this._data[key] === 'object' && typeof value === 'object') {
+            this._data[key] = { ...this._data[key], ...value };
         } else {
-            this._data[key] = partialValue;
+            this._data[key] = value;
         }
         await this._save();
     }
 }
 
-// Export một instance duy nhất (singleton)
 module.exports = new SettingsService();

@@ -19,6 +19,7 @@ class WorkerMonitor {
     }
 
     async checkAllWorkers() {
+        // Lấy lại danh sách worker mới nhất mỗi lần check
         const workers = await Worker.find().lean();
         const workerPromises = workers.map(worker => this.checkWorkerByAPI(worker));
         
@@ -30,21 +31,26 @@ class WorkerMonitor {
     }
 
     async checkWorkerByAPI(worker) {
-        const { url, username, password } = worker;
-        const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+        const { url, apiKey } = worker; // Dùng apiKey thay vì username/password
         let updateData;
 
+        // Bỏ qua nếu worker không có apiKey (có thể là worker mới chưa kịp tạo)
+        if (!apiKey) {
+            return { ...worker, status: 'error', stats: { error: 'Missing API Key' } };
+        }
+
         try {
-            const response = await fetch(`${url}/api/status`, {
-                headers: { 'Authorization': auth },
+            // === START: THAY ĐỔI URL VÀ HEADER ===
+            const response = await fetch(`${url}/worker-api/status`, {
+                headers: { 'X-API-Key': apiKey },
                 timeout: 5000
             });
+            // === END: THAY ĐỔI URL VÀ HEADER ===
 
             if (!response.ok) throw new Error(`Status: ${response.status}`);
 
             const { data } = await response.json();
             
-            // === START: THAY ĐỔI QUAN TRỌNG - Thêm các stats mới ===
             updateData = {
                 status: 'online',
                 'stats.cpu': data.system.cpu,
@@ -58,11 +64,9 @@ class WorkerMonitor {
                 'stats.totalAccounts': data.global.totalAccounts,
                 lastSeen: new Date()
             };
-            // === END: THAY ĐỔI QUAN TRỌNG ===
-
         } catch (error) {
             console.error(`Failed to connect to worker ${worker.name} (${url}): ${error.message}`);
-            updateData = { status: 'offline', 'stats': {} }; // Reset stats khi offline
+            updateData = { status: 'offline', 'stats': {} }; 
         }
         
         const updated = await Worker.findByIdAndUpdate(worker._id, updateData, { new: true }).lean();

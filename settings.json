@@ -1,13 +1,15 @@
 {
+    "masterApiKey": "c56e265d450af920b66ce875028506512a293da9622fbb0d6f1df1dce3e8ed7e",
     "autoCheck": {
         "isEnabled": false,
         "intervalMinutes": 30,
-        "concurrency": 5,
+        "concurrency": 10,
         "delay": 500,
-        "timeout": 180000
+        "timeout": 45000,
+        "batchSize": 50
     },
     "itemProcessor": {
-        "isEnabled": true,
+        "isEnabled": false,
         "concurrency": 10,
         "pollingInterval": 5
     }

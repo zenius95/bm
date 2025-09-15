@@ -36,6 +36,14 @@ rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600
                 </a>
             </li>
             <%# === END: THAY ĐỔI QUAN TRỌNG === %>
+
+            <li>
+                <a href="/admin/users" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'users') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
+                    <i class="ri-user-settings-line w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Quản lý User</span>
+                </a>
+            </li>
+            
             <li>
       
           <a href="/admin/settings" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'settings') ?
@@ -47,9 +55,19 @@ rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600
         </ul>
     </nav>
     <div class="mt-auto">
-  
-      <div class="border-t border-gray-500/20 pt-4 text-center text-xs text-gray-400">
+        <%# === START: THÊM KHỐI NÀY VÀO ĐÂY === %>
+        <div class="px-2 py-4 border-t border-gray-500/20">
+            <div class="text-sm text-gray-300">Đăng nhập với: <strong><%= user.username %></strong></div>
+            <a href="/logout" class="flex items-center mt-2 w-full px-4 py-2.5 rounded-lg transition-all duration-200 text-gray-400 hover:bg-red-500/20 hover:text-red-400">
+                <i class="ri-logout-box-r-line w-5 h-5 mr-3"></i>
+                <span class="font-medium">Đăng Xuất</span>
+            </a>
+        </div>
+        <%# === END: THÊM KHỐI NÀY VÀO ĐÂY === %>
+        <div class="pt-4 text-center text-xs text-gray-400">
             &copy; <%= new Date().getFullYear() %>. All Rights Reserved.
         </div>
     </div>
+
+    
 </aside>

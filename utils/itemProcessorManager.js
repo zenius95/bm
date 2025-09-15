@@ -22,7 +22,6 @@ class ItemProcessorManager extends EventEmitter {
         this.io = io;
         console.log('🔄 Initializing Item Processor Manager...');
         this.config = settingsService.get('itemProcessor');
-        // Luôn khởi động tiến trình, không cần kiểm tra isEnabled
         this.start();
     }
     
@@ -33,7 +32,6 @@ class ItemProcessorManager extends EventEmitter {
         await settingsService.update('itemProcessor', this.config);
         console.log(`[ItemProcessor] Config updated: ${JSON.stringify(this.config)}`);
 
-        // Chỉ kiểm tra nếu interval thay đổi để restart
         const intervalChanged = this.config.pollingInterval !== oldConfig.pollingInterval;
 
         if (intervalChanged) {
@@ -76,7 +74,6 @@ class ItemProcessorManager extends EventEmitter {
         this.emitStatus();
 
         try {
-            
             const onlineWorkers = await Worker.find({ status: 'online', isEnabled: true });
 
             if (onlineWorkers.length === 0) {
@@ -94,6 +91,9 @@ class ItemProcessorManager extends EventEmitter {
             for (const order of ordersWithQueuedItems) {
                  if (order.status === 'pending') {
                     await Order.findByIdAndUpdate(order._id, { status: 'processing' });
+                    // === START: THAY ĐỔI QUAN TRỌNG ===
+                    if(this.io) this.io.emit('order:update', { id: order._id.toString(), status: 'processing' });
+                    // === END: THAY ĐỔI QUAN TRỌNG ===
                     await this.writeLog(order._id, 'INFO', `Order status updated to 'processing'.`);
                 }
 
@@ -114,8 +114,14 @@ class ItemProcessorManager extends EventEmitter {
     }
 
     async dispatchItemToWorker(worker, orderId, item) {
-        const { url, username, password } = worker;
-        const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+        // === START: THAY ĐỔI CÁCH LẤY THÔNG TIN XÁC THỰC ===
+        const { url, apiKey } = worker;
+        if (!apiKey) {
+            console.error(`Worker ${worker.name} is missing an API Key. Skipping.`);
+            await this.writeLog(orderId, 'ERROR', `Worker ${worker.name} is missing an API Key.`);
+            return;
+        }
+        // === END: THAY ĐỔI CÁCH LẤY THÔNG TIN XÁC THỰC ===
 
         try {
             const updatedOrder = await Order.findOneAndUpdate(
@@ -124,22 +130,19 @@ class ItemProcessorManager extends EventEmitter {
                 { new: true }
             );
             
-            if(!updatedOrder) {
-                return;
-            }
+            if(!updatedOrder) return;
 
-            // === START: THAY ĐỔI DÒNG LOG TẠI ĐÂY ===
             if(this.io) {
                 const logMessage = `Đơn hàng ...${orderId.toString().slice(-6)}: Gửi item ...${item._id.toString().slice(-6)} tới worker <strong class="text-blue-400">${worker.name}</strong>`;
                 this.io.emit('itemProcessor:log', logMessage);
             }
-            // === END: THAY ĐỔI DÒNG LOG TẠI ĐÂY ===
             
-            const response = await fetch(`${url}/api/process-item`, {
+            // === START: THAY ĐỔI URL VÀ HEADER ===
+            const response = await fetch(`${url}/worker-api/process-item`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': auth 
+                    'X-API-Key': apiKey 
                 },
                 body: JSON.stringify({
                     orderId: orderId.toString(),
@@ -148,6 +151,7 @@ class ItemProcessorManager extends EventEmitter {
                 }),
                 timeout: 10000
             });
+            // === END: THAY ĐỔI URL VÀ HEADER ===
             
             if (!response.ok || response.status !== 202) {
                 throw new Error(`Worker returned status ${response.status}`);
@@ -200,6 +204,9 @@ class ItemProcessorManager extends EventEmitter {
             const finalStatus = hasFailedItems ? 'failed' : 'completed';
             
             await Order.findByIdAndUpdate(orderId, { status: finalStatus });
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            if(this.io) this.io.emit('order:update', { id: orderId.toString(), status: finalStatus });
+            // === END: THAY ĐỔI QUAN TRỌNG ===
             const logMessage = `🎉 Order ${orderId.toString().slice(-6)} đã HOÀN THÀNH (status: ${finalStatus})!`;
             if(this.io) this.io.emit('itemProcessor:log', logMessage);
             await this.writeLog(orderId, 'INFO', `Order has been fully processed with final status: ${finalStatus}.`);

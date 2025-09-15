@@ -2,60 +2,73 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const basicAuth = require('express-basic-auth');
 const config = require('./config');
 const path = require('path');
-const os = require('os-utils');
+const http = require('http');
+const { Server } = require("socket.io");
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+
+const User = require('./models/User');
+const authController = require('./controllers/authController');
+const apiKeyAuthController = require('./controllers/apiKeyAuthController'); // Thêm dòng này
+
 const Worker = require('./models/Worker');
 const workerMonitor = require('./utils/workerMonitor');
-
 const adminRoutes = require('./routes/admin');
 const orderRoutes = require('./routes/order');
+const workerApiRoutes = require('./routes/workerApi'); // Thêm dòng này
 const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
 const settingsService = require('./utils/settingsService');
 
 const app = express();
-const http = require('http');
-const { Server } = require("socket.io");
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// --- Cấu hình View Engine ---
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '/views'));
 
-// --- Middlewares ---
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'a_very_strong_secret_key_12345',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: config.mongodb.uri }),
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 1000 * 60 * 60 * 24 
+    }
+}));
+
 app.use((req, res, next) => {
     req.io = io;
+    res.locals.user = req.session.user;
     next();
 });
 
-// --- Authentication cho Admin ---
-const adminUser = { [config.admin.user]: config.admin.password };
-const authMiddleware = basicAuth({
-    users: adminUser,
-    challenge: true,
-    unauthorizedResponse: 'Unauthorized access.'
-});
+app.get('/login', authController.getLoginPage);
+app.post('/login', authController.login);
+app.get('/logout', authController.logout);
 
-// --- Sử dụng Routes ---
-app.use('/admin', authMiddleware, adminRoutes);
-// === START: THAY ĐỔI QUAN TRỌNG ===
-// Áp dụng auth cho cả API routes để bảo mật và đồng bộ
-app.use('/api', authMiddleware, orderRoutes);
-// === END: THAY ĐỔI QUAN TRỌNG ===
+// Route cho người dùng đã đăng nhập
+app.use('/api', authController.isAuthenticated, orderRoutes);
+// Route cho admin đã đăng nhập
+app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
+// === START: ROUTE MỚI CHO WORKER ===
+app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
+// === END: ROUTE MỚI CHO WORKER ===
 
-
-// --- Hàm khởi động chính ---
 async function startServer() {
     console.log('🚀 Starting server, checking connections...');
     
     await settingsService.initialize();
+    await settingsService.update('autoCheck', { isEnabled: false });
+    console.log('[Server Startup] Auto Check Live process has been set to DISABLED.');
     
     await mongoose.connect(config.mongodb.uri)
         .then(() => console.log('✅ MongoDB connection: OK'))
@@ -64,7 +77,22 @@ async function startServer() {
             process.exit(1);
         });
 
-    // Khởi tạo worker cục bộ
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    if (adminCount === 0) {
+        console.log('No admin user found. Creating default admin...');
+        try {
+            const defaultAdmin = new User({
+                username: 'admin',
+                password: 'admin',
+                role: 'admin'
+            });
+            await defaultAdmin.save();
+            console.log('✅ Default admin user (admin/admin) created successfully.');
+        } catch (error) {
+            console.error('❌ Failed to create default admin user:', error);
+        }
+    }
+
     await Worker.initializeLocalWorker();
 
     server.listen(config.server.port, () => {
@@ -72,10 +100,9 @@ async function startServer() {
         console.log(`   - API is running on http://localhost:${config.server.port}`);
         console.log(`   - Admin Dashboard is available at http://localhost:${config.server.port}/admin/dashboard`);
         
-        // Khởi tạo các manager
         autoCheckManager.initialize(io);
         itemProcessorManager.initialize(io);
-        workerMonitor.initialize(io); // Khởi động trạm giám sát
+        workerMonitor.initialize(io);
     });
 }
 

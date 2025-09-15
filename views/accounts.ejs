@@ -60,14 +60,15 @@
                 <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
                 <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
             <% } else { %>
-                <a href="/admin/accounts?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<%= trashCount %>)</a>
+                 <%# === START: THAY ĐỔI QUAN TRỌNG === %>
+                <a href="/admin/accounts?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
+                 <%# === END: THAY ĐỔI QUAN TRỌNG === %>
                 <button id="checkSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-green-600/80 border border-green-500 rounded-md font-semibold text-sm text-white hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i id="checkSelectedIcon" class="ri-refresh-line mr-2"></i> Check Live</button>
                 <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
             <% } %>
         </div>
     </div>
     
-    <%# === START: SỬA LỖI HIỂN THỊ BANNER === %>
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
             Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
@@ -78,7 +79,6 @@
             <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
         </div>
     <% } %>
-    <%# === END: SỬA LỖI HIỂN THỊ BANNER === %>
 
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
          <% if (accounts && accounts.length > 0) { %>
@@ -111,7 +111,6 @@
                             <td class="px-6 py-4"><%= account.twofa %></td>
                             <td class="px-6 py-4 text-gray-400"><%= account.proxy || 'N/A' %></td>
                             <td class="px-6 py-4">
-                                <%# === START: SỬA LỖI HIỂN THỊ SPINNER VÀ TRẠNG THÁI === %>
                                 <div class="flex items-center">
                                     <i id="spinner-<%= account._id %>" class="ri-loader-4-line animate-spin text-yellow-400 mr-2" style="display: <%= account.status === 'CHECKING' ? 'inline-block' : 'none' %>;"></i>
                                     <% if (inTrash) { %>
@@ -122,7 +121,6 @@
                                         </span>
                                     <% } %>
                                 </div>
-                                <%# === END: SỬA LỖI HIỂN THỊ SPINNER VÀ TRẠNG THÁI === %>
                             </td>
                             <td id="dieStreak-<%= account._id %>" class="px-6 py-4 text-center font-semibold <%= (account.dieStreak > 0) ? 'text-red-400' : 'text-white' %>">
                                 <%= account.dieStreak || 0 %>
@@ -171,11 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const addAccountsForm = document.getElementById('add-accounts-form');
     if (addAccountsForm) {
         const addAccountsBtn = document.getElementById('add-accounts-btn');
-        const originalBtnHtml = addAccountsBtn.innerHTML;
+        const originalBtnText = addAccountsBtn.querySelector('.btn-text').innerHTML;
         addAccountsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             addAccountsBtn.disabled = true;
-            addAccountsBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...`;
+            addAccountsBtn.querySelector('.btn-text').classList.add('hidden');
+            addAccountsBtn.querySelector('.spinner').classList.remove('hidden');
             try {
                 const response = await fetch('/admin/accounts/add-multiple', {
                     method: 'POST',
@@ -191,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         url.searchParams.delete('error');
                         url.searchParams.delete('success');
                         window.location.href = url.toString();
-                    }, 1500);
+                    }, 1000);
                 } else {
                     showToast(result.message, `Lỗi (Code: ${response.status})`, 'error');
                 }
@@ -199,7 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
             } finally {
                 addAccountsBtn.disabled = false;
-                addAccountsBtn.innerHTML = originalBtnHtml;
+                addAccountsBtn.querySelector('.btn-text').classList.remove('hidden');
+                addAccountsBtn.querySelector('.spinner').classList.add('hidden');
             }
         });
     }
@@ -292,20 +292,21 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBanners();
         });
     }
-
-    async function handleAction(url, confirmMessage, confirmType = 'warning', reloadOnSuccess = true) {
+    
+    async function handleAction(url, confirmMessage, confirmType = 'warning') {
         let payload = {};
+        const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+
         if (isSelectAllAcrossPages) {
             payload = { selectAll: true, filters: <%- JSON.stringify(currentQuery) %> };
         } else {
-            const selectedIds = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
-            if (selectedIds.length === 0) {
+            if (selectedIdsOnPage.length === 0) {
                 showToast('Vui lòng chọn ít nhất một mục.', 'Cảnh báo!', 'warning');
                 return;
             };
-            payload = { ids: selectedIds };
+            payload = { ids: selectedIdsOnPage };
         }
-        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : payload.ids.length;
+        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : selectedIdsOnPage.length;
 
         const confirmed = await showConfirm(confirmMessage(totalCount), confirmType);
         if (confirmed) {
@@ -321,10 +322,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (result.success) {
-                    // Hiển thị toast cho tất cả các hành động thành công
                     showToast(result.message, 'Thành công!', 'success');
-                    if(reloadOnSuccess) {
-                        setTimeout(() => window.location.reload(), 1500);
+                    
+                    if (!url.includes('check-selected')) {
+                        if (payload.selectAll) {
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            payload.ids.forEach(id => {
+                                const row = document.getElementById(`account-row-${id}`);
+                                if (row) row.remove();
+                            });
+                            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                            toggleActionButtons();
+                            updateBanners();
+                        }
                     }
                 } else {
                     showToast(result.message || 'Có lỗi xảy ra từ server.', 'Lỗi!', 'error');
@@ -360,8 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (checkSelectedBtn) {
         checkSelectedBtn.addEventListener('click', () => {
-             // Sửa message cho toast và không reload trang
-             handleAction('/admin/accounts/check-selected', (count) => `Bắt đầu tiến trình check live cho ${count} account?`, 'info', false);
+             handleAction('/admin/accounts/check-selected', (count) => `Bắt đầu tiến trình check live cho ${count} account?`, 'info');
         });
     }
 
@@ -374,7 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastCheckedCell = document.getElementById(`lastChecked-${id}`);
         const dieStreakCell = document.getElementById(`dieStreak-${id}`);
 
-        // Luôn phải tìm thấy cả 2 element vì cấu trúc HTML đã sửa
         if (!statusBadge || !spinner) return;
         
         const isChecking = status === 'CHECKING';
@@ -414,12 +423,16 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Tiến trình Check Live đã hoàn tất!', 'Hoàn thành', 'success');
     });
 
-    // Check on page load if a job is already running
-    const isAnythingChecking = !!document.querySelector('i.animate-spin');
-    if (isAnythingChecking) {
-        isCheckLiveRunning = true;
-    }
-    updateCheckLiveButtonState();
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    socket.on('accounts:trash:update', (data) => {
+        const trashCountSpan = document.getElementById('trash-count');
+        if (trashCountSpan) {
+            trashCountSpan.textContent = data.newTrashCount;
+        }
+    });
+    // === END: THAY ĐỔI QUAN TRỌNG ===
+
+    toggleActionButtons();
 });
 </script>
 

@@ -1,5 +1,6 @@
 // models/Worker.js
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const WorkerSchema = new mongoose.Schema({
     name: {
@@ -13,24 +14,20 @@ const WorkerSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
-    username: {
+    apiKey: {
         type: String,
         required: true,
-    },
-    password: {
-        type: String, 
-        required: true,
+        unique: true,
+        index: true
     },
     isLocal: {
         type: Boolean,
         default: false
     },
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     isEnabled: {
         type: Boolean,
         default: true
     },
-    // === END: THAY ĐỔI QUAN TRỌNG ===
     concurrency: {
         type: Number,
         default: 10,
@@ -68,13 +65,18 @@ WorkerSchema.statics.initializeLocalWorker = async function() {
             const localWorker = new this({
                 name: 'Main Server Worker',
                 url: 'http://localhost:' + (process.env.PORT || 3000),
-                username: process.env.ADMIN_USER || 'admin',
-                password: process.env.ADMIN_PASSWORD || '123456',
+                // Tự tạo một API key cho worker local
+                apiKey: crypto.randomBytes(32).toString('hex'),
                 isLocal: true,
                 status: 'online',
                 concurrency: 10
             });
             await localWorker.save();
+        } else if (!existingLocal.apiKey) {
+            // Đảm bảo worker local cũ cũng có apiKey
+            existingLocal.apiKey = crypto.randomBytes(32).toString('hex');
+            await existingLocal.save();
+            console.log('Updated local worker with a new API key.');
         }
     } catch (error) {
         console.error('Failed to initialize local worker:', error);

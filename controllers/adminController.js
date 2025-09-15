@@ -57,19 +57,24 @@ adminOrderController.handleCreate = async (req, res) => {
 // Logic cho trang dashboard
 adminOrderController.getDashboard = async (req, res) => {
     try {
+        const User = require('../models/User'); // Import User model ở đây
+
         // Stats cho Order
         const totalOrders = Order.countDocuments({ isDeleted: false });
         const processingOrders = Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false });
         const completedOrders = Order.countDocuments({ status: 'completed', isDeleted: false });
         const failedOrders = Order.countDocuments({ status: 'failed', isDeleted: false });
 
-        // === START: THAY ĐỔI QUAN TRỌNG ===
         // Stats cho Account
         const totalAccounts = Account.countDocuments({ isDeleted: false });
         const liveAccounts = Account.countDocuments({ status: 'LIVE', isDeleted: false });
         const dieAccounts = Account.countDocuments({ status: 'DIE', isDeleted: false });
         const uncheckedAccounts = Account.countDocuments({ status: 'UNCHECKED', isDeleted: false });
-        // === END: THAY ĐỔI QUAN TRỌNG ===
+        
+        // === START: THÊM THỐNG KÊ USER ===
+        const totalUsers = User.countDocuments({ isDeleted: false });
+        const adminUsers = User.countDocuments({ role: 'admin', isDeleted: false });
+        // === END: THÊM THỐNG KÊ USER ===
 
         const recentOrdersQuery = Order.find({ isDeleted: false })
             .sort({ createdAt: -1 })
@@ -79,10 +84,12 @@ adminOrderController.getDashboard = async (req, res) => {
         const [
             totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount,
             totalAccountCount, liveAccountCount, dieAccountCount, uncheckedAccountCount,
+            totalUserCount, adminUserCount, // Thêm biến mới
             orders
         ] = await Promise.all([
             totalOrders, processingOrders, completedOrders, failedOrders,
             totalAccounts, liveAccounts, dieAccounts, uncheckedAccounts,
+            totalUsers, adminUsers, // Thêm tác vụ mới
             recentOrdersQuery
         ]);
 
@@ -93,14 +100,20 @@ adminOrderController.getDashboard = async (req, res) => {
             failed: failedOrderCount,
         };
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
         const accountStats = {
             total: totalAccountCount,
             live: liveAccountCount,
             die: dieAccountCount,
             unchecked: uncheckedAccountCount
         };
-        // === END: THAY ĐỔI QUAN TRỌNG ===
+        
+        // === START: THÊM THỐNG KÊ USER ===
+        const userStats = {
+            total: totalUserCount,
+            admins: adminUserCount,
+            users: totalUserCount - adminUserCount
+        };
+        // === END: THÊM THỐNG KÊ USER ===
 
         orders.forEach(order => {
             order.completedItems = 0;
@@ -111,9 +124,8 @@ adminOrderController.getDashboard = async (req, res) => {
             });
         });
 
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        res.render('dashboard', { orderStats, accountStats, orders });
-        // === END: THAY ĐỔI QUAN TRỌNG ===
+        // Truyền userStats vào view
+        res.render('dashboard', { orderStats, accountStats, userStats, orders });
 
     } catch (error) {
         console.error("Error loading admin dashboard:", error);

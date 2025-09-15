@@ -7,7 +7,7 @@
             <p class="mt-1 text-gray-400">Giám sát, điều khiển và quản lý các server worker xử lý đơn hàng.</p>
         </div>
         <div>
-            <button id="add-worker-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
+             <button id="add-worker-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
                 <i class="ri-add-line -ml-1 mr-2"></i>
                 <span>Thêm Worker</span>
             </button>
@@ -21,7 +21,7 @@
                  data-id="<%= worker._id %>"
                  data-name="<%- worker.name %>"
                  data-url="<%- worker.url %>"
-                 data-username="<%- worker.username %>"
+                 data-api-key="<%- worker.apiKey %>"
                  data-is-local="<%= worker.isLocal %>"
                  data-is-enabled="<%= worker.isEnabled %>"
                  data-concurrency="<%= worker.concurrency %>"
@@ -102,7 +102,6 @@
     </div>
 </div>
 
-
 <div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
 
 <div id="add-worker-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-lg p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
@@ -110,7 +109,6 @@
         <form id="add-worker-form">
             <div class="p-6 border-b border-white/10">
                 <h3 class="text-xl font-bold text-white">Thêm Worker Mới</h3>
-                <p class="text-sm text-gray-400 mt-1">Worker mới sẽ được dùng để xử lý item, giảm tải cho server chính.</p>
             </div>
             <div class="p-6 space-y-4">
                 <div>
@@ -122,19 +120,13 @@
                     <input type="url" id="worker-url" name="url" class="form-input" placeholder="http://123.45.67.89:3000" required>
                 </div>
                 <div>
+                    <label for="worker-apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+                    <input type="text" id="worker-apiKey" name="apiKey" class="form-input font-mono" required>
+                </div>
+                <div>
                     <label for="worker-concurrency" class="block text-sm font-medium text-gray-300 mb-2">Số item đồng thời</label>
                     <input type="number" id="worker-concurrency" name="concurrency" class="form-input" value="10" min="1" required>
                 </div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div>
-                        <label for="worker-username" class="block text-sm font-medium text-gray-300 mb-2">Username (Basic Auth)</label>
-                        <input type="text" id="worker-username" name="username" class="form-input" required>
-                    </div>
-                     <div>
-                        <label for="worker-password" class="block text-sm font-medium text-gray-300 mb-2">Password (Basic Auth)</label>
-                        <input type="password" id="worker-password" name="password" class="form-input" required>
-                    </div>
-                 </div>
             </div>
             <div class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3">
                 <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Hủy</button>
@@ -161,19 +153,13 @@
                     <input type="url" id="edit-worker-url" name="url" class="form-input" required>
                 </div>
                  <div>
+                    <label for="edit-worker-apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+                    <input type="text" id="edit-worker-apiKey" name="apiKey" class="form-input font-mono" required>
+                </div>
+                 <div>
                     <label for="edit-worker-concurrency" class="block text-sm font-medium text-gray-300 mb-2">Số item đồng thời</label>
                     <input type="number" id="edit-worker-concurrency" name="concurrency" class="form-input" required min="1">
                 </div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div>
-                        <label for="edit-worker-username" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
-                        <input type="text" id="edit-worker-username" name="username" class="form-input" required>
-                    </div>
-                     <div>
-                        <label for="edit-worker-password" class="block text-sm font-medium text-gray-300 mb-2">Password Mới (để trống nếu không đổi)</label>
-                        <input type="password" id="edit-worker-password" name="password" class="form-input">
-                    </div>
-                 </div>
             </div>
             <div class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3">
                 <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Hủy</button>
@@ -202,10 +188,8 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const initialState = <%- JSON.stringify(initialState || {}) %>;
+    // Modal Logic
     const backdrop = document.getElementById('modal-backdrop');
-
-    // --- Generic Modal Logic ---
     const showModal = (modalEl) => {
         backdrop.classList.remove('hidden');
         modalEl.classList.remove('hidden');
@@ -214,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
             modalEl.classList.remove('opacity-0', 'scale-95');
         }, 10);
     };
-
     const hideModal = (modalEl) => {
         backdrop.classList.add('opacity-0');
         modalEl.classList.add('opacity-0', 'scale-95');
@@ -223,18 +206,10 @@ document.addEventListener('DOMContentLoaded', () => {
             modalEl.classList.add('hidden');
         }, 300);
     };
-    
-    backdrop.addEventListener('click', () => {
-        document.querySelectorAll('.modal-container').forEach(hideModal);
-    });
-    document.querySelectorAll('.btn-cancel').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modal = btn.closest('.modal-container');
-            if (modal) hideModal(modal);
-        });
-    });
+    backdrop.addEventListener('click', () => document.querySelectorAll('.modal-container').forEach(hideModal));
+    document.querySelectorAll('.btn-cancel').forEach(btn => btn.addEventListener('click', () => hideModal(btn.closest('.modal-container'))));
 
-    // --- Add Worker Modal ---
+    // Add Worker Modal
     const addWorkerModal = document.getElementById('add-worker-modal');
     document.getElementById('add-worker-btn').addEventListener('click', () => showModal(addWorkerModal));
     document.getElementById('add-worker-form').addEventListener('submit', async (e) => {
@@ -242,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = e.target;
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-
         try {
             const response = await fetch('/admin/workers', {
                 method: 'POST',
@@ -253,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.success) {
                 showToast(result.message, 'Thành công!', 'success');
                 hideModal(addWorkerModal);
-                form.reset();
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 showToast(result.message, 'Lỗi!', 'error');
@@ -263,16 +236,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Event Delegation for Worker Cards ---
+    // Event Delegation for Worker Cards
     document.getElementById('worker-list').addEventListener('click', async (e) => {
         const card = e.target.closest('.flex-col');
         if (!card) return;
 
-        const { id, name, url, username, isLocal, concurrency } = card.dataset;
-        let isEnabled = card.dataset.isEnabled === 'true';
+        const { id, name, url, apiKey, isLocal, concurrency } = card.dataset;
+        const isEnabled = card.dataset.isEnabled === 'true';
         const isLocalBool = (isLocal === 'true');
 
-        // Dropdown Toggle
         if (e.target.closest('.btn-toggle-dropdown')) {
             e.stopPropagation();
             const menu = card.querySelector('.dropdown-menu');
@@ -282,35 +254,27 @@ document.addEventListener('DOMContentLoaded', () => {
             menu.classList.toggle('hidden');
         }
         
-        // Edit Button
         if (e.target.closest('.btn-edit-worker')) {
             e.preventDefault();
             const editWorkerModal = document.getElementById('edit-worker-modal');
-            const editWorkerForm = document.getElementById('edit-worker-form');
-            editWorkerForm.querySelector('#edit-worker-id').value = id;
-            const nameInput = editWorkerForm.querySelector('#edit-worker-name');
-            const urlInput = editWorkerForm.querySelector('#edit-worker-url');
-            const usernameInput = editWorkerForm.querySelector('#edit-worker-username');
-            const passwordInput = editWorkerForm.querySelector('#edit-worker-password');
-            const concurrencyInput = editWorkerForm.querySelector('#edit-worker-concurrency');
+            const form = document.getElementById('edit-worker-form');
+            form.querySelector('#edit-worker-id').value = id;
+            form.querySelector('#edit-worker-name').value = name;
+            form.querySelector('#edit-worker-url').value = url;
+            form.querySelector('#edit-worker-apiKey').value = apiKey;
+            form.querySelector('#edit-worker-concurrency').value = concurrency;
 
-            nameInput.value = name;
-            urlInput.value = url;
-            usernameInput.value = username;
-            passwordInput.value = '';
-            concurrencyInput.value = concurrency;
-            urlInput.disabled = isLocalBool;
-            usernameInput.disabled = isLocalBool;
-            passwordInput.parentElement.parentElement.style.display = isLocalBool ? 'none' : 'grid';
+            // Vô hiệu hóa sửa URL và API Key cho worker local
+            form.querySelector('#edit-worker-url').disabled = isLocalBool;
+            form.querySelector('#edit-worker-apiKey').disabled = isLocalBool;
             
             showModal(editWorkerModal);
             card.querySelector('.dropdown-menu').classList.add('hidden');
         }
 
-        // Delete Button
         if (e.target.closest('.btn-delete-worker')) {
             e.preventDefault();
-            const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN worker "${name}"? Hành động này không thể hoàn tác.`, 'danger');
+            const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN worker "${name}"?`, 'danger');
             if (confirmed) {
                 try {
                     const response = await fetch(`/admin/workers/${id}`, { method: 'DELETE' });
@@ -323,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Toggle Enable/Disable Button
         if(e.target.closest('.btn-toggle-worker')) {
             const newIsEnabled = !isEnabled;
             try {
@@ -345,30 +308,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // View Log Button
         if (e.target.closest('.btn-view-log')) {
             const logModal = document.getElementById('log-modal');
-            const logWorkerName = document.getElementById('log-worker-name');
+            document.getElementById('log-worker-name').textContent = name;
             const logContent = document.getElementById('log-content');
-
-            logWorkerName.textContent = name;
             logContent.innerHTML = '<div class="text-gray-500">Đang tải logs...</div>';
             showModal(logModal);
             try {
                 const response = await fetch(`/admin/workers/${id}/logs`);
                 const result = await response.json();
                 if (result.success && result.logs) {
-                    if (result.logs.length === 0) {
-                        logContent.innerHTML = '<div class="text-gray-500">Không có log nào.</div>';
-                        return;
-                    }
-                    logContent.innerHTML = result.logs.map(log => `
-                        <div class="flex items-start">
-                            <span class="text-gray-500 mr-3">${new Date(log.timestamp).toLocaleTimeString('vi-VN')}</span>
-                            <span class="${log.level === 'ERROR' ? 'text-red-400' : 'text-green-400'} font-bold mr-2">[${log.level}]</span>
-                            <span class="text-gray-300 flex-1">${log.message}</span>
-                        </div>
-                    `).join('');
+                    logContent.innerHTML = result.logs.length === 0 
+                        ? '<div class="text-gray-500">Không có log nào.</div>'
+                        : result.logs.map(log => `
+                            <div class="flex items-start">
+                                <span class="text-gray-500 mr-3">${new Date(log.timestamp).toLocaleTimeString('vi-VN')}</span>
+                                <span class="${log.level === 'ERROR' ? 'text-red-400' : 'text-green-400'} font-bold mr-2">[${log.level}]</span>
+                                <span class="text-gray-300 flex-1">${log.message}</span>
+                            </div>`).join('');
                 } else {
                      logContent.innerHTML = `<div class="text-red-400">Lỗi khi tải logs: ${result.message}</div>`;
                 }
@@ -378,21 +335,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Hide dropdown when clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.dropdown-container')) {
             document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
         }
     });
 
-    // --- Edit Worker Form Submission ---
+    // Edit Worker Form Submission
     document.getElementById('edit-worker-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const form = e.target;
         const id = form.querySelector('#edit-worker-id').value;
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-
         try {
             const response = await fetch(`/admin/workers/${id}`, {
                 method: 'POST',
@@ -402,7 +357,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (result.success) {
                 showToast(result.message, 'Thành công!', 'success');
-                hideModal(document.getElementById('edit-worker-modal'));
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 showToast(result.message, 'Lỗi!', 'error');
@@ -412,14 +366,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // --- Real-time Logic ---
+    // Real-time Logic
     const procLogs = document.getElementById('processor-logs');
-    
     function addLogMessage(message) {
         if(!procLogs) return;
-        if (procLogs.childElementCount > 100) {
-            procLogs.removeChild(procLogs.firstChild);
-        }
+        if (procLogs.childElementCount > 100) procLogs.removeChild(procLogs.firstChild);
         const logLine = document.createElement('div');
         const time = new Date().toLocaleTimeString('vi-VN');
         logLine.innerHTML = `<span class="text-gray-500 mr-3">[${time}]</span>${message}`;
@@ -433,16 +384,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const toggleBtn = workerCard.querySelector('.btn-toggle-worker');
         const statusIndicator = workerCard.querySelector('.status-indicator');
         
-        // Card opacity and border
         workerCard.classList.toggle('opacity-50', !isEnabled);
         
-        // Toggle button icon
         if (toggleBtn) {
-            toggleBtn.innerHTML = isEnabled ?
-                `<i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>` : `<i class="ri-play-circle-line" title="Tiếp tục Worker"></i>`;
+            toggleBtn.innerHTML = isEnabled ? `<i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>` : `<i class="ri-play-circle-line" title="Tiếp tục Worker"></i>`;
         }
         
-        // Status indicator color
         statusIndicator.classList.remove('bg-green-400', 'bg-yellow-400', 'bg-red-400', 'animate-pulse');
         if (isOnline) {
             if (isEnabled) {
@@ -461,30 +408,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#worker-list .flex-col').forEach(updateWorkerCardUI);
     
     const socket = io();
-    socket.on('connect', () => {
-        console.log('Connected to server for real-time updates.');
-        addLogMessage('Đã kết nối với server.');
-    });
+    socket.on('connect', () => addLogMessage('Đã kết nối với server.'));
     socket.on('workers:update', (workers) => {
         workers.forEach(worker => {
             const workerCard = document.getElementById(`worker-${worker._id}`);
             if (!workerCard) return;
 
-            // Update data-attributes first
             workerCard.dataset.status = worker.status;
-            
-            // Update stats
-            workerCard.querySelector('.stat-cpu').textContent = `${worker.stats.cpu || 0}`;
-            workerCard.querySelector('.stat-ram').textContent = `${worker.stats.freeMem || 0}`;
-            workerCard.querySelector('.stat-processing-items').textContent = `${worker.stats.processingItems || 0}`;
-            workerCard.querySelector('.stat-pending-orders').textContent = `${worker.stats.pendingOrders || 0}`;
-            workerCard.querySelector('.stat-live-accounts').textContent = `${worker.stats.liveAccounts || 0}`;
-            workerCard.querySelector('.stat-total-accounts').textContent = `${worker.stats.totalAccounts || 0}`;
+            ['cpu', 'ram', 'processing-items', 'pending-orders', 'live-accounts', 'total-accounts'].forEach(stat => {
+                const el = workerCard.querySelector(`.stat-${stat}`);
+                if (el) el.textContent = `${worker.stats[stat.replace('-','')] || 0}`;
+            });
             
             updateWorkerCardUI(workerCard);
         });
     });
-    
     socket.on('itemProcessor:log', (message) => addLogMessage(message));
 });
 </script>

@@ -14,15 +14,9 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleGetAll = async (req, res) => {
         try {
             const { data, pagination } = await crudService.find(req.query);
-            // === START: THAY ĐỔI QUAN TRỌNG ===
-            // Lấy số lượng mục trong thùng rác
             const trashCount = await crudService.Model.countDocuments({ isDeleted: true });
-            // === END: THAY ĐỔI QUAN TRỌNG ===
 
-            // === START: THAY ĐỔI QUAN TRỌNG ===
-            // Truyền trashCount vào view
             renderData(res, viewName, { [plural]: data, pagination, trashCount });
-            // === END: THAY ĐỔI QUAN TRỌNG ===
         } catch (error) {
             console.error(`Error getting all ${plural}:`, error);
             res.status(500).send(`Could not load ${plural}.`);
@@ -62,17 +56,25 @@ const createCrudController = (crudService, viewName, options = {}) => {
         }
     };
 
+    // === START: THAY ĐỔI QUAN TRỌNG - BỔ SUNG REALTIME UPDATE CHO THÙNG RÁC ===
     const handleSoftDelete = async (req, res) => {
         try {
+            let modifiedCount = 0;
             if (req.body.selectAll) {
                 const result = await crudService.softDeleteMany(req.body.filters);
-                return res.json({ success: true, message: `Đã chuyển ${result.modifiedCount} mục vào thùng rác.` });
+                modifiedCount = result.modifiedCount;
+            } else {
+                const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+                if (ids.length > 0) {
+                    await Promise.all(ids.map(id => crudService.softDelete(id)));
+                    modifiedCount = ids.length;
+                }
             }
-            const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-            if (ids.length > 0) {
-                await Promise.all(ids.map(id => crudService.softDelete(id)));
-            }
-            res.json({ success: true, message: `Đã chuyển ${ids.length} mục vào thùng rác.` });
+            // Sau khi xóa, đếm lại và bắn sự kiện socket
+            const newTrashCount = await crudService.Model.countDocuments({ isDeleted: true });
+            req.io.emit(`${viewName}:trash:update`, { newTrashCount });
+
+            res.json({ success: true, message: `Đã chuyển ${modifiedCount} mục vào thùng rác.` });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }
@@ -80,15 +82,22 @@ const createCrudController = (crudService, viewName, options = {}) => {
 
     const handleRestore = async (req, res) => {
         try {
+            let modifiedCount = 0;
             if (req.body.selectAll) {
                 const result = await crudService.restoreMany(req.body.filters);
-                return res.json({ success: true, message: `Đã khôi phục ${result.modifiedCount} mục.` });
+                modifiedCount = result.modifiedCount;
+            } else {
+                const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+                if (ids.length > 0) {
+                    await Promise.all(ids.map(id => crudService.restore(id)));
+                    modifiedCount = ids.length;
+                }
             }
-            const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-            if (ids.length > 0) {
-                await Promise.all(ids.map(id => crudService.restore(id)));
-            }
-            res.json({ success: true, message: `Đã khôi phục ${ids.length} mục.` });
+            // Sau khi khôi phục, đếm lại và bắn sự kiện socket
+            const newTrashCount = await crudService.Model.countDocuments({ isDeleted: true });
+            req.io.emit(`${viewName}:trash:update`, { newTrashCount });
+
+            res.json({ success: true, message: `Đã khôi phục ${modifiedCount} mục.` });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }
@@ -96,19 +105,27 @@ const createCrudController = (crudService, viewName, options = {}) => {
 
     const handleHardDelete = async (req, res) => {
         try {
+            let deletedCount = 0;
             if (req.body.selectAll) {
                 const result = await crudService.hardDeleteMany(req.body.filters);
-                return res.json({ success: true, message: `Đã xóa vĩnh viễn ${result.deletedCount} mục.` });
+                deletedCount = result.deletedCount;
+            } else {
+                const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+                if (ids.length > 0) {
+                    await Promise.all(ids.map(id => crudService.hardDelete(id)));
+                    deletedCount = ids.length;
+                }
             }
-            const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-            if (ids.length > 0) {
-                await Promise.all(ids.map(id => crudService.hardDelete(id)));
-            }
-            res.json({ success: true, message: `Đã xóa vĩnh viễn ${ids.length} mục.` });
+            // Sau khi xóa vĩnh viễn, đếm lại và bắn sự kiện socket
+            const newTrashCount = await crudService.Model.countDocuments({ isDeleted: true });
+            req.io.emit(`${viewName}:trash:update`, { newTrashCount });
+            
+            res.json({ success: true, message: `Đã xóa vĩnh viễn ${deletedCount} mục.` });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
         }
     };
+    // === END: THAY ĐỔI QUAN TRỌNG ===
     
     return {
         parseQueryMiddleware,
