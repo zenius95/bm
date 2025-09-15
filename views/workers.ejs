@@ -17,20 +17,34 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="worker-list">
         <% workers.forEach(worker => { %>
             <div id="worker-<%= worker._id %>" 
-                 class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 space-y-4 flex flex-col"
+                 class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 space-y-4 flex flex-col transition-all duration-300"
                  data-id="<%= worker._id %>"
                  data-name="<%- worker.name %>"
                  data-url="<%- worker.url %>"
                  data-username="<%- worker.username %>"
                  data-is-local="<%= worker.isLocal %>"
-                 data-concurrency="<%= worker.concurrency %>">
+                 data-is-enabled="<%= worker.isEnabled %>"
+                 data-concurrency="<%= worker.concurrency %>"
+                 data-status="<%= worker.status %>">
                 
                 <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h3 class="font-bold text-lg text-white truncate"><%= worker.name %></h3>
-                        <div class="text-xs text-gray-400 font-mono break-all mt-1"><%= worker.url %></div>
+                    <div class="flex items-center gap-3">
+                        <span class="status-indicator w-3 h-3 rounded-full flex-shrink-0" title="Trạng thái"></span>
+                        <div>
+                            <h3 class="font-bold text-lg text-white truncate leading-tight"><%= worker.name %></h3>
+                            <div class="text-xs text-gray-400 font-mono break-all mt-1"><%= worker.url %></div>
+                        </div>
                     </div>
                     <div class="flex items-center gap-1 flex-shrink-0">
+                        <% if (!worker.isLocal) { %>
+                            <button class="btn-toggle-worker p-2 rounded-md hover:bg-white/10 text-gray-400 transition">
+                                <% if (worker.isEnabled) { %>
+                                    <i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>
+                                <% } else { %>
+                                    <i class="ri-play-circle-line" title="Tiếp tục Worker"></i>
+                                <% } %>
+                            </button>
+                        <% } %>
                         <button class="btn-view-log p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Xem Logs"><i class="ri-file-text-line"></i></button>
                         <div class="relative dropdown-container">
                             <button class="btn-toggle-dropdown p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Cài đặt"><i class="ri-settings-3-line"></i></button>
@@ -44,26 +58,36 @@
                     </div>
                 </div>
                 
-                <%# === START: THAY ĐỔI QUAN TRỌNG - Giao diện stats mới === %>
-                <div class="space-y-4 border-t border-white/10 pt-4">
-                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-400 flex items-center gap-2"><i class="ri-stack-line"></i> Đơn hàng chờ</span>
-                        <span class="stat-pending-orders font-semibold text-white"><%= worker.stats.pendingOrders || 0 %></span>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-white/10 pt-4 mt-auto">
+                     <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center flex-shrink-0"><i class="ri-stack-line ri-lg"></i></div>
+                        <div>
+                            <div class="text-sm text-gray-400">Đơn chờ</div>
+                            <div class="stat-pending-orders text-lg font-semibold text-white"><%= worker.stats.pendingOrders || 0 %></div>
+                        </div>
                     </div>
-                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-400 flex items-center gap-2"><i class="ri-loader-2-line"></i> Items đang xử lý</span>
-                        <span class="stat-processing-items font-semibold text-white"><%= worker.stats.processingItems || 0 %></span>
+                     <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-yellow-500/10 text-yellow-400 flex items-center justify-center flex-shrink-0"><i class="ri-loader-2-line ri-lg"></i></div>
+                        <div>
+                            <div class="text-sm text-gray-400">Item xử lý</div>
+                            <div class="stat-processing-items text-lg font-semibold text-white"><%= worker.stats.processingItems || 0 %></div>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-400 flex items-center gap-2"><i class="ri-user-line"></i> Accounts</span>
-                        <span class="font-semibold text-white"><span class="stat-live-accounts"><%= worker.stats.liveAccounts || 0 %></span> / <span class="stat-total-accounts"><%= worker.stats.totalAccounts || 0 %></span></span>
+                     <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center flex-shrink-0"><i class="ri-user-line ri-lg"></i></div>
+                        <div>
+                            <div class="text-sm text-gray-400">Accounts</div>
+                            <div class="text-lg font-semibold text-white"><span class="stat-live-accounts"><%= worker.stats.liveAccounts || 0 %></span>/<span class="stat-total-accounts text-gray-400 text-base"><%= worker.stats.totalAccounts || 0 %></span></div>
+                        </div>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-400 flex items-center gap-2"><i class="ri-cpu-line"></i> CPU / RAM</span>
-                        <span class="font-semibold text-white"><span class="stat-cpu"><%= worker.stats.cpu || 0 %></span>% / <span class="stat-ram"><%= worker.stats.freeMem || 0 %></span> MB</span>
+                     <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center flex-shrink-0"><i class="ri-cpu-line ri-lg"></i></div>
+                        <div>
+                            <div class="text-sm text-gray-400">CPU / RAM</div>
+                            <div class="text-lg font-semibold text-white"><span class="stat-cpu"><%= worker.stats.cpu || 0 %></span>% / <span class="stat-ram"><%= worker.stats.freeMem || 0 %></span>MB</div>
+                        </div>
                     </div>
                 </div>
-                <%# === END: THAY ĐỔI QUAN TRỌNG === %>
             </div>
         <% }) %>
     </div>
@@ -214,7 +238,6 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // ... code hiện có ...
     const initialState = <%- JSON.stringify(initialState || {}) %>;
     const backdrop = document.getElementById('modal-backdrop');
     
@@ -275,101 +298,57 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
         }
     });
-
-    // === START: THAY ĐỔI QUAN TRỌNG - Logic cho Edit Modal và Dropdown ===
-    const editWorkerModal = document.getElementById('edit-worker-modal');
-    const editWorkerForm = document.getElementById('edit-worker-form');
-
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-            if (!menu.parentElement.contains(e.target)) {
-                menu.classList.add('hidden');
-            }
-        });
-    });
     
-    document.querySelectorAll('.dropdown-container').forEach(container => {
-        const toggleBtn = container.querySelector('.btn-toggle-dropdown');
-        const menu = container.querySelector('.dropdown-menu');
-        
-        toggleBtn.addEventListener('click', (e) => {
+    // --- Event Delegation for Worker Cards ---
+    document.getElementById('worker-list').addEventListener('click', async (e) => {
+        const card = e.target.closest('.flex-col');
+        if (!card) return;
+
+        const { id, name, url, username, isLocal, concurrency } = card.dataset;
+        let isEnabled = card.dataset.isEnabled === 'true';
+        const isLocalBool = (isLocal === 'true');
+
+        // Dropdown Toggle
+        if (e.target.closest('.btn-toggle-dropdown')) {
             e.stopPropagation();
-            // Hide other menus before showing this one
+            const menu = card.querySelector('.dropdown-menu');
             document.querySelectorAll('.dropdown-menu').forEach(otherMenu => {
                 if(otherMenu !== menu) otherMenu.classList.add('hidden');
             });
             menu.classList.toggle('hidden');
-        });
-
-        // Edit button inside dropdown
-        const editBtn = container.querySelector('.btn-edit-worker');
-        if(editBtn) {
-            editBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const card = e.target.closest('.flex-col');
-                const { id, name, url, username, isLocal, concurrency } = card.dataset;
-                
-                editWorkerForm.querySelector('#edit-worker-id').value = id;
-                const nameInput = editWorkerForm.querySelector('#edit-worker-name');
-                const urlInput = editWorkerForm.querySelector('#edit-worker-url');
-                const usernameInput = editWorkerForm.querySelector('#edit-worker-username');
-                const passwordInput = editWorkerForm.querySelector('#edit-worker-password');
-                const concurrencyInput = editWorkerForm.querySelector('#edit-worker-concurrency');
-
-                nameInput.value = name;
-                urlInput.value = url;
-                usernameInput.value = username;
-                passwordInput.value = '';
-                concurrencyInput.value = concurrency;
-
-                const isLocalBool = (isLocal === 'true');
-                nameInput.disabled = isLocalBool;
-                urlInput.disabled = isLocalBool;
-                usernameInput.disabled = isLocalBool;
-                passwordInput.disabled = isLocalBool;
-                
-                showModal(editWorkerModal);
-                menu.classList.add('hidden');
-            });
         }
-    });
-    // === END: THAY ĐỔI QUAN TRỌNG ===
-    
-    editWorkerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = editWorkerForm.querySelector('#edit-worker-id').value;
-        const formData = new FormData(editWorkerForm);
-        const data = Object.fromEntries(formData.entries());
-
-        try {
-            const response = await fetch(`/admin/workers/${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (result.success) {
-                showToast(result.message, 'Thành công!', 'success');
-                hideModal(editWorkerModal);
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                showToast(result.message, 'Lỗi!', 'error');
-            }
-        } catch (error) {
-            showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
-        }
-    });
-
-    // --- Delete Worker ---
-    document.querySelectorAll('.btn-delete-worker').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+        
+        // Edit Button
+        if (e.target.closest('.btn-edit-worker')) {
             e.preventDefault();
-            const card = e.target.closest('.flex-col');
-            const { id, name } = card.dataset;
-
-            const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN worker "${name}"? Hành động này không thể hoàn tác.`, 'danger');
+            const editWorkerModal = document.getElementById('edit-worker-modal');
+            const editWorkerForm = document.getElementById('edit-worker-form');
             
+            editWorkerForm.querySelector('#edit-worker-id').value = id;
+            const nameInput = editWorkerForm.querySelector('#edit-worker-name');
+            const urlInput = editWorkerForm.querySelector('#edit-worker-url');
+            const usernameInput = editWorkerForm.querySelector('#edit-worker-username');
+            const passwordInput = editWorkerForm.querySelector('#edit-worker-password');
+            const concurrencyInput = editWorkerForm.querySelector('#edit-worker-concurrency');
+
+            nameInput.value = name;
+            urlInput.value = url;
+            usernameInput.value = username;
+            passwordInput.value = '';
+            concurrencyInput.value = concurrency;
+            
+            urlInput.disabled = isLocalBool;
+            usernameInput.disabled = isLocalBool;
+            passwordInput.parentElement.parentElement.style.display = isLocalBool ? 'none' : 'grid';
+            
+            showModal(editWorkerModal);
+            card.querySelector('.dropdown-menu').classList.add('hidden');
+        }
+
+        // Delete Button
+        if (e.target.closest('.btn-delete-worker')) {
+            e.preventDefault();
+            const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN worker "${name}"? Hành động này không thể hoàn tác.`, 'danger');
             if (confirmed) {
                 try {
                     const response = await fetch(`/admin/workers/${id}`, { method: 'DELETE' });
@@ -377,25 +356,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (result.success) {
                         showToast(result.message, 'Thành công', 'success');
                         card.remove();
-                    } else {
-                        showToast(result.message, 'Lỗi!', 'error');
-                    }
-                } catch (error) {
-                    showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
-                }
+                    } else { showToast(result.message, 'Lỗi!', 'error'); }
+                } catch (error) { showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error'); }
             }
-        });
-    });
-    
-    // --- Log Modal ---
-    const logModal = document.getElementById('log-modal');
-    const logWorkerName = document.getElementById('log-worker-name');
-    const logContent = document.getElementById('log-content');
-    document.querySelectorAll('.btn-view-log').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const card = e.target.closest('.flex-col');
-            const { id, name } = card.dataset;
-            
+        }
+        
+        // Toggle Enable/Disable Button
+        if(e.target.closest('.btn-toggle-worker')) {
+            const newIsEnabled = !isEnabled;
+            try {
+                const response = await fetch(`/admin/workers/${id}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isEnabled: newIsEnabled })
+                });
+                const result = await response.json();
+                if(result.success) {
+                    showToast(result.message, 'Thành công', 'success');
+                    card.dataset.isEnabled = newIsEnabled; 
+                    updateWorkerCardUI(card); 
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
+            }
+        }
+
+        // View Log Button
+        if (e.target.closest('.btn-view-log')) {
+            const logModal = document.getElementById('log-modal');
+            const logWorkerName = document.getElementById('log-worker-name');
+            const logContent = document.getElementById('log-content');
+
             logWorkerName.textContent = name;
             logContent.innerHTML = '<div class="text-gray-500">Đang tải logs...</div>';
             showModal(logModal);
@@ -421,9 +414,43 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                  logContent.innerHTML = `<div class="text-red-400">Lỗi kết nối: ${error.message}</div>`;
             }
-        });
+        }
     });
 
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dropdown-container')) {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+        }
+    });
+    
+    // --- Edit Worker Form Submission ---
+    document.getElementById('edit-worker-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const id = form.querySelector('#edit-worker-id').value;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch(`/admin/workers/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message, 'Thành công!', 'success');
+                hideModal(document.getElementById('edit-worker-modal'));
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.message, 'Lỗi!', 'error');
+            }
+        } catch (error) {
+            showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
+        }
+    });
+    
     // --- Processor Control & Real-time Logic ---
     const procForm = document.getElementById('processor-settings-form');
     const procPollingInput = document.getElementById('proc-pollingInterval');
@@ -459,10 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const result = await response.json();
             if (result.success) {
-                showToast(result.message, 'Thành công', 'success');
+                showToast(result.message, 'Thành công!', 'success');
                 updateProcUI(result.data);
             } else {
-                showToast(result.message, 'Lỗi', 'error');
+                showToast(result.message, 'Lỗi!', 'error');
             }
         } catch (error) {
             showToast('Lỗi kết nối server', 'Lỗi', 'error');
@@ -489,6 +516,38 @@ document.addEventListener('DOMContentLoaded', () => {
         procLogs.scrollTop = procLogs.scrollHeight;
     }
 
+    function updateWorkerCardUI(workerCard) {
+        const isEnabled = workerCard.dataset.isEnabled === 'true';
+        const isOnline = workerCard.dataset.status === 'online';
+        const toggleBtn = workerCard.querySelector('.btn-toggle-worker');
+        const statusIndicator = workerCard.querySelector('.status-indicator');
+
+        // Card opacity and border
+        workerCard.classList.toggle('opacity-50', !isEnabled);
+
+        // Toggle button icon
+        if (toggleBtn) {
+            toggleBtn.innerHTML = isEnabled ? `<i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>` : `<i class="ri-play-circle-line" title="Tiếp tục Worker"></i>`;
+        }
+        
+        // Status indicator color
+        statusIndicator.classList.remove('bg-green-400', 'bg-yellow-400', 'bg-red-400');
+        if (isOnline) {
+            if (isEnabled) {
+                statusIndicator.classList.add('bg-green-400', 'animate-pulse');
+                statusIndicator.title = "Online & Active";
+            } else {
+                 statusIndicator.classList.add('bg-yellow-400');
+                 statusIndicator.title = "Paused";
+            }
+        } else {
+            statusIndicator.classList.add('bg-red-400');
+            statusIndicator.title = "Offline";
+        }
+    }
+    
+    document.querySelectorAll('#worker-list .flex-col').forEach(updateWorkerCardUI);
+
     const socket = io();
     socket.on('connect', () => {
         console.log('Connected to server for real-time updates.');
@@ -500,24 +559,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const workerCard = document.getElementById(`worker-${worker._id}`);
             if (!workerCard) return;
 
-            const statusBadge = workerCard.querySelector('.status-badge');
-            if (worker.status === 'online') {
-                statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> Online`;
-                statusBadge.className = 'status-badge flex items-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-300';
-            } else {
-                statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-400"></span> Offline`;
-                statusBadge.className = 'status-badge flex items-center gap-2 px-2.5 py-1 text-xs font-semibold rounded-full bg-red-500/20 text-red-400';
-            }
+            // Update data-attributes first
+            workerCard.dataset.status = worker.status;
             
+            // Update stats
             workerCard.querySelector('.stat-cpu').textContent = `${worker.stats.cpu || 0}`;
             workerCard.querySelector('.stat-ram').textContent = `${worker.stats.freeMem || 0}`;
             workerCard.querySelector('.stat-processing-items').textContent = `${worker.stats.processingItems || 0}`;
             workerCard.querySelector('.stat-pending-orders').textContent = `${worker.stats.pendingOrders || 0}`;
+            workerCard.querySelector('.stat-live-accounts').textContent = `${worker.stats.liveAccounts || 0}`;
+            workerCard.querySelector('.stat-total-accounts').textContent = `${worker.stats.totalAccounts || 0}`;
             
-            const liveAcc = workerCard.querySelector('.stat-live-accounts');
-            const totalAcc = workerCard.querySelector('.stat-total-accounts');
-            if(liveAcc) liveAcc.textContent = `${worker.stats.liveAccounts || 0}`;
-            if(totalAcc) totalAcc.textContent = `${worker.stats.totalAccounts || 0}`;
+            updateWorkerCardUI(workerCard);
         });
     });
 
