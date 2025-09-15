@@ -7,7 +7,7 @@
         "timeout": 180000
     },
     "itemProcessor": {
-        "isEnabled": false,
+        "isEnabled": true,
         "concurrency": 10,
         "pollingInterval": 5
     }

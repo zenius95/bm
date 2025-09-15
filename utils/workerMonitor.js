@@ -20,11 +20,7 @@ class WorkerMonitor {
 
     async checkAllWorkers() {
         const workers = await Worker.find().lean();
-
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Luôn kiểm tra tất cả worker qua API
         const workerPromises = workers.map(worker => this.checkWorkerByAPI(worker));
-        // === END: THAY ĐỔI QUAN TRỌNG ===
         
         const updatedWorkers = await Promise.all(workerPromises);
         
@@ -33,9 +29,7 @@ class WorkerMonitor {
         }
     }
 
-    // === START: THAY ĐỔI QUAN TRỌNG - Đổi tên hàm và xóa hàm cũ ===
     async checkWorkerByAPI(worker) {
-    // === END: THAY ĐỔI QUAN TRỌNG ===
         const { url, username, password } = worker;
         const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
         let updateData;
@@ -49,6 +43,8 @@ class WorkerMonitor {
             if (!response.ok) throw new Error(`Status: ${response.status}`);
 
             const { data } = await response.json();
+            
+            // === START: THAY ĐỔI QUAN TRỌNG - Thêm các stats mới ===
             updateData = {
                 status: 'online',
                 'stats.cpu': data.system.cpu,
@@ -56,8 +52,14 @@ class WorkerMonitor {
                 'stats.totalMem': data.system.totalMem,
                 'stats.activeTasks': data.itemProcessor.activeTasks,
                 'stats.queuedTasks': data.itemProcessor.queuedTasks,
+                'stats.pendingOrders': data.global.pendingOrders,
+                'stats.processingItems': data.global.processingItems,
+                'stats.liveAccounts': data.global.liveAccounts,
+                'stats.totalAccounts': data.global.totalAccounts,
                 lastSeen: new Date()
             };
+            // === END: THAY ĐỔI QUAN TRỌNG ===
+
         } catch (error) {
             console.error(`Failed to connect to worker ${worker.name} (${url}): ${error.message}`);
             updateData = { status: 'offline', 'stats': {} }; // Reset stats khi offline

@@ -80,7 +80,9 @@ class ItemProcessorManager extends EventEmitter {
         this.emitStatus();
 
         try {
-            const onlineWorkers = await Worker.find({ status: 'online' });
+            
+            const onlineWorkers = await Worker.find({ status: 'online', isEnabled: true });
+
             if (onlineWorkers.length === 0) {
                 if(this.io) this.io.emit('itemProcessor:log', '⚠️ Không có worker nào online để xử lý.');
                 return;

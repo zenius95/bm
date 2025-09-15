@@ -34,6 +34,10 @@ router.get('/workers', workerController.getWorkersPage);
 router.post('/workers', workerController.addWorker);
 router.post('/workers/:id', workerController.updateWorker);
 router.delete('/workers/:id', workerController.deleteWorker);
+router.get('/workers/:id/logs', workerController.getWorkerLogs);
+// === START: THAY ĐỔI QUAN TRỌNG ===
+router.post('/workers/:id/toggle', workerController.toggleWorker);
+// === END: THAY ĐỔI QUAN TRỌNG ===
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);

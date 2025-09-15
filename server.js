@@ -45,7 +45,10 @@ const authMiddleware = basicAuth({
 
 // --- Sử dụng Routes ---
 app.use('/admin', authMiddleware, adminRoutes);
-app.use('/api', orderRoutes);
+// === START: THAY ĐỔI QUAN TRỌNG ===
+// Áp dụng auth cho cả API routes để bảo mật và đồng bộ
+app.use('/api', authMiddleware, orderRoutes);
+// === END: THAY ĐỔI QUAN TRỌNG ===
 
 
 // --- Hàm khởi động chính ---

@@ -5,6 +5,11 @@ const orderController = require('../controllers/orderController');
 const Log = require('../models/Log');
 const os = require('os-utils');
 const itemProcessorManager = require('../utils/itemProcessorManager');
+// === START: THAY ĐỔI QUAN TRỌNG ===
+const Order = require('../models/Order');
+const Account = require('../models/Account');
+// === END: THAY ĐỔI QUAN TRỌNG ===
+
 
 // API tạo và lấy thông tin order công khai
 router.post('/orders', orderController.createOrder);
@@ -20,23 +25,64 @@ router.get('/orders/:id/logs', async (req, res) => {
 });
 
 // API để worker báo cáo trạng thái
-router.get('/status', (req, res) => {
-    os.cpuUsage((cpuPercent) => {
+// === START: THAY ĐỔI QUAN TRỌNG - Bổ sung stats chi tiết ===
+router.get('/status', async (req, res) => {
+    try {
+        const cpuPromise = new Promise(resolve => os.cpuUsage(resolve));
+
+        // Lấy các thống kê global từ DB
+        const pendingOrders = Order.countDocuments({ status: 'pending', isDeleted: false });
+        const processingItems = Order.aggregate([
+            { $match: { status: 'processing', isDeleted: false } },
+            { $project: { processingItems: { $size: { $filter: { input: '$items', as: 'item', cond: { $eq: ['$$item.status', 'processing'] } } } } } },
+            { $group: { _id: null, total: { $sum: '$processingItems' } } }
+        ]);
+        const liveAccounts = Account.countDocuments({ status: 'LIVE', isDeleted: false });
+        const totalAccounts = Account.countDocuments({ isDeleted: false });
+
+        // Chạy song song các tác vụ bất đồng bộ
+        const [
+            cpuPercent,
+            pendingOrderCount,
+            processingItemsResult,
+            liveAccountCount,
+            totalAccountCount
+        ] = await Promise.all([
+            cpuPromise,
+            pendingOrders,
+            processingItems,
+            liveAccounts,
+            totalAccounts
+        ]);
+        
         const itemProcessorStats = itemProcessorManager.getStatus();
         const systemStats = {
             cpu: (cpuPercent * 100).toFixed(2),
             freeMem: os.freemem().toFixed(0),
             totalMem: os.totalmem().toFixed(0)
         };
+        const globalStats = {
+            pendingOrders: pendingOrderCount,
+            processingItems: processingItemsResult.length > 0 ? processingItemsResult[0].total : 0,
+            liveAccounts: liveAccountCount,
+            totalAccounts: totalAccountCount
+        };
+
         res.json({
             success: true,
             data: {
                 itemProcessor: itemProcessorStats,
-                system: systemStats
+                system: systemStats,
+                global: globalStats
             }
         });
-    });
+    } catch (error) {
+        console.error("Error fetching system status:", error);
+        res.status(500).json({ success: false, message: 'Failed to fetch system status.' });
+    }
 });
+// === END: THAY ĐỔI QUAN TRỌNG ===
+
 
 // API để worker tiếp nhận và xử lý một item
 router.post('/process-item', async (req, res) => {
@@ -46,10 +92,7 @@ router.post('/process-item', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Thiếu thông tin item.' });
         }
 
-        // Báo cho Tổng hành dinh biết là đã nhận lệnh
         res.status(202).json({ success: true, message: 'Đã nhận item, bắt đầu xử lý.' });
-
-        // Chạy xử lý trong nền
         itemProcessorManager.processSingleItem(orderId, itemId, itemData);
 
     } catch (error) {

@@ -18,12 +18,23 @@ const WorkerSchema = new mongoose.Schema({
         required: true,
     },
     password: {
-        type: String, // Trong thực tế nên mã hóa trường này
+        type: String, 
         required: true,
     },
     isLocal: {
         type: Boolean,
         default: false
+    },
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    isEnabled: {
+        type: Boolean,
+        default: true
+    },
+    // === END: THAY ĐỔI QUAN TRỌNG ===
+    concurrency: {
+        type: Number,
+        default: 10,
+        min: 1
     },
     status: {
         type: String,
@@ -35,7 +46,11 @@ const WorkerSchema = new mongoose.Schema({
         freeMem: { type: Number, default: 0 },
         totalMem: { type: Number, default: 0 },
         activeTasks: { type: Number, default: 0 },
-        queuedTasks: { type: Number, default: 0 }
+        queuedTasks: { type: Number, default: 0 },
+        pendingOrders: { type: Number, default: 0 },
+        processingItems: { type: Number, default: 0 },
+        liveAccounts: { type: Number, default: 0 },
+        totalAccounts: { type: Number, default: 0 }
     },
     lastSeen: {
         type: Date,
@@ -45,7 +60,6 @@ const WorkerSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Tạo một worker cục bộ mặc định nếu chưa có
 WorkerSchema.statics.initializeLocalWorker = async function() {
     try {
         const existingLocal = await this.findOne({ isLocal: true });
@@ -57,7 +71,8 @@ WorkerSchema.statics.initializeLocalWorker = async function() {
                 username: process.env.ADMIN_USER || 'admin',
                 password: process.env.ADMIN_PASSWORD || '123456',
                 isLocal: true,
-                status: 'online'
+                status: 'online',
+                concurrency: 10
             });
             await localWorker.save();
         }
@@ -65,6 +80,5 @@ WorkerSchema.statics.initializeLocalWorker = async function() {
         console.error('Failed to initialize local worker:', error);
     }
 };
-
 
 module.exports = mongoose.model('Worker', WorkerSchema);
