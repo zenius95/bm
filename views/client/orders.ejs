@@ -13,7 +13,7 @@
     <% if (orders && orders.length > 0) { %>
         <div class="space-y-4">
             <% orders.forEach(order => { %>
-                <a href="/orders/<%= order._id %>" class="block bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 group">
+                <a href="/orders/<%= order._id %>" id="order-card-<%= order._id %>" class="block bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 hover:border-blue-500/50 hover:bg-white/10 transition-all duration-300 group">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex-1">
                             <div class="flex items-center gap-3">
@@ -21,29 +21,28 @@
                                     let statusConfig = { text: 'Pending', icon: 'ri-time-line', color: 'gray' };
                                     if (order.status === 'processing') statusConfig = { text: 'Processing', icon: 'ri-loader-4-line animate-spin', color: 'yellow' };
                                     if (order.status === 'completed') statusConfig = { text: 'Completed', icon: 'ri-checkbox-circle-line', color: 'green' };
+                                    if (order.status === 'failed') statusConfig = { text: 'Failed', icon: 'ri-close-circle-line', color: 'red' };
                                 %>
-                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-<%= statusConfig.color %>-500/20 text-<%= statusConfig.color %>-300"><%= statusConfig.text %></span>
+                                <span id="status-badge-<%= order._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-<%= statusConfig.color %>-500/20 text-<%= statusConfig.color %>-300"><%= statusConfig.text %></span>
                                 <p class="font-mono text-sm text-white group-hover:text-blue-300 transition-colors">ID: <%= order._id %></p>
                             </div>
                             <p class="text-xs text-gray-400 mt-2"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
                         </div>
                         
-                        <%# === START: THAY ĐỔI QUAN TRỌNG (Loại bỏ thanh tiến trình) === %>
                         <div class="flex items-center gap-4 text-center">
                              <div>
                                 <p class="text-lg font-bold text-white"><%= order.items.length %></p>
                                 <p class="text-xs text-gray-400">Tổng</p>
                             </div>
                             <div>
-                                <p class="text-lg font-bold text-green-400"><%= order.completedItems %></p>
+                                <p class="text-lg font-bold text-green-400 item-completed-count"><%= order.completedItems %></p>
                                 <p class="text-xs text-gray-400">OK</p>
                             </div>
                             <div>
-                                <p class="text-lg font-bold text-red-400"><%= order.failedItems %></p>
+                                <p class="text-lg font-bold text-red-400 item-failed-count"><%= order.failedItems %></p>
                                 <p class="text-xs text-gray-400">Lỗi</p>
                             </div>
                         </div>
-                        <%# === END: THAY ĐỔI QUAN TRỌNG === %>
 
                         <div class="text-right">
                             <p class="text-xs text-gray-400">Tổng chi phí</p>
@@ -73,3 +72,40 @@
     </nav>
     <% } %>
 </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const socket = io();
+
+    socket.on('connect', () => {
+        console.log('Connected to server for real-time order updates.');
+    });
+
+    socket.on('order:update', (data) => {
+        const { id, status } = data;
+        const statusBadge = document.getElementById(`status-badge-${id}`);
+        if (!statusBadge) return;
+
+        let statusConfig = { text: 'Pending', color: 'gray' };
+        if (status === 'processing') statusConfig = { text: 'Processing', color: 'yellow' };
+        if (status === 'completed') statusConfig = { text: 'Completed', color: 'green' };
+        if (status === 'failed') statusConfig = { text: 'Failed', color: 'red' };
+
+        statusBadge.textContent = statusConfig.text;
+        statusBadge.className = `px-2.5 py-1 text-xs font-semibold rounded-full bg-${statusConfig.color}-500/20 text-${statusConfig.color}-300`;
+    });
+
+    socket.on('order:item_update', (data) => {
+        const { id, completedItems, failedItems } = data;
+        const orderCard = document.getElementById(`order-card-${id}`);
+        if (!orderCard) return;
+
+        const completedEl = orderCard.querySelector('.item-completed-count');
+        const failedEl = orderCard.querySelector('.item-failed-count');
+
+        if (completedEl) completedEl.textContent = completedItems;
+        if (failedEl) failedEl.textContent = failedItems;
+    });
+});
+</script>

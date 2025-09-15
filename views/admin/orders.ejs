@@ -31,23 +31,43 @@
                                 </select>
                                 <p class="text-xs text-gray-400 mt-1">Nếu không chọn, đơn hàng sẽ được gán cho bạn.</p>
                             </div>
-                            <div class="p-4 bg-gray-900/50 rounded-lg border border-white/10 space-y-2">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Số dư hiện tại:</span>
-                                    <span id="user-balance" class="font-semibold text-white">N/A</span>
+                            <div class="p-4 bg-gray-900/50 rounded-lg border border-white/10 space-y-4">
+                                <div class="flex items-center gap-3">
+                                    <i class="ri-wallet-3-line text-xl text-gray-400"></i>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-baseline">
+                                            <span class="text-gray-400 text-sm">Số dư</span>
+                                            <span id="user-balance" class="font-bold text-lg text-white">N/A</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Số items:</span>
-                                    <span id="item-count" class="font-semibold text-white">0</span>
+                                <div class="flex items-center gap-3">
+                                    <i class="ri-stack-line text-xl text-gray-400"></i>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-baseline">
+                                            <span class="text-gray-400 text-sm">Số items</span>
+                                            <span id="item-count" class="font-bold text-lg text-white">0</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Đơn giá:</span>
-                                    <span class="font-semibold text-white"><%= currentPricePerItem.toLocaleString('vi-VN') %>đ</span>
+                                <div class="flex items-center gap-3">
+                                    <i class="ri-price-tag-3-line text-xl text-gray-400"></i>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-baseline">
+                                            <span class="text-gray-400 text-sm">Đơn giá</span>
+                                            <span class="font-bold text-lg text-white"><%= currentPricePerItem.toLocaleString('vi-VN') %>đ</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="border-t border-white/10 my-2"></div>
-                                <div class="flex justify-between text-base">
-                                    <span class="font-bold text-white">Tổng chi phí:</span>
-                                    <span id="total-cost" class="font-bold text-yellow-400">0đ</span>
+                                <div class="border-t border-white/10 my-1"></div>
+                                <div class="flex items-center gap-3">
+                                    <i class="ri-money-dollar-circle-line text-2xl text-yellow-400"></i>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-baseline">
+                                            <span class="font-bold text-white">Tổng cộng</span>
+                                            <span id="total-cost" class="font-bold text-2xl text-yellow-400">0đ</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -140,9 +160,11 @@
                                     </span>
                                  </td>
                                 <td class="px-6 py-4 text-center">
-                                    <span class="font-bold text-white"><%= order.items.length %></span> /
-                                    <span class="text-green-400 item-completed-count"><%= order.completedItems %></span> /
-                                    <span class="text-red-400 item-failed-count"><%= order.failedItems %></span>
+                                    <div class="flex items-center justify-center gap-2">
+                                        <span class="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 text-xs font-bold text-sky-300 bg-sky-600/50 border border-sky-500/60 rounded-full" title="Tổng items"><%= order.items.length %></span>
+                                        <span class="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 text-xs font-bold text-green-300 bg-green-600/50 border border-green-500/60 rounded-full item-completed-count" title="Items thành công"><%= order.completedItems %></span>
+                                        <span class="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 text-xs font-bold text-red-300 bg-red-600/50 border border-red-500/60 rounded-full item-failed-count" title="Items thất bại"><%= order.failedItems %></span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 font-mono text-yellow-400">
                                     <%= order.totalCost.toLocaleString('vi-VN') %>đ
