@@ -72,9 +72,12 @@ class CrudService {
         return this.Model.findByIdAndUpdate(id, { isDeleted: true, deletedAt: new Date() });
     }
 
+    // === START: THAY ĐỔI QUAN TRỌNG ===
     async restore(id) {
-        return this.Model.findByIdAndUpdate(id, { isDeleted: false, deletedAt: null });
+        // Reset dieStreak về 0 khi khôi phục
+        return this.Model.findByIdAndUpdate(id, { isDeleted: false, deletedAt: null, dieStreak: 0 });
     }
+    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     async hardDelete(id) {
         return this.Model.findByIdAndDelete(id);
@@ -116,10 +119,13 @@ class CrudService {
         return this.Model.updateMany(query, { isDeleted: true, deletedAt: new Date() });
     }
 
+    // === START: THAY ĐỔI QUAN TRỌNG ===
     async restoreMany(queryOptions) {
         const query = this._buildQuery(queryOptions);
-        return this.Model.updateMany(query, { isDeleted: false, deletedAt: null });
+        // Reset dieStreak về 0 khi khôi phục hàng loạt
+        return this.Model.updateMany(query, { isDeleted: false, deletedAt: null, dieStreak: 0 });
     }
+    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     async hardDeleteMany(queryOptions) {
         const query = this._buildQuery(queryOptions);

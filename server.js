@@ -5,6 +5,7 @@ const cors = require('cors');
 const basicAuth = require('express-basic-auth');
 const config = require('./config');
 const { orderQueue } = require('./queue');
+const path = require('path')
 
 // Import các routes
 const adminRoutes = require('./routes/admin');
@@ -20,6 +21,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 // --- Cấu hình View Engine ---
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, '/views'));
 
 // --- Middlewares ---
 app.use(cors());

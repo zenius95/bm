@@ -2,6 +2,8 @@
 
     <main class="main-content">
         <h1 class="display-5 fw-bold mb-4 text-white">Dashboard</h1>
+        
+        <h2 class="h4 mb-3 text-white">Thống kê Đơn Hàng</h2>
         <div class="row g-4 mb-5">
             <div class="col-md-6 col-xl-3">
                 <div class="card h-100">
@@ -9,7 +11,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h6 class="text-uppercase text-white-50">Tổng Đơn Hàng</h6>
-                                <h2 class="display-5 fw-bold mb-0 text-white"><%= stats.total %></h2>
+                                <h2 class="display-5 fw-bold mb-0 text-white"><%= orderStats.total %></h2>
                             </div>
                             <div class="icon text-primary"><i class="ri-stack-line"></i></div>
                         </div>
@@ -22,7 +24,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h6 class="text-uppercase text-white-50">Đang Xử Lý</h6>
-                                <h2 class="display-5 fw-bold mb-0 text-warning"><%= stats.processing %></h2>
+                                <h2 class="display-5 fw-bold mb-0 text-warning"><%= orderStats.processing %></h2>
                             </div>
                             <div class="icon text-warning"><i class="ri-loader-4-line"></i></div>
                         </div>
@@ -35,7 +37,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h6 class="text-uppercase text-white-50">Hoàn Thành</h6>
-                                <h2 class="display-5 fw-bold mb-0 text-success"><%= stats.completed %></h2>
+                                <h2 class="display-5 fw-bold mb-0 text-success"><%= orderStats.completed %></h2>
                             </div>
                             <div class="icon text-success"><i class="ri-checkbox-circle-line"></i></div>
                         </div>
@@ -48,7 +50,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <h6 class="text-uppercase text-white-50">Thất Bại</h6>
-                                <h2 class="display-5 fw-bold mb-0 text-danger"><%= stats.failed %></h2>
+                                <h2 class="display-5 fw-bold mb-0 text-danger"><%= orderStats.failed %></h2>
                             </div>
                             <div class="icon text-danger"><i class="ri-close-circle-line"></i></div>
                         </div>
@@ -56,7 +58,61 @@
                 </div>
             </div>
         </div>
-
+        <h2 class="h4 mb-3 text-white">Thống kê Account</h2>
+        <div class="row g-4 mb-5">
+             <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Tổng Account</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-white"><%= accountStats.total %></h2>
+                            </div>
+                            <div class="icon text-primary"><i class="ri-group-line"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Live</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-success"><%= accountStats.live %></h2>
+                            </div>
+                            <div class="icon text-success"><i class="ri-shield-check-line"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Die</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-danger"><%= accountStats.die %></h2>
+                            </div>
+                            <div class="icon text-danger"><i class="ri-skull-line"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="col-md-6 col-xl-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-uppercase text-white-50">Chưa check</h6>
+                                <h2 class="display-5 fw-bold mb-0 text-secondary"><%= accountStats.unchecked %></h2>
+                            </div>
+                            <div class="icon text-secondary"><i class="ri-question-mark"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <h2 class="h4 mb-3 text-white">Đơn Hàng Gần Nhất</h2>
         <div class="card">
             <% if (orders && orders.length > 0) { %>

@@ -1,5 +1,6 @@
 // controllers/adminController.js
 const Order = require('../models/Order');
+const Account = require('../models/Account'); // Import model Account
 const Log = require('../models/Log');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
@@ -61,27 +62,51 @@ adminOrderController.handleCreate = async (req, res) => {
 // Logic cho trang dashboard
 adminOrderController.getDashboard = async (req, res) => {
     try {
-        const total = Order.countDocuments({ isDeleted: false });
-        const processing = Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false });
-        const completed = Order.countDocuments({ status: 'completed', isDeleted: false });
-        const failed = Order.countDocuments({ status: 'failed', isDeleted: false });
+        // Stats cho Order
+        const totalOrders = Order.countDocuments({ isDeleted: false });
+        const processingOrders = Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false });
+        const completedOrders = Order.countDocuments({ status: 'completed', isDeleted: false });
+        const failedOrders = Order.countDocuments({ status: 'failed', isDeleted: false });
+
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        // Stats cho Account
+        const totalAccounts = Account.countDocuments({ isDeleted: false });
+        const liveAccounts = Account.countDocuments({ status: 'LIVE', isDeleted: false });
+        const dieAccounts = Account.countDocuments({ status: 'DIE', isDeleted: false });
+        const uncheckedAccounts = Account.countDocuments({ status: 'UNCHECKED', isDeleted: false });
+        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         const recentOrdersQuery = Order.find({ isDeleted: false })
             .sort({ createdAt: -1 })
             .limit(20)
             .lean();
 
-        const [totalCount, processingCount, completedCount, failedCount, orders] = await Promise.all([
-            total, processing, completed, failed, recentOrdersQuery
+        const [
+            totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount,
+            totalAccountCount, liveAccountCount, dieAccountCount, uncheckedAccountCount,
+            orders
+        ] = await Promise.all([
+            totalOrders, processingOrders, completedOrders, failedOrders,
+            totalAccounts, liveAccounts, dieAccounts, uncheckedAccounts,
+            recentOrdersQuery
         ]);
 
-        const stats = {
-            total: totalCount,
-            processing: processingCount,
-            completed: completedCount,
-            failed: failedCount,
+        const orderStats = {
+            total: totalOrderCount,
+            processing: processingOrderCount,
+            completed: completedOrderCount,
+            failed: failedOrderCount,
         };
         
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        const accountStats = {
+            total: totalAccountCount,
+            live: liveAccountCount,
+            die: dieAccountCount,
+            unchecked: uncheckedAccountCount
+        };
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+
         orders.forEach(order => {
             order.completedItems = 0;
             order.failedItems = 0;
@@ -91,7 +116,9 @@ adminOrderController.getDashboard = async (req, res) => {
             });
         });
 
-        res.render('dashboard', { stats, orders });
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        res.render('dashboard', { orderStats, accountStats, orders });
+        // === END: THAY ĐỔI QUAN TRỌNG ===
 
     } catch (error) {
         console.error("Error loading admin dashboard:", error);
