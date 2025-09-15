@@ -103,4 +103,13 @@ router.post('/process-item', async (req, res) => {
     }
 });
 
+router.get('/logs', async (req, res) => {
+    try {
+        const logs = await Log.find().sort({ timestamp: -1 }).limit(50).lean();
+        res.json({ success: true, logs });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+});
+
 module.exports = router;

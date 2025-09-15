@@ -6,13 +6,6 @@ const config = {
     mongodb: {
         uri: process.env.MONGO_URI || 'mongodb://localhost:27017/order_processor',
     },
-
-    // Cấu hình kết nối Redis
-    redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT, 10) || 6379,
-        password: process.env.REDIS_PASSWORD || undefined, // Mật khẩu, nếu có
-    },
     
     // Cấu hình server
     server: {

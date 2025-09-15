@@ -2,6 +2,7 @@
 const Worker = require('../models/Worker');
 const itemProcessorManager = require('../utils/itemProcessorManager');
 const Log = require('../models/Log');
+const fetch = require('node-fetch'); // Thêm dòng này
 
 const workerController = {};
 
@@ -110,17 +111,46 @@ workerController.deleteWorker = async (req, res) => {
     }
 };
 
+// === START: THAY ĐỔI QUAN TRỌNG ===
 workerController.getWorkerLogs = async (req, res) => {
     try {
-        const logs = await Log.find().sort({ timestamp: -1 }).limit(50).lean();
-        res.json({ success: true, logs });
+        const { id } = req.params;
+        const worker = await Worker.findById(id).lean();
+
+        if (!worker) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy worker.' });
+        }
+
+        // Nếu là worker local, lấy log trực tiếp từ DB
+        if (worker.isLocal) {
+            const logs = await Log.find().sort({ timestamp: -1 }).limit(50).lean();
+            return res.json({ success: true, logs });
+        }
+
+        // Nếu là worker phụ, gọi API để lấy log từ nó
+        const { url, username, password } = worker;
+        const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+
+        const response = await fetch(`${url}/api/logs`, {
+            headers: { 'Authorization': auth },
+            timeout: 5000
+        });
+
+        if (!response.ok) {
+            throw new Error(`Worker tại ${url} trả về status ${response.status}`);
+        }
+
+        const result = await response.json();
+        res.json(result);
+
     } catch (error) {
-        console.error("Error fetching worker logs:", error);
-        res.status(500).json({ success: false, message: 'Lỗi server khi lấy logs.' });
+        console.error(`Lỗi khi lấy logs cho worker ${req.params.id}:`, error);
+        res.status(500).json({ success: false, message: 'Lỗi server khi lấy logs: ' + error.message });
     }
 };
+// === END: THAY ĐỔI QUAN TRỌNG ===
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
+
 workerController.toggleWorker = async (req, res) => {
     try {
         const { id } = req.params;
@@ -144,6 +174,5 @@ workerController.toggleWorker = async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi server.' });
     }
 };
-// === END: THAY ĐỔI QUAN TRỌNG ===
 
 module.exports = workerController;

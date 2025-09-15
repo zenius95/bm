@@ -39,6 +39,8 @@ router.get('/workers/:id/logs', workerController.getWorkerLogs);
 router.post('/workers/:id/toggle', workerController.toggleWorker);
 // === END: THAY ĐỔI QUAN TRỌNG ===
 
+
+
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
 // Auto Check
