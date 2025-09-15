@@ -1,6 +1,7 @@
 // utils/checkLiveService.js
 const Account = require('../models/Account');
 const ProcessRunner = require('./processRunner');
+const runInsta = require('../../src/runInsta.js');
 
 /**
  * Dịch vụ kiểm tra trạng thái live của các account.
@@ -28,7 +29,7 @@ async function runCheckLive(accountIds, io, options) {
     const checkLiveRunner = new ProcessRunner({
         concurrency: options.concurrency || 10,
         delay: options.delay || 500,
-        timeout: options.timeout || 45000,
+        timeout: options.timeout || 180000,
         retries: 2,
         maxErrors: 20,
     });
@@ -47,11 +48,45 @@ async function runCheckLive(accountIds, io, options) {
                 dieStreak: currentAccount.dieStreak || 0
             });
             
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 3000));
-            if (Math.random() < 0.15) {
-                throw new Error("Lỗi ngẫu nhiên khi check live");
+           
+            let isLive = false;
+
+            try {
+
+                const setting = {
+                    timeout: {value: 100000},
+                    khangBm: {value: false},
+                    proxy: {value: 'httpProxy'},
+                    userAgent: {value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0'}
+                }
+
+                await runInsta({
+                    setting,
+                    type: 'instagram',
+                    mode: 'normal',
+                    item: {
+                        id: currentAccount._id,
+                        uid: currentAccount.uid,
+                        password: currentAccount.password,
+                        twofa: currentAccount.twofa,
+                        proxyKey: '42.115.87.255:46603:qXhlkJ:haoEBF'
+                    }
+                }, (action, data) => {
+
+                    if (action === 'message' && data.message === 'Đăng nhập thành công') {
+
+                        isLive = true
+
+                    }
+
+                })
+
+
+            } catch (err) {
+
+                throw new Error(err);
+                
             }
-            const isLive = Math.random() > 0.5;
 
             return { isLive, checkedAt: new Date() }; 
         }

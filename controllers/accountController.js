@@ -2,9 +2,8 @@
 const Account = require('../models/Account');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
-// === START: THAY ĐỔI QUAN TRỌNG ===
-const { runCheckLive } = require('../utils/checkLiveService'); // Thay thế ProcessRunner
-// === END: THAY ĐỔI QUAN TRỌNG ===
+const { runCheckLive } = require('../utils/checkLiveService');
+const settingsService = require('../utils/settingsService'); // THÊM DÒNG NÀY
 
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy']
@@ -63,7 +62,7 @@ accountController.addMultiple = async (req, res) => {
 
 
 // === START: THAY ĐỔI QUAN TRỌNG ===
-// Viết lại hàm checkSelected để dùng service mới
+// Sửa lại hàm checkSelected để truyền config vào service
 accountController.checkSelected = async (req, res) => {
     const { ids, selectAll, filters } = req.body;
     const io = req.io;
@@ -85,8 +84,15 @@ accountController.checkSelected = async (req, res) => {
         // Phản hồi ngay cho client biết là đã nhận lệnh
         res.json({ success: true, message: `Đã bắt đầu tiến trình check live cho ${accountIdsToCheck.length} accounts.` });
 
-        // Chạy tiến trình check live ở background
-        runCheckLive(accountIdsToCheck, io);
+        // Lấy cấu hình check-live từ settings
+        const checkLiveConfig = settingsService.get('autoCheck');
+
+        // Chạy tiến trình check live ở background với config đã lấy
+        runCheckLive(accountIdsToCheck, io, {
+            concurrency: checkLiveConfig.concurrency,
+            delay: checkLiveConfig.delay,
+            timeout: checkLiveConfig.timeout
+        });
 
     } catch (error) {
         console.error("Error preparing check live process:", error);
