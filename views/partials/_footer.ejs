@@ -1,46 +1,65 @@
-<div class="toast-container">
-        <div id="app-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i id="toast-icon" class="ri-checkbox-circle-fill me-2"></i>
-                <strong id="toast-title" class="me-auto">Thông báo</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div id="toast-body" class="toast-body"></div>
+</main>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <div id="toast-container" class="fixed top-5 right-5 z-50 w-full max-w-xs space-y-3">
+        </div>
     
     <script>
-        const toastEl = document.getElementById('app-toast');
-        const toast = new bootstrap.Toast(toastEl);
+        /**
+         * Hàm hiển thị toast notification hiện đại.
+         * @param {string} message - Nội dung thông báo.
+         * @param {string} [title='Thông báo'] - Tiêu đề thông báo.
+         * @param {'success'|'error'|'warning'|'info'} [type='info'] - Loại thông báo.
+         * @param {number} [duration=5000] - Thời gian hiển thị (ms).
+         */
+        function showToast(message, title = 'Thông báo', type = 'info', duration = 5000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
 
-        function showToast(message, title = 'Thành công!', type = 'success') {
-            const toastTitle = document.getElementById('toast-title');
-            const toastBody = document.getElementById('toast-body');
-            const toastIcon = document.getElementById('toast-icon');
+            const icons = {
+                success: '<i class="ri-checkbox-circle-fill"></i>',
+                error: '<i class="ri-close-circle-fill"></i>',
+                warning: '<i class="ri-error-warning-fill"></i>',
+                info: '<i class="ri-information-fill"></i>'
+            };
 
-            toastTitle.textContent = title;
-            toastBody.innerHTML = message; // Dùng innerHTML để có thể hiển thị xuống dòng
+            const colors = {
+                success: 'bg-green-500 border-green-600',
+                error: 'bg-red-500 border-red-600',
+                warning: 'bg-yellow-500 border-yellow-600',
+                info: 'bg-blue-500 border-blue-600'
+            };
 
-            // Reset classes
-            toastEl.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-warning');
-            toastIcon.className = 'me-2';
-
-            if (type === 'success') {
-                toastEl.classList.add('text-bg-success');
-                toastIcon.classList.add('ri-checkbox-circle-fill');
-            } else if (type === 'error') {
-                toastTitle.textContent = title === 'Thành công!' ? 'Thất bại!' : title;
-                toastEl.classList.add('text-bg-danger');
-                toastIcon.classList.add('ri-error-warning-fill');
-            } else if (type === 'warning') {
-                toastTitle.textContent = title === 'Thành công!' ? 'Cảnh báo!' : title;
-                toastEl.classList.add('text-bg-warning');
-                toastIcon.classList.add('ri-alert-fill');
-            }
+            const toastId = 'toast-' + Date.now();
+            const toastElement = document.createElement('div');
+            toastElement.id = toastId;
+            toastElement.className = `transform transition-all duration-300 ease-in-out translate-x-full opacity-0`;
             
-            toast.show();
+            toastElement.innerHTML = `
+                <div class="flex items-start p-4 rounded-lg shadow-lg text-white ${colors[type] || colors.info} border-l-4">
+                    <div class="text-xl mr-3">${icons[type] || icons.info}</div>
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">${title}</p>
+                        <p class="text-xs mt-1">${message}</p>
+                    </div>
+                    <button onclick="document.getElementById('${toastId}').remove()" class="ml-4 text-xl leading-none">&times;</button>
+                </div>
+            `;
+
+            container.appendChild(toastElement);
+
+            // Hiệu ứng vào
+            setTimeout(() => {
+                toastElement.classList.remove('translate-x-full', 'opacity-0');
+                toastElement.classList.add('translate-x-0', 'opacity-100');
+            }, 100);
+
+            // Tự động đóng
+            setTimeout(() => {
+                toastElement.classList.add('opacity-0', 'translate-y-[-20px]');
+                setTimeout(() => toastElement.remove(), 300);
+            }, duration);
         }
     </script>
 </body>

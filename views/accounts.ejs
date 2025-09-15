@@ -2,55 +2,54 @@
 
 <% const inTrash = currentQuery.inTrash === 'true' %>
 
-<main class="main-content">
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white"><%= inTrash ? 'Thùng rác - Account' : 'Quản Lý Account' %></h1>
+        <p class="mt-1 text-gray-400">Thêm mới, tìm kiếm và quản lý tất cả account của Bro.</p>
+    </div>
     
     <% if (currentQuery.error) { %>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>Đã xảy ra lỗi!</strong><br>
-            <pre class="mb-0"><%= decodeURIComponent(currentQuery.error) %></pre>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg relative" role="alert">
+            <strong class="font-bold">Đã xảy ra lỗi!</strong>
+            <span class="block sm:inline"><%= decodeURIComponent(currentQuery.error) %></span>
         </div>
-   
-     <% } %>
+    <% } %>
     <% if (currentQuery.success) { %>
-         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <strong>Thành công!</strong> <%= decodeURIComponent(currentQuery.success) %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+         <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg relative" role="alert">
+            <strong class="font-bold">Thành công!</strong>
+            <span class="block sm:inline"><%= decodeURIComponent(currentQuery.success) %></span>
         </div>
     <% } %>
 
-    <h1 class="display-5 fw-bold mb-4 text-white">
-        <%= inTrash ? 'Thùng rác - Account' : 'Quản Lý Account' %>
-    </h1>
-
     <% if (!inTrash) { %>
-    <div class="card mb-4">
-        <div class="card-header"><h5 class="mb-0">Thêm Account Mới</h5></div>
-        <div class="card-body">
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+        <div class="px-6 py-4 border-b border-white/10">
+            <h3 class="text-lg font-semibold text-white">Thêm Account Mới</h3>
+        </div>
+        <div class="p-6">
             <form id="add-accounts-form">
-                <div class="mb-3">
-                    <label for="accountsData" class="form-label">Nhập danh sách account (mỗi account một dòng)</label>
-                    <textarea class="form-control font-monospace" id="accountsData" name="accountsData" rows="6" placeholder="uid|password|2fa|proxy (proxy không bắt buộc)"></textarea>
+                <div class="mb-4">
+                    <label for="accountsData" class="block text-sm font-medium text-gray-300 mb-2">Nhập danh sách account (mỗi account một dòng)</label>
+                    <textarea class="w-full bg-gray-900/50 border border-white/20 rounded-lg p-3 text-gray-200 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" id="accountsData" name="accountsData" rows="6" placeholder="uid|password|2fa|proxy (proxy không bắt buộc)"></textarea>
                 </div>
-                <button type="submit" id="add-accounts-btn" class="btn btn-primary">
-                    <i class="ri-add-line me-1"></i> Thêm Accounts
+                <button type="submit" id="add-accounts-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-950 transition-transform duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="btn-text"><i class="ri-add-line -ml-1 mr-2"></i>Thêm Accounts</span>
+                    <span class="spinner hidden"><i class="ri-loader-4-line animate-spin mr-2"></i>Đang xử lý...</span>
                 </button>
             </form>
         </div>
     </div>
     <% } %>
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" action="/admin/accounts" class="row g-3 align-items-center">
-                <% if (inTrash) { %>
-               <input type="hidden" name="inTrash" value="true">
-                <% } %>
-                <div class="col-md-6">
-                    <input type="text" name="search" class="form-control" placeholder="Tìm theo Username, Proxy..." value="<%= currentQuery.search || '' %>">
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <form method="GET" action="/admin/accounts" class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full md:w-2/3">
+                <% if (inTrash) { %><input type="hidden" name="inTrash" value="true"><% } %>
+                <div class="md:col-span-2">
+                    <input type="text" name="search" class="w-full bg-gray-900/50 border-white/20 rounded-md shadow-sm text-sm text-gray-200 focus:ring-blue-500 focus:border-blue-500" placeholder="Tìm theo Username, Proxy..." value="<%= currentQuery.search || '' %>">
                 </div>
-                <div class="col-md-4">
-                     <select name="status" class="form-select" onchange="this.form.submit()">
+                <div>
+                    <select name="status" class="w-full bg-gray-900/50 border-white/20 rounded-md shadow-sm text-sm text-gray-200 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
                         <option value="">-- Lọc theo trạng thái --</option>
                         <option value="UNCHECKED" <%= currentQuery.status === 'UNCHECKED' ? 'selected' : '' %>>Unchecked</option>
                         <option value="LIVE" <%= currentQuery.status === 'LIVE' ? 'selected' : '' %>>Live</option>
@@ -59,91 +58,91 @@
                         <option value="ERROR" <%= currentQuery.status === 'ERROR' ? 'selected' : '' %>>Error</option>
                     </select>
                 </div>
-           <div class="col-md-2">
-                    <button type="submit" class="btn btn-info w-100">Lọc</button>
-                </div>
             </form>
+            <div class="w-full md:w-auto">
+                <% if (inTrash) { %>
+                    <a href="/admin/accounts" class="w-full md:w-auto inline-flex items-center justify-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
+                <% } else { %>
+                    <a href="/admin/accounts?inTrash=true" class="w-full md:w-auto inline-flex items-center justify-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác</a>
+                <% } %>
+            </div>
         </div>
     </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h4 text-white mb-0"><%= inTrash ? 'Các mục đã xóa' : 'Danh Sách Hiện Có' %> (<%= pagination.totalItems %>)</h2>
-        <div>
-            <% if (inTrash) { %>
-                <a href="/admin/accounts" class="btn btn-light"><i class="ri-arrow-left-line me-1"></i> Quay lại danh sách</a>
-                <button class="btn btn-info" id="restoreSelectedBtn" disabled><i class="ri-arrow-go-back-line me-1"></i> Khôi phục</button>
-                <button class="btn btn-danger" id="hardDeleteSelectedBtn" disabled><i class="ri-delete-bin-fill me-1"></i> Xóa vĩnh viễn</button>
+    
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <h2 class="text-xl font-semibold text-white">
+            <%= inTrash ? 'Các mục đã xóa' : 'Danh Sách Hiện Có' %> 
+            <span class="text-base font-normal text-gray-400">(<%= pagination.totalItems %>)</span>
+        </h2>
+        <div class="flex items-center gap-2">
+             <% if (inTrash) { %>
+                <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
+                <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
             <% } else { %>
-                <a href="/admin/accounts?inTrash=true" class="btn btn-secondary"><i class="ri-delete-bin-line me-1"></i> Thùng rác</a>
-                <button class="btn btn-primary" id="checkSelectedBtn" disabled>
-                    <i class="ri-refresh-line me-1" id="checkSelectedIcon"></i> Check Live
+                <button id="checkSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-green-600/80 border border-green-500 rounded-md font-semibold text-sm text-white hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i id="checkSelectedIcon" class="ri-refresh-line mr-2"></i> Check Live
                 </button>
-                <button class="btn btn-warning" id="softDeleteSelectedBtn" disabled><i class="ri-delete-bin-2-line me-1"></i> Bỏ vào thùng rác</button>
+                <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
             <% } %>
         </div>
     </div>
     
-    <div id="select-all-banner" class="alert alert-info d-none" role="alert">
+    <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
         Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
- <a href="#" id="select-all-matching-items" class="alert-link">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+        <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
     </div>
-    <div id="clear-selection-banner" class="alert alert-info d-none" role="alert">
+    <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
         Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
- <a href="#" id="clear-selection" class="alert-link">Bỏ chọn.</a>
+        <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
     </div>
 
-    <div class="card mt-3">
-        <% if (accounts && accounts.length > 0) { %>
-        <div class="table-responsive">
-            <table class="table table-dark table-hover align-middle mb-0">
-                <thead>
+
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+         <% if (accounts && accounts.length > 0) { %>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-400 uppercase bg-white/5">
                     <tr>
-                        <th scope="col" class="ps-4" style="width: 50px;">
-                            <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
-                        </th>
-                        <th scope="col">Username</th>
-                        <th scope="col">Password</th>
-                        <th scope="col">2FA</th>
-                        <th scope="col">Proxy</th>
-                        <th scope="col">Trạng Thái</th>
-                        <th scope="col" class="text-center">Die Streak</th>
-                        <th scope="col"><%= inTrash ? 'Ngày Xóa' : 'Check Lần Cuối' %></th>
+                        <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
+                        <th scope="col" class="px-6 py-3">Username</th>
+                        <th scope="col" class="px-6 py-3">Password</th>
+                        <th scope="col" class="px-6 py-3">2FA</th>
+                        <th scope="col" class="px-6 py-3">Proxy</th>
+                        <th scope="col" class="px-6 py-3">Trạng Thái</th>
+                        <th scope="col" class="px-6 py-3 text-center">Die Streak</th>
+                        <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Check Lần Cuối' %></th>
                     </tr>
                 </thead>
                 <tbody>
                     <% accounts.forEach(account => { %>
-       <%
-                            let statusClass = 'text-bg-secondary';
-                            if (account.status === 'LIVE') statusClass = 'text-bg-success';
-                            if (account.status === 'DIE') statusClass = 'text-bg-danger';
-                            if (account.status === 'ERROR') statusClass = 'text-bg-danger';
+                        <%
+                            let statusClass = 'bg-gray-700 text-gray-300';
+                            if (account.status === 'LIVE') statusClass = 'bg-green-500/20 text-green-400';
+                            if (account.status === 'DIE') statusClass = 'bg-red-500/20 text-red-400';
+                            if (account.status === 'ERROR') statusClass = 'bg-red-500/20 text-red-400';
                         %>
-   
-                      <tr id="account-row-<%= account._id %>">
-                            <td class="ps-4">
-                                <input class="form-check-input item-checkbox" type="checkbox" value="<%= account._id %>">
-                            </td>
-                            <td><%= account.uid %></td>
-                            <td><%= account.password %></td>
-                            <td><%= account.twofa %></td>
-                            <td><%= account.proxy || 'N/A' %></td>
-                            <td>
-                                <% if (!inTrash) { %>
-                                    <% if (account.status === 'CHECKING') { %>
-                                        <div class="spinner-border spinner-border-sm text-warning" role="status" id="spinner-<%= account._id %>"></div>
-                                        <span class="badge d-none" id="status-<%= account._id %>"></span>
-                                    <% } else { %>
-                                        <div class="spinner-border spinner-border-sm text-warning d-none" role="status" id="spinner-<%= account._id %>"></div>
-                                        <span class="badge <%= statusClass %>" id="status-<%= account._id %>"><%= account.status %></span>
-                                    <% } %>
+                        <tr id="account-row-<%= account._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                            <td class="p-4"><input type="checkbox" value="<%= account._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
+                            <td class="px-6 py-4 font-medium text-white"><%= account.uid %></td>
+                            <td class="px-6 py-4"><%= account.password %></td>
+                            <td class="px-6 py-4"><%= account.twofa %></td>
+                            <td class="px-6 py-4 text-gray-400"><%= account.proxy || 'N/A' %></td>
+                            <td class="px-6 py-4">
+                                <% if (inTrash) { %>
+                                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">DELETED</span>
+                                <% } else if (account.status === 'CHECKING') { %>
+                                    <div class="flex items-center">
+                                        <i id="spinner-<%= account._id %>" class="ri-loader-4-line animate-spin text-yellow-400 mr-2"></i>
+                                        <span id="status-<%= account._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400">CHECKING</span>
+                                    </div>
                                 <% } else { %>
-                                    <span class="badge text-bg-secondary">DELETED</span>
+                                     <span id="status-<%= account._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>"><%= account.status %></span>
                                 <% } %>
                             </td>
-                            <td class="text-center" id="dieStreak-<%= account._id %>">
+                            <td id="dieStreak-<%= account._id %>" class="px-6 py-4 text-center font-semibold <%= (account.dieStreak > 0) ? 'text-red-400' : 'text-white' %>">
                                 <%= account.dieStreak || 0 %>
                             </td>
-                           <td id="lastChecked-<%= account._id %>">
+                            <td id="lastChecked-<%= account._id %>" class="px-6 py-4 text-gray-400">
                                 <% if (inTrash && account.deletedAt) { %>
                                     <%= new Date(account.deletedAt).toLocaleString('vi-VN') %>
                                 <% } else if (!inTrash && account.lastCheckedAt) { %>
@@ -158,31 +157,29 @@
             </table>
         </div>
         <% } else { %>
-             <div class="card-body">
-                <div class="empty-state">
-                    <div class="icon mb-3"><i class="ri-group-line"></i></div>
-                    <h4 class="text-white">Không tìm thấy account nào</h4>
-                    <p class="text-white-50"><%= inTrash ? 'Thùng rác trống.' : 'Hãy thử thay đổi bộ lọc hoặc thêm account mới.' %></p>
-                </div>
+            <div class="text-center py-16 px-6">
+                <i class="ri-user-search-line text-6xl text-gray-700"></i>
+                <h4 class="mt-4 text-xl font-semibold text-white">Không tìm thấy account nào</h4>
+                <p class="mt-2 text-gray-400"><%= inTrash ? 'Thùng rác trống.' : 'Hãy thử thay đổi bộ lọc hoặc thêm account mới.' %></p>
             </div>
         <% } %>
     </div>
-
+    
     <% if (pagination.totalPages > 1) { %>
-    <nav class="mt-4">
-        <ul class="pagination justify-content-center">
-             <% for(let i = 1; i <= pagination.totalPages; i++) { 
-       const query = new URLSearchParams(currentQuery);
+    <nav class="flex justify-center">
+        <ul class="inline-flex items-center -space-x-px">
+            <% for(let i = 1; i <= pagination.totalPages; i++) { 
+                const query = new URLSearchParams(currentQuery);
                 query.set('page', i);
- %>
-                <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
-                    <a class="page-link" href="?<%= query.toString() %>"><%= i %></a>
+            %>
+                <li>
+                    <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
                 </li>
             <% } %>
         </ul>
     </nav>
     <% } %>
-</main>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>

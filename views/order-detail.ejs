@@ -1,79 +1,96 @@
-<%- include('partials/_header.ejs', { title: 'Order Details', page: 'dashboard' }) %>
+<%- include('partials/_header.ejs', { title: 'Order Details', page: 'orders' }) %>
 
-    <main class="main-content">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <a href="/admin/dashboard" class="text-decoration-none text-white-50 mb-2 d-inline-block"><i class="ri-arrow-left-line"></i> Quay lại Dashboard</a>
-                <h1 class="display-6 fw-bold mb-0 text-white">Chi Tiết Đơn Hàng</h1>
-            </div>
-        </div>
-        
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-white">Thông tin chung</h5>
-                <% 
-                    let statusClass = 'text-bg-secondary';
-                    if (order.status === 'processing') { statusClass = 'text-bg-warning'; }
-                    if (order.status === 'completed') { statusClass = 'text-bg-success'; }
-                    if (order.status === 'failed') { statusClass = 'text-bg-danger'; }
-                %>
-                <span class="badge <%= statusClass %> fs-6"><%= order.status %></span>
-            </div>
-            <div class="card-body">
-                <p class="mb-2"><strong>ID:</strong> <span class="font-monospace text-info"><%= order._id %></span></p>
-                <p class="mb-0"><strong>Ngày tạo:</strong> <%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
-            </div>
-        </div>
+<div class="space-y-8">
+    <div>
+        <a href="/admin/orders" class="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors duration-200 mb-2">
+            <i class="ri-arrow-left-line mr-2"></i>
+            Quay lại Quản lý Đơn hàng
+        </a>
+        <h1 class="text-3xl font-bold text-white">Chi Tiết Đơn Hàng</h1>
+    </div>
 
-        <div class="row g-4">
-            <div class="col-lg-5">
-                <div class="card h-100">
-                    <div class="card-header"><h5 class="mb-0 text-white">Danh Sách Items</h5></div>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Item Data</th>
-                                    <th class="text-center">Trạng Thái</th>
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+        <div class="px-6 py-4 flex justify-between items-center border-b border-white/10">
+            <h3 class="text-lg font-semibold text-white">Thông tin chung</h3>
+            <% 
+                let statusClass = 'bg-gray-700 text-gray-300';
+                if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
+                if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
+            %>
+            <span class="px-3 py-1 text-sm font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
+        </div>
+        <div class="p-6 space-y-2 text-sm">
+            <p class="text-gray-300"><strong>ID:</strong> <span class="font-mono text-blue-400"><%= order._id %></span></p>
+            <p class="text-gray-300"><strong>Ngày tạo:</strong> <span class="text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-5">
+            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full">
+                <div class="px-6 py-4 border-b border-white/10">
+                    <h3 class="text-lg font-semibold text-white">Danh Sách Items (<%= order.items.length %>)</h3>
+                </div>
+                <div class="overflow-auto max-h-96">
+                    <table class="w-full text-sm text-left text-gray-300">
+                        <thead class="text-xs text-gray-400 uppercase bg-white/5 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3">Item Data</th>
+                                <th class="px-6 py-3 text-center">Trạng Thái</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/10">
+                            <% order.items.forEach(item => { %>
+                                <tr class="hover:bg-white/5">
+                                    <td class="px-6 py-3"><%= item.data %></td>
+                                    <td class="px-6 py-3 text-center">
+                                        <% if (item.status === 'completed') { %>
+                                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400">
+                                                <i class="ri-check-line"></i>
+                                            </span>
+                                        <% } else { %>
+                                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-500/20 text-gray-400">
+                                                <i class="ri-time-line"></i>
+                                            </span>
+                                        <% } %>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <% order.items.forEach(item => { %>
-                                    <tr>
-                                        <td><%= item.data %></td>
-                                        <td class="text-center">
-                                            <% if (item.status === 'completed') { %>
-                                                <span class="badge text-bg-success"><i class="ri-check-line"></i></span>
-                                            <% } else { %>
-                                                <span class="badge text-bg-secondary"><i class="ri-time-line"></i></span>
-                                            <% } %>
-                                        </td>
-                                    </tr>
-                                <% }); %>
-                            </tbody>
-                        </table>
-                    </div>
+                            <% }); %>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="col-lg-7">
-                <div class="card h-100">
-                    <div class="card-header"><h5 class="mb-0 text-white">Logs</h5></div>
-                    <div class="card-body log-container p-3">
+        </div>
+
+        <div class="lg:col-span-7">
+            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full flex flex-col">
+                <div class="px-6 py-4 border-b border-white/10">
+                    <h3 class="text-lg font-semibold text-white">Logs</h3>
+                </div>
+                <div class="p-4 flex-grow overflow-y-auto max-h-96 font-mono text-xs space-y-2">
+                    <% if (logs && logs.length > 0) { %>
                         <% logs.forEach(log => { %>
-                            <div class="log-line">
-                                <span class="log-time"><%= new Date(log.timestamp).toLocaleString('vi-VN') %></span>
+                            <div class="flex items-start">
+                                <span class="text-gray-500 mr-3"><%= new Date(log.timestamp).toLocaleTimeString('vi-VN') %></span>
                                 <% if (log.level === 'INFO') { %>
-                                    <span class="text-success fw-bold">[INFO]</span>
+                                    <span class="text-green-400 font-bold mr-2">[INFO]</span>
                                 <% } else { %>
-                                    <span class="text-danger fw-bold">[ERROR]</span>
+                                    <span class="text-red-400 font-bold mr-2">[ERROR]</span>
                                 <% } %>
-                                <span class="ms-2"><%= log.message %></span>
+                                <span class="text-gray-300 flex-1"><%= log.message %></span>
                             </div>
                         <% }); %>
-                    </div>
+                    <% } else { %>
+                        <div class="text-center py-10 text-gray-500">
+                            <i class="ri-terminal-box-line text-4xl"></i>
+                            <p class="mt-2">Không có log nào được ghi lại.</p>
+                        </div>
+                    <% } %>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+</div>
 
 <%- include('partials/_footer.ejs') %>

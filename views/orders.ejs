@@ -2,104 +2,98 @@
 
 <% const inTrash = currentQuery.inTrash === 'true' %>
 
-<main class="main-content">
-    <h1 class="display-5 fw-bold mb-4 text-white">
-        <%= inTrash ? 'Thùng rác - Đơn hàng' : 'Quản Lý Đơn Hàng' %>
-    </h1>
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white"><%= inTrash ? 'Thùng rác - Đơn hàng' : 'Quản Lý Đơn Hàng' %></h1>
+        <p class="mt-1 text-gray-400">Tạo mới, tìm kiếm và quản lý tất cả đơn hàng của Bro.</p>
+    </div>
 
     <% if (!inTrash) { %>
-    <div class="card mb-4">
-        <div class="card-header"><h5 class="mb-0">Tạo Đơn Hàng Mới</h5></div>
-        <div class="card-body">
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+        <div class="px-6 py-4 border-b border-white/10">
+            <h3 class="text-lg font-semibold text-white">Tạo Đơn Hàng Mới</h3>
+        </div>
+        <div class="p-6">
             <form id="create-order-form">
-                <div class="mb-3">
-                    <label for="itemsData" class="form-label">Nhập danh sách items (mỗi item một dòng)</label>
-                    <textarea class="form-control font-monospace" id="itemsData" name="itemsData" rows="6" placeholder="Item 1...&#10;Item 2...&#10;Item 3..."></textarea>
+                <div>
+                    <label for="itemsData" class="block text-sm font-medium text-gray-300 mb-2">Nhập danh sách items (mỗi item một dòng)</label>
+                    <textarea class="w-full bg-gray-900/50 border border-white/20 rounded-lg p-3 text-gray-200 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" id="itemsData" name="itemsData" rows="6" placeholder="Item 1...&#10;Item 2...&#10;Item 3..."></textarea>
                 </div>
-                <button type="submit" id="create-order-btn" class="btn btn-primary">
-                    <i class="ri-add-line me-1"></i> Tạo Đơn Hàng
-                </button>
+                <div class="mt-4">
+                    <button type="submit" id="create-order-btn" class="inline-flex items-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-950 transition-transform duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="ri-add-line -ml-1 mr-2"></i>
+                        <span>Tạo Đơn Hàng</span>
+                    </button>
+                </div>
             </form>
         </div>
     </div>
     <% } %>
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" action="/admin/orders" class="row g-3 align-items-center">
-                 <% if (inTrash) { %>
-                    <input type="hidden" name="inTrash" value="true">
-                 <% } %>
-                <div class="col-md-8">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
-                        <option value="">-- Lọc theo trạng thái --</option>
-                        <option value="pending" <%= currentQuery.status === 'pending' ? 'selected' : '' %>>Pending</option>
-                        <option value="processing" <%= currentQuery.status === 'processing' ? 'selected' : '' %>>Processing</option>
-                        <option value="completed" <%= currentQuery.status === 'completed' ? 'selected' : '' %>>Completed</option>
-                        <option value="failed" <%= currentQuery.status === 'failed' ? 'selected' : '' %>>Failed</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <button type="submit" class="btn btn-info w-100">Lọc</button>
-                </div>
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-3 w-full md:w-auto">
+            <form method="GET" action="/admin/orders" class="flex items-center gap-3">
+                 <% if (inTrash) { %> <input type="hidden" name="inTrash" value="true"> <% } %>
+                <select name="status" class="bg-gray-900/50 border-white/20 rounded-md shadow-sm text-sm text-gray-200 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                    <option value="">-- Lọc theo trạng thái --</option>
+                    <option value="pending" <%= currentQuery.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                    <option value="processing" <%= currentQuery.status === 'processing' ? 'selected' : '' %>>Processing</option>
+                    <option value="completed" <%= currentQuery.status === 'completed' ? 'selected' : '' %>>Completed</option>
+                    <option value="failed" <%= currentQuery.status === 'failed' ? 'selected' : '' %>>Failed</option>
+                </select>
             </form>
         </div>
-    </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h4 text-white mb-0"><%= inTrash ? 'Các mục đã xóa' : 'Danh Sách Đơn Hàng' %> (<%= pagination.totalItems %>)</h2>
+        
         <div>
-             <% if (inTrash) { %>
-                <a href="/admin/orders" class="btn btn-light"><i class="ri-arrow-left-line me-1"></i> Quay lại danh sách</a>
-                <button class="btn btn-info" id="restoreSelectedBtn" disabled><i class="ri-arrow-go-back-line me-1"></i> Khôi phục</button>
-                <button class="btn btn-danger" id="hardDeleteSelectedBtn" disabled><i class="ri-delete-bin-fill me-1"></i> Xóa vĩnh viễn</button>
+            <% if (inTrash) { %>
+                <a href="/admin/orders" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
+                <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
+                <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
             <% } else { %>
-                <a href="/admin/orders?inTrash=true" class="btn btn-secondary"><i class="ri-delete-bin-line me-1"></i> Thùng rác</a>
-                <button class="btn btn-warning" id="softDeleteSelectedBtn" disabled><i class="ri-delete-bin-2-line me-1"></i> Bỏ vào thùng rác</button>
+                <a href="/admin/orders?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<%= pagination.totalItems %>)</a>
+                <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
             <% } %>
         </div>
     </div>
-    
-    <div class="card">
+
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
         <% if (orders && orders.length > 0) { %>
-            <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle mb-0">
-                    <thead>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-300">
+                    <thead class="text-xs text-gray-400 uppercase bg-white/5">
                         <tr>
-                            <th scope="col" class="ps-4" style="width: 50px;">
-                                <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
+                            <th scope="col" class="p-4" style="width: 50px;">
+                                <input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
                             </th>
-                            <th scope="col">Order ID</th>
-                            <th scope="col">Trạng Thái</th>
-                            <th scope="col" class="text-center">Items</th>
-                            <th scope="col"><%= inTrash ? 'Ngày Xóa' : 'Ngày Tạo' %></th>
+                            <th scope="col" class="px-6 py-3">Order ID</th>
+                            <th scope="col" class="px-6 py-3">Trạng Thái</th>
+                            <th scope="col" class="px-6 py-3 text-center">Items</th>
+                            <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Ngày Tạo' %></th>
                         </tr>
                     </thead>
                     <tbody>
                         <% orders.forEach(order => { %>
-                            <% 
-                                let statusClass = 'text-bg-secondary';
-                                if (order.status === 'processing') { statusClass = 'text-bg-warning'; }
-                                if (order.status === 'completed') { statusClass = 'text-bg-success'; }
-                                if (order.status === 'failed') { statusClass = 'text-bg-danger'; }
+                             <% 
+                                let statusClass = 'bg-gray-700 text-gray-300';
+                                if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                                if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
+                                if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
                             %>
-                            <tr>
-                                <td class="ps-4">
-                                     <input class="form-check-input item-checkbox" type="checkbox" value="<%= order._id %>">
+                            <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                                <td class="p-4">
+                                    <input type="checkbox" value="<%= order._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
                                 </td>
-                                <td class="font-monospace">
-                                    <a href="/admin/orders/<%= order._id %>" class="link-light fw-bold text-decoration-none"><%= order._id %></a>
+                                <td class="px-6 py-4 font-mono font-medium text-white">
+                                    <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
                                 </td>
-                                <td><span class="badge <%= inTrash ? 'text-bg-secondary' : statusClass %> fs-6"><%= inTrash ? 'DELETED' : order.status %></span></td>
-                                <td class="text-center">
-                                    <span class="fw-bold"><%= order.items.length %></span>
+                                <td class="px-6 py-4">
+                                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= inTrash ? 'bg-gray-700 text-gray-300' : statusClass %>"><%= inTrash ? 'DELETED' : order.status %></span>
                                 </td>
-                                <td>
-                                    <% if (inTrash && order.deletedAt) { %>
-                                        <%= new Date(order.deletedAt).toLocaleString('vi-VN') %>
-                                    <% } else { %>
-                                        <%= new Date(order.createdAt).toLocaleString('vi-VN') %>
-                                    <% } %>
+                                <td class="px-6 py-4 text-center text-white font-semibold">
+                                    <%= order.items.length %>
+                                </td>
+                                <td class="px-6 py-4 text-gray-400">
+                                    <%= new Date(inTrash && order.deletedAt ? order.deletedAt : order.createdAt).toLocaleString('vi-VN') %>
                                 </td>
                             </tr>
                         <% }); %>
@@ -107,31 +101,29 @@
                 </table>
             </div>
         <% } else { %>
-            <div class="card-body">
-                <div class="empty-state">
-                    <div class="icon mb-3"><i class="ri-file-list-3-line"></i></div>
-                    <h4 class="text-white">Không có đơn hàng nào</h4>
-                     <p class="text-white-50"><%= inTrash ? 'Thùng rác trống.' : 'Hãy dùng form phía trên để tạo đơn hàng đầu tiên hoặc thay đổi bộ lọc.' %></p>
-                </div>
+            <div class="text-center py-16 px-6">
+                <i class="ri-file-search-line text-6xl text-gray-700"></i>
+                <h4 class="mt-4 text-xl font-semibold text-white">Không có đơn hàng nào</h4>
+                <p class="mt-2 text-gray-400"><%= inTrash ? 'Thùng rác trống.' : 'Hãy dùng form phía trên để tạo đơn hàng đầu tiên hoặc thay đổi bộ lọc.' %></p>
             </div>
         <% } %>
     </div>
-
+    
     <% if (pagination.totalPages > 1) { %>
-    <nav class="mt-4">
-        <ul class="pagination justify-content-center">
-             <% for(let i = 1; i <= pagination.totalPages; i++) { 
+    <nav class="flex justify-center">
+        <ul class="inline-flex items-center -space-x-px">
+            <% for(let i = 1; i <= pagination.totalPages; i++) { 
                 const query = new URLSearchParams(currentQuery);
                 query.set('page', i);
             %>
-                <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
-                    <a class="page-link" href="?<%= query.toString() %>"><%= i %></a>
+                <li>
+                    <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
                 </li>
             <% } %>
         </ul>
     </nav>
     <% } %>
-</main>
+</div>
 
 <script>
     const createOrderForm = document.getElementById('create-order-form');
