@@ -1,5 +1,6 @@
 // controllers/settingController.js
 const autoCheckManager = require('../utils/autoCheckManager');
+const itemProcessorManager = require('../utils/itemProcessorManager');
 const settingsService = require('../utils/settingsService');
 
 const settingController = {};
@@ -8,7 +9,10 @@ settingController.getSettingsPage = async (req, res) => {
     try {
         res.render('settings', {
             settings: settingsService.getAll(),
-            initialState: JSON.stringify(autoCheckManager.getStatus()) 
+            initialState: JSON.stringify({
+                autoCheck: autoCheckManager.getStatus(),
+                itemProcessor: itemProcessorManager.getStatus()
+            }) 
         });
     } catch (error) {
         console.error("Error loading settings page:", error);
@@ -21,7 +25,6 @@ settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
 };
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
 // Cập nhật để xử lý thêm các trường mới
 settingController.updateAutoCheckConfig = async (req, res) => {
     try {
@@ -42,7 +45,6 @@ settingController.updateAutoCheckConfig = async (req, res) => {
         configToUpdate.delay = parseAndValidate(delay, 0);
         configToUpdate.timeout = parseAndValidate(timeout, 1000);
         
-        // Loại bỏ các giá trị undefined
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
         await autoCheckManager.updateConfig(configToUpdate);
@@ -53,6 +55,34 @@ settingController.updateAutoCheckConfig = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// === END: THAY ĐỔI QUAN TRỌNG ===
+
+// Cập nhật cấu hình cho Item Processor
+settingController.updateItemProcessorConfig = async (req, res) => {
+    try {
+        const { isEnabled, concurrency, pollingInterval } = req.body;
+        const configToUpdate = {};
+
+        if (typeof isEnabled === 'boolean') {
+            configToUpdate.isEnabled = isEnabled;
+        }
+
+        const parseAndValidate = (val, min = 0) => {
+            const num = parseInt(val, 10);
+            return !isNaN(num) && num >= min ? num : undefined;
+        };
+
+        configToUpdate.concurrency = parseAndValidate(concurrency, 1);
+        configToUpdate.pollingInterval = parseAndValidate(pollingInterval, 1);
+        
+        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+        
+        await itemProcessorManager.updateConfig(configToUpdate);
+
+        res.json({ success: true, message: 'Cập nhật cài đặt thành công.', data: itemProcessorManager.getStatus() });
+    } catch (error) {
+        console.error("Error updating item processor config:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 module.exports = settingController;

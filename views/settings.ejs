@@ -25,7 +25,10 @@
             <div class="card">
                 <div class="card-body p-2">
                     <div class="nav flex-column nav-pills settings-nav" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-                        <a class="nav-link active" id="v-pills-autocheck-tab" data-bs-toggle="pill" href="#v-pills-autocheck" role="tab" aria-controls="v-pills-autocheck" aria-selected="true">
+                         <a class="nav-link active" id="v-pills-processor-tab" data-bs-toggle="pill" href="#v-pills-processor" role="tab" aria-controls="v-pills-processor" aria-selected="true">
+                            <i class="ri-cpu-line me-2"></i> Xử Lý Đơn Hàng
+                        </a>
+                        <a class="nav-link" id="v-pills-autocheck-tab" data-bs-toggle="pill" href="#v-pills-autocheck" role="tab" aria-controls="v-pills-autocheck" aria-selected="false">
                             <i class="ri-refresh-line me-2"></i> Tự Động Check Live
                         </a>
                         <a class="nav-link" id="v-pills-notifications-tab" data-bs-toggle="pill" href="#v-pills-notifications" role="tab" aria-controls="v-pills-notifications" aria-selected="false">
@@ -42,7 +45,62 @@
         <div class="col-lg-9">
             <div class="tab-content" id="v-pills-tabContent">
                 
-                <div class="tab-pane fade show active" id="v-pills-autocheck" role="tabpanel" aria-labelledby="v-pills-autocheck-tab">
+                <div class="tab-pane fade show active" id="v-pills-processor" role="tabpanel" aria-labelledby="v-pills-processor-tab">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Cài Đặt Tiến Trình Xử Lý Item Đơn Hàng</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-7">
+                                    <form id="processor-settings-form">
+                                        <h6 class="text-white">Trạng thái & Điều khiển</h6>
+                                        <div class="d-flex align-items-center p-3 rounded mb-4" style="background-color: var(--bs-dark);">
+                                            <div class="flex-grow-1">
+                                                <strong>Trạng thái: </strong>
+                                                <span id="proc-status-badge" class="badge text-bg-secondary">Đang tải...</span>
+                                                <div class="mt-2 text-info small">
+                                                    <i class="ri-loader-2-line"></i> Đang chạy: <strong id="proc-active-tasks">0</strong> tasks
+                                                    | <i class="ri-inbox-line"></i> Chờ: <strong id="proc-queued-tasks">0</strong> tasks
+                                                </div>
+                                            </div>
+                                            <div class="btn-group" role="group">
+                                                <button id="proc-start-btn" type="button" class="btn btn-sm btn-success"><i class="ri-play-fill me-1"></i> Start</button>
+                                                <button id="proc-stop-btn" type="button" class="btn btn-sm btn-danger"><i class="ri-stop-fill me-1"></i> Stop</button>
+                                                <button id="proc-restart-btn" type="button" class="btn btn-sm btn-warning"><i class="ri-refresh-line me-1"></i> Restart</button>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="mt-4">
+                                            <h6 class="text-white">Cấu hình chi tiết</h6>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label for="proc-concurrency" class="form-label">Số item chạy đồng thời</label>
+                                                    <input type="number" class="form-control" id="proc-concurrency" value="<%= settings.itemProcessor.concurrency %>" min="1" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="proc-pollingInterval" class="form-label">Quét DB mỗi (giây)</label>
+                                                    <input type="number" class="form-control" id="proc-pollingInterval" value="<%= settings.itemProcessor.pollingInterval %>" min="1" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 border-top pt-3">
+                                            <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1"></i> Lưu Cấu Hình</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="col-lg-5">
+                                     <h6 class="text-white">Logs thời gian thực</h6>
+                                     <div id="processor-logs" class="p-3 rounded font-monospace small" style="background-color: var(--bs-dark); height: 300px; overflow-y: auto;">
+                                        <div class="text-white-50">Đang chờ kết nối...</div>
+                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="v-pills-autocheck" role="tabpanel" aria-labelledby="v-pills-autocheck-tab">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Cài Đặt Tự Động Check Live Account</h5>
@@ -66,9 +124,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
                                 <hr>
-
                                 <div class="mt-4">
                                     <h6 class="text-white">Cấu hình chi tiết</h6>
                                     <p class="text-white-50 small">Tinh chỉnh các thông số của tiến trình check live tự động.</p>
@@ -132,73 +188,155 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // Toàn bộ script ở đây không cần thay đổi, nó sẽ tự động hoạt động với giao diện mới.
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('settings-form');
-        const intervalInput = document.getElementById('intervalMinutes');
-        const concurrencyInput = document.getElementById('concurrency');
-        const delayInput = document.getElementById('delay');
-        const timeoutInput = document.getElementById('timeout');
-        
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const statusBadge = document.getElementById('status-badge');
-        const nextRunContainer = document.getElementById('next-run-container');
-        const nextRunTime = document.getElementById('next-run-time');
-        
-        let currentState = <%- initialState %>;
+document.addEventListener('DOMContentLoaded', () => {
+    const initialState = <%- initialState %>;
 
-        function updateUI(state) {
-            statusBadge.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-secondary');
-            if (state.status === 'RUNNING') {
-                statusBadge.textContent = state.isJobRunning ? 'Đang check...' : 'Đang chạy';
-                statusBadge.classList.add('text-bg-success');
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-                restartBtn.disabled = false;
-            } else {
-                statusBadge.textContent = 'Đã dừng';
-                statusBadge.classList.add('text-bg-danger');
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-                restartBtn.disabled = true;
-            }
-
-            intervalInput.value = state.config.intervalMinutes;
-            concurrencyInput.value = state.config.concurrency;
-            delayInput.value = state.config.delay;
-            timeoutInput.value = state.config.timeout;
-
-            if (state.nextRun && !state.isJobRunning) {
-                nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
-                nextRunContainer.style.display = 'block';
-            } else {
-                nextRunContainer.style.display = 'none';
-            }
+    // === Phần của Item Processor ===
+    const procForm = document.getElementById('processor-settings-form');
+    const procConcurrencyInput = document.getElementById('proc-concurrency');
+    const procPollingInput = document.getElementById('proc-pollingInterval');
+    const procStartBtn = document.getElementById('proc-start-btn');
+    const procStopBtn = document.getElementById('proc-stop-btn');
+    const procRestartBtn = document.getElementById('proc-restart-btn');
+    const procStatusBadge = document.getElementById('proc-status-badge');
+    const procActiveTasks = document.getElementById('proc-active-tasks');
+    const procQueuedTasks = document.getElementById('proc-queued-tasks');
+    const procLogs = document.getElementById('processor-logs');
+    
+    function updateProcUI(state) {
+        if (!state) return;
+        procStatusBadge.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-secondary');
+        if (state.status === 'RUNNING') {
+            procStatusBadge.textContent = 'Đang chạy';
+            procStatusBadge.classList.add('text-bg-success');
+            procStartBtn.disabled = true;
+            procStopBtn.disabled = false;
+            procRestartBtn.disabled = false;
+        } else {
+            procStatusBadge.textContent = 'Đã dừng';
+            procStatusBadge.classList.add('text-bg-danger');
+            procStartBtn.disabled = false;
+            procStopBtn.disabled = true;
+            procRestartBtn.disabled = true;
         }
-        
-        updateUI(currentState);
-        
-        async function updateConfig(payload) {
-            try {
-                const response = await fetch('/admin/settings/auto-check/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (result.success) {
-                    showToast(result.message, 'Thành công', 'success');
-                    updateUI(result.data);
-                } else {
-                    showToast(result.message, 'Lỗi', 'error');
-                }
-            } catch (error) {
-                showToast('Lỗi kết nối server', 'Lỗi', 'error');
-            }
-        }
+        procConcurrencyInput.value = state.config.concurrency;
+        procPollingInput.value = state.config.pollingInterval;
+        procActiveTasks.textContent = state.activeTasks;
+        procQueuedTasks.textContent = state.queuedTasks;
+    }
 
+    async function updateProcConfig(payload) {
+        try {
+            const response = await fetch('/admin/settings/item-processor/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message, 'Thành công', 'success');
+                updateProcUI(result.data);
+            } else {
+                showToast(result.message, 'Lỗi', 'error');
+            }
+        } catch (error) {
+            showToast('Lỗi kết nối server', 'Lỗi', 'error');
+        }
+    }
+
+    if (procForm) {
+        procForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateProcConfig({
+                concurrency: procConcurrencyInput.value,
+                pollingInterval: procPollingInput.value
+            });
+        });
+        procStartBtn.addEventListener('click', () => updateProcConfig({ isEnabled: true }));
+        procStopBtn.addEventListener('click', () => updateProcConfig({ isEnabled: false }));
+        procRestartBtn.addEventListener('click', () => {
+             fetch('/admin/settings/item-processor/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isEnabled: true })
+             }).then(res => res.json()).then(result => {
+                 if (result.success) showToast('Đã khởi động lại dịch vụ.', 'Thành công', 'success');
+             });
+        });
+    }
+
+    function addLogMessage(message) {
+        if(procLogs.childElementCount > 100) {
+            procLogs.removeChild(procLogs.firstChild);
+        }
+        const logLine = document.createElement('div');
+        const time = new Date().toLocaleTimeString('vi-VN');
+        logLine.innerHTML = `<span class="text-white-50 me-2">[${time}]</span>${message}`;
+        procLogs.appendChild(logLine);
+        procLogs.scrollTop = procLogs.scrollHeight;
+    }
+
+    // === Phần của Auto Check Live ===
+    const form = document.getElementById('settings-form');
+    const intervalInput = document.getElementById('intervalMinutes');
+    const concurrencyInput = document.getElementById('concurrency');
+    const delayInput = document.getElementById('delay');
+    const timeoutInput = document.getElementById('timeout');
+    const startBtn = document.getElementById('start-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const statusBadge = document.getElementById('status-badge');
+    const nextRunContainer = document.getElementById('next-run-container');
+    const nextRunTime = document.getElementById('next-run-time');
+    
+    function updateUI(state) {
+        if (!state) return;
+        statusBadge.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-secondary');
+        if (state.status === 'RUNNING') {
+            statusBadge.textContent = state.isJobRunning ? 'Đang check...' : 'Đang chạy';
+            statusBadge.classList.add('text-bg-success');
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            restartBtn.disabled = false;
+        } else {
+            statusBadge.textContent = 'Đã dừng';
+            statusBadge.classList.add('text-bg-danger');
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            restartBtn.disabled = true;
+        }
+        intervalInput.value = state.config.intervalMinutes;
+        concurrencyInput.value = state.config.concurrency;
+        delayInput.value = state.config.delay;
+        timeoutInput.value = state.config.timeout;
+        if (state.nextRun && !state.isJobRunning) {
+            nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
+            nextRunContainer.style.display = 'block';
+        } else {
+            nextRunContainer.style.display = 'none';
+        }
+    }
+
+    async function updateConfig(payload) {
+        try {
+            const response = await fetch('/admin/settings/auto-check/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast(result.message, 'Thành công', 'success');
+                updateUI(result.data);
+            } else {
+                showToast(result.message, 'Lỗi', 'error');
+            }
+        } catch (error) {
+            showToast('Lỗi kết nối server', 'Lỗi', 'error');
+        }
+    }
+    
+    if (form) {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             updateConfig({
@@ -208,31 +346,33 @@
                 timeout: timeoutInput.value
             });
         });
-        
         startBtn.addEventListener('click', () => updateConfig({ isEnabled: true }));
         stopBtn.addEventListener('click', () => updateConfig({ isEnabled: false }));
-        
         restartBtn.addEventListener('click', () => {
              fetch('/admin/settings/auto-check/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    isEnabled: true, 
-                    intervalMinutes: intervalInput.value,
-                    concurrency: concurrencyInput.value,
-                    delay: delayInput.value,
-                    timeout: timeoutInput.value
-                })
-            }).then(res => res.json()).then(result => {
+                body: JSON.stringify({ isEnabled: true })
+             }).then(res => res.json()).then(result => {
                 if (result.success) showToast('Đã khởi động lại dịch vụ.', 'Thành công', 'success');
             });
         });
-        
-        const socket = io();
-        socket.on('autoCheck:statusUpdate', (state) => {
-            updateUI(state);
-        });
-    });
+    }
+
+    // === Cập nhật trạng thái ban đầu & Socket.IO listeners ===
+    updateProcUI(initialState.itemProcessor);
+    updateUI(initialState.autoCheck);
+
+    const socket = io();
+    socket.on('autoCheck:statusUpdate', (state) => updateUI(state));
+    socket.on('itemProcessor:statusUpdate', (state) => updateProcUI(state));
+    socket.on('itemProcessor:log', (message) => addLogMessage(message));
+    
+    if (procLogs) {
+        procLogs.innerHTML = '';
+        addLogMessage('Đã kết nối với server.');
+    }
+});
 </script>
 
 <%- include('partials/_footer.ejs') %>

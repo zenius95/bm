@@ -9,7 +9,8 @@ const path = require('path');
 const adminRoutes = require('./routes/admin');
 const orderRoutes = require('./routes/order');
 const autoCheckManager = require('./utils/autoCheckManager');
-const settingsService = require('./utils/settingsService'); // THÊM DÒNG NÀY
+const itemProcessorManager = require('./utils/itemProcessorManager');
+const settingsService = require('./utils/settingsService');
 
 const app = express();
 const http = require('http');
@@ -48,10 +49,7 @@ app.use('/api', orderRoutes);
 async function startServer() {
     console.log('🚀 Starting server, checking connections...');
     
-    // === START: THAY ĐỔI QUAN TRỌNG ===
-    // Khởi tạo settingsService TRƯỚC khi làm mọi việc khác
     await settingsService.initialize();
-    // === END: THAY ĐỔI QUAN TRỌNG ===
     
     await mongoose.connect(config.mongodb.uri)
         .then(() => console.log('✅ MongoDB connection: OK'))
@@ -65,8 +63,9 @@ async function startServer() {
         console.log(`   - API is running on http://localhost:${config.server.port}`);
         console.log(`   - Admin Dashboard is available at http://localhost:${config.server.port}/admin/dashboard`);
         
-        // autoCheckManager giờ sẽ được khởi tạo với config đã được load sẵn
+        // Khởi tạo các manager
         autoCheckManager.initialize(io);
+        itemProcessorManager.initialize(io);
     });
 }
 

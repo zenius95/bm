@@ -10,11 +10,14 @@ const DEFAULT_SETTINGS = {
     autoCheck: {
         isEnabled: false,
         intervalMinutes: 30,
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        concurrency: 10, // Số luồng
-        delay: 500,      // Delay giữa các task (ms)
-        timeout: 45000   // Timeout cho mỗi task (ms)
-        // === END: THAY ĐỔI QUAN TRỌNG ===
+        concurrency: 10,
+        delay: 500,
+        timeout: 45000
+    },
+    itemProcessor: {
+        isEnabled: false,
+        concurrency: 10,      // Số item xử lý đồng thời
+        pollingInterval: 5    // Quét DB mỗi 5 giây
     }
 };
 
@@ -35,6 +38,10 @@ class SettingsService extends EventEmitter {
                 autoCheck: {
                     ...DEFAULT_SETTINGS.autoCheck,
                     ...(fileData.autoCheck || {})
+                },
+                itemProcessor: {
+                    ...DEFAULT_SETTINGS.itemProcessor,
+                    ...(fileData.itemProcessor || {})
                 }
             };
             console.log('[SettingsService] Loaded config from settings.json');

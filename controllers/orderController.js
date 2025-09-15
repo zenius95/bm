@@ -1,7 +1,6 @@
 // controllers/orderController.js
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
-const { orderQueue } = require('../queue');
 
 // POST /api/orders - Tạo đơn hàng mới từ API
 exports.createOrder = async (req, res) => {
@@ -13,9 +12,9 @@ exports.createOrder = async (req, res) => {
         const items = itemsData.map(data => ({ data, status: 'queued' }));
         const order = new Order({ items });
         await order.save();
-        await orderQueue.add('process-order', { orderId: order._id });
-        console.log(`[Server] Job added to queue for Order ID: ${order._id}`);
-        res.status(202).json({ message: 'Order accepted and is being processed.', order });
+        // Không cần thêm vào queue nữa
+        console.log(`[Server] Order created: ${order._id}`);
+        res.status(201).json({ message: 'Order created and queued for processing.', order });
     } catch (error) {
         console.error('[Server] Error creating order:', error);
         res.status(500).json({ message: 'Server error', error: error.message });

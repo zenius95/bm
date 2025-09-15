@@ -4,7 +4,6 @@ const Account = require('../models/Account'); // Import model Account
 const Log = require('../models/Log');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
-const { orderQueue } = require('../queue');
 
 // 1. Khởi tạo Service cho Order
 const orderService = new CrudService(Order, {
@@ -25,12 +24,8 @@ adminOrderController.handleGetById = async (req, res) => {
         if (!order) {
             return res.status(404).send("Order not found.");
         }
-        // Lấy thêm logs cho trang chi tiết
         const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 });
-
-        // Render đúng file view 'order-detail.ejs'
         res.render('order-detail', { order, logs });
-
     } catch (error) {
         console.error(`Error getting order by id:`, error);
         res.status(500).send(`Could not load order detail.`);
@@ -49,7 +44,7 @@ adminOrderController.handleCreate = async (req, res) => {
         }));
         if (items.length > 0) {
             const order = await orderService.create({ items });
-            await orderQueue.add('process-order', { orderId: order._id });
+            // Không cần thêm vào queue nữa
             return res.json({ success: true, message: `Đã tạo thành công đơn hàng với ${items.length} item.` });
         }
          return res.status(400).json({ success: false, message: "Không có item nào hợp lệ." });

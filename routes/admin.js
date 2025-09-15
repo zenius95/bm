@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const accountController = require('../controllers/accountController');
-const settingController = require('../controllers/settingController'); // THÊM DÒNG NÀY
+const settingController = require('../controllers/settingController');
 
 // Middleware parse query cho tất cả các route bên dưới
 router.use(accountController.parseQueryMiddleware);
@@ -28,12 +28,13 @@ router.post('/orders/soft-delete', adminController.handleSoftDelete);
 router.post('/orders/restore', adminController.handleRestore);
 router.post('/orders/hard-delete', adminController.handleHardDelete);
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
+// Auto Check
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
-router.get('/settings/auto-check/status', settingController.getAutoCheckStatus); // Dùng để debug nếu cần
-// === END: THAY ĐỔI QUAN TRỌNG ===
+router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
+// Item Processor
+router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
 
 
 module.exports = router;

@@ -5,5 +5,10 @@
         "concurrency": 5,
         "delay": 500,
         "timeout": 180000
+    },
+    "itemProcessor": {
+        "isEnabled": true,
+        "concurrency": 10,
+        "pollingInterval": 5
     }
 }
