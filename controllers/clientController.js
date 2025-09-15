@@ -11,7 +11,8 @@ clientController.getDashboard = (req, res) => {
     };
     res.render('client/dashboard', { 
         page: 'dashboard',
-        stats
+        stats,
+        title: 'Client Dashboard' // Đảm bảo có title
     });
 };
 

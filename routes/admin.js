@@ -11,8 +11,9 @@ router.use(accountController.parseQueryMiddleware);
 router.use(adminController.parseQueryMiddleware);
 router.use(userController.parseQueryMiddleware);
 
-// Dashboard
-router.get('/', adminController.getDashboard);
+// === SỬA LỖI Ở ĐÂY ===
+// Dashboard route should be /dashboard
+router.get('/dashboard', adminController.getDashboard);
 
 // --- Account Routes ---
 router.get('/accounts', accountController.handleGetAll);
@@ -46,7 +47,7 @@ router.post('/workers/:id/toggle', workerController.toggleWorker);
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
-router.post('/settings/api-key/update', settingController.updateMasterApiKey); // Thêm route này
+router.post('/settings/api-key/update', settingController.updateMasterApiKey);
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);

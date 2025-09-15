@@ -1,9 +1,8 @@
-// controllers/crudControllerFactory.js
+// controllers/crudController.js
 const createCrudController = (crudService, viewName, options = {}) => {
     const { single, plural } = options;
 
     const renderData = (res, path, data) => {
-        // Render view từ thư mục admin
         res.render(`admin/${path}`, { ...data, currentQuery: res.locals.currentQuery });
     };
     
@@ -17,8 +16,16 @@ const createCrudController = (crudService, viewName, options = {}) => {
             const { data, pagination } = await crudService.find(req.query);
             const trashCount = await crudService.Model.countDocuments({ isDeleted: true });
 
-            // Truyền biến có tên là giá trị của 'plural' (ví dụ: 'users')
-            renderData(res, viewName, { [plural]: data, pagination, trashCount });
+            // === THÊM DÒNG NÀY ĐỂ TẠO TITLE ĐỘNG ===
+            const title = plural.charAt(0).toUpperCase() + plural.slice(1) + ' Management';
+
+            renderData(res, viewName, { 
+                [plural]: data, 
+                pagination, 
+                trashCount,
+                title, // Gửi title cho view
+                page: plural // Gửi page cho sidebar active state
+            });
         } catch (error) {
             console.error(`Error getting all ${plural}:`, error);
             res.status(500).send(`Could not load ${plural}.`);
@@ -31,8 +38,11 @@ const createCrudController = (crudService, viewName, options = {}) => {
             if (!item) {
                 return res.status(404).send(`${single} not found.`);
             }
-            // Render view chi tiết, ví dụ 'admin/user-detail'
-            res.render(`admin/${viewName.replace(/s$/, '')}-detail`, { [single]: item }); 
+            res.render(`admin/${viewName.replace(/s$/, '')}-detail`, { 
+                [single]: item,
+                title: `${single.charAt(0).toUpperCase() + single.slice(1)} Detail`,
+                page: plural
+            }); 
         } catch (error) {
             console.error(`Error getting ${single} by id:`, error);
             res.status(500).send(`Could not load ${single}.`);
@@ -53,8 +63,7 @@ const createCrudController = (crudService, viewName, options = {}) => {
         try {
             await crudService.update(req.params.id, req.body);
             res.redirect(`/admin/${plural}`);
-        } catch (error)
-        {
+        } catch (error) {
             console.error(`Error updating ${single}:`, error);
             res.status(500).send(`Could not update ${single}.`);
         }

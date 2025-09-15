@@ -2,7 +2,7 @@
 const autoCheckManager = require('../utils/autoCheckManager');
 const itemProcessorManager = require('../utils/itemProcessorManager');
 const settingsService = require('../utils/settingsService');
-const Worker = require('../models/Worker'); // Thêm dòng này
+const Worker = require('../models/Worker');
 
 const settingController = {};
 
@@ -13,7 +13,9 @@ settingController.getSettingsPage = async (req, res) => {
             initialState: JSON.stringify({
                 autoCheck: autoCheckManager.getStatus(),
                 itemProcessor: itemProcessorManager.getStatus() 
-            }) 
+            }),
+            title: 'System Settings', // Đảm bảo có title
+            page: 'settings'
         });
     } catch (error) {
         console.error("Error loading settings page:", error);
@@ -21,7 +23,6 @@ settingController.getSettingsPage = async (req, res) => {
     }
 };
 
-// === START: THÊM HÀM MỚI ĐỂ CẬP NHẬT API KEY ===
 settingController.updateMasterApiKey = async (req, res) => {
     try {
         const { masterApiKey } = req.body;
@@ -31,7 +32,6 @@ settingController.updateMasterApiKey = async (req, res) => {
         
         await settingsService.update('masterApiKey', masterApiKey);
 
-        // Đồng bộ key mới cho worker local
         await Worker.updateOne(
             { isLocal: true },
             { $set: { apiKey: masterApiKey } }
@@ -43,8 +43,6 @@ settingController.updateMasterApiKey = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// === END: THÊM HÀM MỚI ĐỂ CẬP NHẬT API KEY ===
-
 
 settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());

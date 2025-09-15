@@ -1,0 +1,33 @@
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white">Xin chào, <%= user.username %>!</h1>
+        <p class="mt-1 text-gray-400">Chào mừng Bro đã quay trở lại.</p>
+    </div>
+
+    <div>
+        <h2 class="text-xl font-semibold text-white mb-4">Tổng quan tài khoản</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-400">Tổng Đơn Hàng</span>
+                    <i class="ri-stack-line text-2xl text-blue-400"></i>
+                </div>
+                <p class="mt-2 text-3xl font-bold text-white"><%= stats.orders %></p>
+            </div>
+            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-400">Đơn Chờ Xử Lý</span>
+                    <i class="ri-loader-4-line text-2xl text-yellow-400"></i>
+                </div>
+                <p class="mt-2 text-3xl font-bold text-yellow-400"><%= stats.pending %></p>
+            </div>
+            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-400">Số Dư</span>
+                    <i class="ri-wallet-3-line text-2xl text-green-400"></i>
+                </div>
+                <p class="mt-2 text-3xl font-bold text-green-400"><%= stats.balance.toLocaleString('vi-VN') %>đ</p>
+            </div>
+        </div>
+    </div>
+</div>

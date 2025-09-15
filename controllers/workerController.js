@@ -2,7 +2,7 @@
 const Worker = require('../models/Worker');
 const itemProcessorManager = require('../utils/itemProcessorManager');
 const Log = require('../models/Log');
-const fetch = require('node-fetch'); // Thêm dòng này
+const fetch = require('node-fetch');
 
 const workerController = {};
 
@@ -25,7 +25,8 @@ workerController.getWorkersPage = async (req, res) => {
             page: 'workers',
             initialState: {
                 itemProcessor: itemProcessorManager.getStatus()
-            }
+            },
+            title: 'Worker Management' // Đảm bảo có title
         });
     } catch (error) {
         console.error("Error loading workers page:", error);
@@ -111,7 +112,6 @@ workerController.deleteWorker = async (req, res) => {
     }
 };
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
 workerController.getWorkerLogs = async (req, res) => {
     try {
         const { id } = req.params;
@@ -121,13 +121,11 @@ workerController.getWorkerLogs = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Không tìm thấy worker.' });
         }
 
-        // Nếu là worker local, lấy log trực tiếp từ DB
         if (worker.isLocal) {
             const logs = await Log.find().sort({ timestamp: -1 }).limit(50).lean();
             return res.json({ success: true, logs });
         }
 
-        // Nếu là worker phụ, gọi API để lấy log từ nó
         const { url, username, password } = worker;
         const auth = 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
 
@@ -148,8 +146,6 @@ workerController.getWorkerLogs = async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi server khi lấy logs: ' + error.message });
     }
 };
-// === END: THAY ĐỔI QUAN TRỌNG ===
-
 
 workerController.toggleWorker = async (req, res) => {
     try {

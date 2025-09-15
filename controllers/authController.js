@@ -18,21 +18,17 @@ authController.login = async (req, res) => {
             return res.redirect('/login?error=' + encodeURIComponent('Sai tên đăng nhập hoặc mật khẩu.'));
         }
         
-        // Lưu thông tin user vào session
         req.session.user = {
             id: user._id,
             username: user.username,
             role: user.role
         };
         
-        // === START: PHÂN LUỒNG USER ===
-        // Nếu là 'admin' thì vào trang admin, ngược lại vào trang client
         if (user.role === 'admin') {
             res.redirect('/admin/dashboard');
         } else {
-            res.redirect('/dashboard'); // URL mới cho client
+            res.redirect('/dashboard');
         }
-        // === END: PHÂN LUỒNG USER ===
 
     } catch (error) {
         console.error("Login error:", error);
@@ -44,7 +40,6 @@ authController.login = async (req, res) => {
 authController.logout = (req, res) => {
     req.session.destroy(err => {
         if (err) {
-            // Chuyển hướng về trang login sau khi logout
             return res.redirect('/login');
         }
         res.clearCookie('connect.sid');
@@ -54,23 +49,23 @@ authController.logout = (req, res) => {
 
 // Middleware kiểm tra đã đăng nhập chưa
 authController.isAuthenticated = (req, res, next) => {
-    if (req.session.user) {
+    if (req.session && req.session.user) {
         return next();
     }
     res.redirect('/login');
 };
 
-// Middleware kiểm tra có phải Admin không
+// === START: SỬA LẠI MIDDLEWARE ISADMIN ===
+// Middleware này chỉ kiểm tra quyền truy cập vào các route /admin
 authController.isAdmin = (req, res, next) => {
+    // Nếu đã đăng nhập và là admin, cho phép đi tiếp
     if (req.session.user && req.session.user.role === 'admin') {
         return next();
     }
-    // Nếu user thường cố vào trang admin, đá về dashboard của họ
-    if (req.session.user) {
-        return res.redirect('/dashboard');
-    }
-    // Nếu chưa đăng nhập, về trang login
-    res.redirect('/login');
+    // Nếu không phải admin (là user thường), trả về lỗi 403 Forbidden
+    // và không cho phép truy cập.
+    res.status(403).send('Forbidden: You do not have permission to access this page.');
 };
+// === END ===
 
 module.exports = authController;

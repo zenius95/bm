@@ -1,7 +1,7 @@
 <aside class="w-64 flex-shrink-0 bg-gray-900/60 backdrop-blur-xl border-r border-gray-500/20 p-4 flex flex-col">
     <div class="mb-4 text-center">
         <a href="<%= user.role === 'admin' ? '/admin/dashboard' : '/dashboard' %>" class="text-2xl font-bold text-white tracking-wider">
-            <%= user.role === 'admin' ? 'ADMINPRO' : 'CLIENTPRO' %>
+            <%= user.role === 'admin' && currentPath.startsWith('/admin') ? 'ADMINPRO' : 'CLIENTPRO' %>
         </a>
     </div>
 
@@ -32,7 +32,7 @@
 
     <nav class="flex-grow">
         <ul class="space-y-2">
-            <% if(user.role === 'admin') { %>
+            <% if(user.role === 'admin' && currentPath.startsWith('/admin')) { %>
                 <li><a href="/admin/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Dashboard</span></a></li>
                 <li><a href="/admin/orders" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'orders') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-file-list-3-line w-5 h-5 mr-3"></i><span class="font-medium">Đơn hàng</span></a></li>
                 <li><a href="/admin/accounts" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-group-line w-5 h-5 mr-3"></i><span class="font-medium">Accounts</span></a></li>
@@ -41,15 +41,29 @@
                 <li><a href="/admin/settings" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'settings') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-settings-3-line w-5 h-5 mr-3"></i><span class="font-medium">Cài Đặt</span></a></li>
             <% } else { %>
                 <li><a href="/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Tổng Quan</span></a></li>
-                <% } %>
+            <% } %>
         </ul>
     </nav>
     
+    <% if (user.role === 'admin') { %>
+        <div class="mt-4 pt-4 border-t border-gray-500/20">
+            <% if (currentPath.startsWith('/admin')) { %>
+                <a href="/dashboard" class="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors duration-200">
+                    <i class="ri-user-line w-5 h-5 mr-2"></i>
+                    <span class="font-medium text-sm">Chuyển sang Client</span>
+                </a>
+            <% } else { %>
+                 <a href="/admin/dashboard" class="flex items-center justify-center w-full px-4 py-2.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 transition-colors duration-200">
+                    <i class="ri-shield-user-line w-5 h-5 mr-2"></i>
+                    <span class="font-medium text-sm">Về trang Admin</span>
+                </a>
+            <% } %>
+        </div>
+    <% } %>
     <div class="mt-auto pt-4 text-center text-xs text-gray-400">
         &copy; <%= new Date().getFullYear() %>. All Rights Reserved.
     </div>
 </aside>
-
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -77,7 +91,6 @@
                 }
             });
 
-            // Đóng dropdown khi click ra ngoài
             document.addEventListener('click', (event) => {
                 if (!userMenuContainer.contains(event.target)) {
                     dropdown.classList.add('opacity-0', 'scale-95');

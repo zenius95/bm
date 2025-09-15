@@ -1,6 +1,5 @@
 // server.js
 const express = require('express');
-const expressLayouts = require('express-ejs-layouts'); // Thêm dòng này
 const mongoose = require('mongoose');
 const cors = require('cors');
 const config = require('./config');
@@ -9,19 +8,22 @@ const http = require('http');
 const { Server } = require("socket.io");
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const expressLayouts = require('express-ejs-layouts');
 
 const User = require('./models/User');
+const Worker = require('./models/Worker'); // === THÊM DÒNG NÀY ===
 const authController = require('./controllers/authController');
 const apiKeyAuthController = require('./controllers/apiKeyAuthController');
 
-const Worker = require('./models/Worker');
-const workerMonitor = require('./utils/workerMonitor');
 const adminRoutes = require('./routes/admin');
+const clientRoutes = require('./routes/client'); // Thêm dòng này
 const orderRoutes = require('./routes/order');
 const workerApiRoutes = require('./routes/workerApi');
+
 const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
 const settingsService = require('./utils/settingsService');
+const workerMonitor = require('./utils/workerMonitor');
 
 const app = express();
 const server = http.createServer(app);
@@ -29,9 +31,8 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '/views'));
-
-app.use(expressLayouts); // Thêm dòng này
-app.set('layout', 'layouts/main'); // Đặt layout mặc định
+app.use(expressLayouts);
+app.set('layout', 'layouts/main');
 
 app.use(cors());
 app.use(express.json());
@@ -49,19 +50,18 @@ app.use(session({
     }
 }));
 
-// === START: CẬP NHẬT MIDDLEWARE ===
-// Middleware này sẽ lấy thông tin user mới nhất từ DB trên mỗi request
-// để đảm bảo số dư và các thông tin khác luôn chính xác.
 app.use(async (req, res, next) => {
     req.io = io;
-    res.locals.user = null; // Khởi tạo user là null
+    res.locals.user = null;
+    // === START: THÊM DÒNG NÀY ĐỂ TRUYỀN PATH VÀO VIEW ===
+    res.locals.currentPath = req.originalUrl; 
+    // === END ===
     if (req.session.user) {
         try {
             const currentUser = await User.findById(req.session.user.id).lean();
             if (currentUser) {
                 res.locals.user = currentUser;
             } else {
-                // Nếu user không còn tồn tại trong DB, hủy session
                 req.session.destroy();
             }
         } catch (error) {
@@ -70,22 +70,26 @@ app.use(async (req, res, next) => {
     }
     next();
 });
-// === END: CẬP NHẬT MIDDLEWARE ===
 
 app.get('/login', authController.getLoginPage);
 app.post('/login', authController.login);
 app.get('/logout', authController.logout);
 
-app.use('/api', authController.isAuthenticated, orderRoutes);
+// === START: THAY ĐỔI THỨ TỰ ROUTE ===
+// Route cho admin phải được đặt trước route của client
 app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
+// Route cho client
+app.use('/', authController.isAuthenticated, clientRoutes);
+// === END ===
+
+app.use('/api', authController.isAuthenticated, orderRoutes);
 app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
+
 
 async function startServer() {
     console.log('🚀 Starting server, checking connections...');
     
     await settingsService.initialize();
-    await settingsService.update('autoCheck', { isEnabled: false });
-    console.log('[Server Startup] Auto Check Live process has been set to DISABLED.');
     
     await mongoose.connect(config.mongodb.uri)
         .then(() => console.log('✅ MongoDB connection: OK'))
@@ -100,6 +104,7 @@ async function startServer() {
         try {
             const defaultAdmin = new User({
                 username: 'admin',
+                email: 'admin@example.com',
                 password: 'admin',
                 role: 'admin'
             });

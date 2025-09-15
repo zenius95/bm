@@ -1,33 +1,11 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<%- include('../partials/_header.ejs') %>
 
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { 
-                extend: { 
-                    fontFamily: { sans: ['Inter', 'sans-serif'] } 
-                } 
-            }
-        }
-    </script>
-    <style>
-        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    </style>
-</head>
 <body class="bg-gray-950 text-gray-50 font-sans">
     
     <div class="fixed inset-0 -z-10 h-full w-full">
         <div class="absolute top-0 left-0 h-96 w-96 bg-purple-500/40 rounded-full blur-[150px] opacity-30"></div>
         <div class="absolute bottom-0 right-0 h-80 w-80 bg-blue-500/40 rounded-full blur-[120px] opacity-40"></div>
+        <div class="absolute bottom-1/4 left-1/4 h-72 w-72 bg-pink-500/30 rounded-full blur-[100px] opacity-30"></div>
     </div>
     
     <div class="flex min-h-screen w-full relative z-10">
