@@ -23,35 +23,53 @@
 
         <div class="lg:col-span-1 sticky top-8">
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 space-y-4">
-                <h3 class="text-lg font-bold text-white border-b border-white/10 pb-3">Chi Tiết Giao Dịch</h3>
-                
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-400">Số dư hiện tại</span>
-                        <span class="font-semibold text-green-400 text-base"><%= user.balance.toLocaleString('vi-VN') %>đ</span>
+                <h3 class="text-lg font-bold text-white border-b border-white/10 pb-3 mb-4">Chi Tiết Giao Dịch</h3>
+
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i class="ri-wallet-3-line text-xl text-gray-400"></i>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-gray-400 text-sm">Số dư</span>
+                                <span class="font-bold text-lg text-green-400"><%= user.balance.toLocaleString('vi-VN') %>đ</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-400">Đơn giá</span>
-                        <span class="font-mono text-gray-300"><%= pricePerItem.toLocaleString('vi-VN') %>đ / item</span>
+                    <div class="flex items-center gap-3">
+                        <i class="ri-stack-line text-xl text-gray-400"></i>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-gray-400 text-sm">Số items</span>
+                                <span id="item-count" class="font-bold text-lg text-white">0</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-400">Số lượng Items</span>
-                        <span id="item-count" class="font-semibold text-white">0</span>
+                    <div class="flex items-center gap-3">
+                        <i class="ri-price-tag-3-line text-xl text-gray-400"></i>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-baseline">
+                                <span class="text-gray-400 text-sm">Đơn giá</span>
+                                <span class="font-bold text-lg text-white"><%= pricePerItem.toLocaleString('vi-VN') %>đ</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-white/10 my-1"></div>
+                    <div class="flex items-center gap-3">
+                        <i class="ri-money-dollar-circle-line text-2xl text-yellow-400"></i>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-baseline">
+                                <span class="font-bold text-white">Tổng cộng</span>
+                                <span id="total-cost" class="font-bold text-2xl text-yellow-400">0đ</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="border-t border-dashed border-white/10 pt-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-base font-medium text-white">TỔNG CHI PHÍ</span>
-                        <span id="total-cost" class="text-2xl font-bold text-yellow-400">0đ</span>
-                    </div>
-                </div>
-
-                <div id="balance-warning" class="bg-red-500/10 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden">
+                <div id="balance-warning" class="bg-red-500/10 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4">
                     <i class="ri-error-warning-line mr-1"></i> Số dư của Bro không đủ.
                 </div>
                 
-                <button type="submit" id="create-order-btn" class="w-full mt-2 inline-flex items-center justify-center px-5 py-3 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                <button type="submit" id="create-order-btn" class="w-full mt-4 inline-flex items-center justify-center px-5 py-3 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
                     <i class="ri-send-plane-2-line -ml-1 mr-2"></i>
                     <span>Xác Nhận & Bắt Đầu</span>
                 </button>

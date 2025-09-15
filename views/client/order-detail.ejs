@@ -107,19 +107,34 @@
         padding: 6px 12px;
         border-radius: 8px;
         background-color: rgba(255, 255, 255, 0.05);
-        color: #9ca3af;
         transition: all 0.2s;
-        border: 1px solid transparent;
+        border: 1px solid;
         white-space: nowrap;
     }
+
+    .filter-btn[data-filter="all"] { color: #60a5fa; border-color: #2563eb; }
+    .filter-btn[data-filter="completed"] { color: #4ade80; border-color: #16a34a; }
+    .filter-btn[data-filter="failed"] { color: #f87171; border-color: #dc2626; }
+    .filter-btn[data-filter="pending"] { color: #fbbf24; border-color: #f59e0b; }
+
     .filter-btn:hover {
         background-color: rgba(255, 255, 255, 0.1);
-        color: #e5e7eb;
     }
     .filter-btn.active {
-        background-color: #2563eb;
-        color: white;
+        color: white !important;
         font-weight: 600;
+    }
+    .filter-btn[data-filter="all"].active {
+        background-color: #2563eb;
+    }
+    .filter-btn[data-filter="completed"].active {
+        background-color: #16a34a;
+    }
+    .filter-btn[data-filter="failed"].active {
+        background-color: #dc2626;
+    }
+    .filter-btn[data-filter="pending"].active {
+        background-color: #f59e0b;
     }
 </style>
 
