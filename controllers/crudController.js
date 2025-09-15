@@ -2,8 +2,8 @@
 const createCrudController = (crudService, viewName, options = {}) => {
     const { single, plural } = options;
 
-    // Helper function để render view trong thư mục admin
     const renderData = (res, path, data) => {
+        // Render view từ thư mục admin
         res.render(`admin/${path}`, { ...data, currentQuery: res.locals.currentQuery });
     };
     
@@ -17,7 +17,7 @@ const createCrudController = (crudService, viewName, options = {}) => {
             const { data, pagination } = await crudService.find(req.query);
             const trashCount = await crudService.Model.countDocuments({ isDeleted: true });
 
-            // Sửa ở đây: Truyền viewName (ví dụ: 'accounts') vào helper
+            // Truyền biến có tên là giá trị của 'plural' (ví dụ: 'users')
             renderData(res, viewName, { [plural]: data, pagination, trashCount });
         } catch (error) {
             console.error(`Error getting all ${plural}:`, error);
@@ -31,7 +31,7 @@ const createCrudController = (crudService, viewName, options = {}) => {
             if (!item) {
                 return res.status(404).send(`${single} not found.`);
             }
-            // Sửa ở đây: Render view chi tiết từ thư mục admin
+            // Render view chi tiết, ví dụ 'admin/user-detail'
             res.render(`admin/${viewName.replace(/s$/, '')}-detail`, { [single]: item }); 
         } catch (error) {
             console.error(`Error getting ${single} by id:`, error);
@@ -42,7 +42,6 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleCreate = async (req, res) => {
         try {
             await crudService.create(req.body);
-            // Sửa ở đây: Chuyển hướng đến đúng URL admin
             res.redirect(`/admin/${plural}`);
         } catch (error) {
             console.error(`Error creating ${single}:`, error);
@@ -53,9 +52,9 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleUpdate = async (req, res) => {
         try {
             await crudService.update(req.params.id, req.body);
-            // Sửa ở đây: Chuyển hướng đến đúng URL admin
             res.redirect(`/admin/${plural}`);
-        } catch (error) {
+        } catch (error)
+        {
             console.error(`Error updating ${single}:`, error);
             res.status(500).send(`Could not update ${single}.`);
         }

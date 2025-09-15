@@ -1,0 +1,92 @@
+<aside class="w-64 flex-shrink-0 bg-gray-900/60 backdrop-blur-xl border-r border-gray-500/20 p-4 flex flex-col">
+    <div class="mb-4 text-center">
+        <a href="<%= user.role === 'admin' ? '/admin/dashboard' : '/dashboard' %>" class="text-2xl font-bold text-white tracking-wider">
+            <%= user.role === 'admin' ? 'ADMINPRO' : 'CLIENTPRO' %>
+        </a>
+    </div>
+
+    <% if (user) { %>
+        <div class="relative" id="user-menu-container">
+            <button id="user-menu-button" class="w-full flex items-center gap-3 text-left p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white shadow-md">
+                    <%= user.username.charAt(0).toUpperCase() %>
+                </div>
+                <div class="flex-1 overflow-hidden">
+                    <div class="font-semibold text-sm text-white truncate"><%= user.username %></div>
+                    <div class="text-xs text-yellow-400 font-mono truncate">
+                        <%= user.balance.toLocaleString('vi-VN') %>đ
+                    </div>
+                </div>
+                <i class="ri-arrow-down-s-line text-gray-400 transition-transform duration-300" id="user-menu-arrow"></i>
+            </button>
+            <div id="user-menu-dropdown" class="absolute top-full right-0 mt-2 w-full bg-gray-800 border border-white/10 rounded-lg shadow-2xl z-20 hidden transition-all duration-300 transform opacity-0 scale-95">
+                <a href="/logout" class="flex items-center w-full px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-lg">
+                    <i class="ri-logout-box-r-line w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Đăng Xuất</span>
+                </a>
+            </div>
+        </div>
+    <% } %>
+
+    <div class="my-4 border-t border-gray-500/20"></div>
+
+    <nav class="flex-grow">
+        <ul class="space-y-2">
+            <% if(user.role === 'admin') { %>
+                <li><a href="/admin/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Dashboard</span></a></li>
+                <li><a href="/admin/orders" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'orders') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-file-list-3-line w-5 h-5 mr-3"></i><span class="font-medium">Đơn hàng</span></a></li>
+                <li><a href="/admin/accounts" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-group-line w-5 h-5 mr-3"></i><span class="font-medium">Accounts</span></a></li>
+                <li><a href="/admin/workers" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'workers') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-cpu-line w-5 h-5 mr-3"></i><span class="font-medium">Workers</span></a></li>
+                <li><a href="/admin/users" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'users') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-user-settings-line w-5 h-5 mr-3"></i><span class="font-medium">Users</span></a></li>
+                <li><a href="/admin/settings" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'settings') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-settings-3-line w-5 h-5 mr-3"></i><span class="font-medium">Cài Đặt</span></a></li>
+            <% } else { %>
+                <li><a href="/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Tổng Quan</span></a></li>
+                <% } %>
+        </ul>
+    </nav>
+    
+    <div class="mt-auto pt-4 text-center text-xs text-gray-400">
+        &copy; <%= new Date().getFullYear() %>. All Rights Reserved.
+    </div>
+</aside>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const userMenuContainer = document.getElementById('user-menu-container');
+        if (userMenuContainer) {
+            const button = document.getElementById('user-menu-button');
+            const dropdown = document.getElementById('user-menu-dropdown');
+            const arrow = document.getElementById('user-menu-arrow');
+
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const isHidden = dropdown.classList.contains('hidden');
+                if (isHidden) {
+                    dropdown.classList.remove('hidden');
+                    setTimeout(() => {
+                        dropdown.classList.remove('opacity-0', 'scale-95');
+                        arrow.classList.add('rotate-180');
+                    }, 10);
+                } else {
+                    dropdown.classList.add('opacity-0', 'scale-95');
+                    arrow.classList.remove('rotate-180');
+                    setTimeout(() => {
+                        dropdown.classList.add('hidden');
+                    }, 300);
+                }
+            });
+
+            // Đóng dropdown khi click ra ngoài
+            document.addEventListener('click', (event) => {
+                if (!userMenuContainer.contains(event.target)) {
+                    dropdown.classList.add('opacity-0', 'scale-95');
+                    arrow.classList.remove('rotate-180');
+                    setTimeout(() => {
+                        dropdown.classList.add('hidden');
+                    }, 300);
+                }
+            });
+        }
+    });
+</script>

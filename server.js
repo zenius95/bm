@@ -1,5 +1,6 @@
 // server.js
 const express = require('express');
+const expressLayouts = require('express-ejs-layouts'); // Thêm dòng này
 const mongoose = require('mongoose');
 const cors = require('cors');
 const config = require('./config');
@@ -11,13 +12,13 @@ const MongoStore = require('connect-mongo');
 
 const User = require('./models/User');
 const authController = require('./controllers/authController');
-const apiKeyAuthController = require('./controllers/apiKeyAuthController'); // Thêm dòng này
+const apiKeyAuthController = require('./controllers/apiKeyAuthController');
 
 const Worker = require('./models/Worker');
 const workerMonitor = require('./utils/workerMonitor');
 const adminRoutes = require('./routes/admin');
 const orderRoutes = require('./routes/order');
-const workerApiRoutes = require('./routes/workerApi'); // Thêm dòng này
+const workerApiRoutes = require('./routes/workerApi');
 const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
 const settingsService = require('./utils/settingsService');
@@ -28,6 +29,9 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '/views'));
+
+app.use(expressLayouts); // Thêm dòng này
+app.set('layout', 'layouts/main'); // Đặt layout mặc định
 
 app.use(cors());
 app.use(express.json());
@@ -45,23 +49,36 @@ app.use(session({
     }
 }));
 
-app.use((req, res, next) => {
+// === START: CẬP NHẬT MIDDLEWARE ===
+// Middleware này sẽ lấy thông tin user mới nhất từ DB trên mỗi request
+// để đảm bảo số dư và các thông tin khác luôn chính xác.
+app.use(async (req, res, next) => {
     req.io = io;
-    res.locals.user = req.session.user;
+    res.locals.user = null; // Khởi tạo user là null
+    if (req.session.user) {
+        try {
+            const currentUser = await User.findById(req.session.user.id).lean();
+            if (currentUser) {
+                res.locals.user = currentUser;
+            } else {
+                // Nếu user không còn tồn tại trong DB, hủy session
+                req.session.destroy();
+            }
+        } catch (error) {
+            console.error("Lỗi khi lấy thông tin user cho session:", error);
+        }
+    }
     next();
 });
+// === END: CẬP NHẬT MIDDLEWARE ===
 
 app.get('/login', authController.getLoginPage);
 app.post('/login', authController.login);
 app.get('/logout', authController.logout);
 
-// Route cho người dùng đã đăng nhập
 app.use('/api', authController.isAuthenticated, orderRoutes);
-// Route cho admin đã đăng nhập
 app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
-// === START: ROUTE MỚI CHO WORKER ===
 app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
-// === END: ROUTE MỚI CHO WORKER ===
 
 async function startServer() {
     console.log('🚀 Starting server, checking connections...');
