@@ -22,12 +22,8 @@ class ItemProcessorManager extends EventEmitter {
         this.io = io;
         console.log('🔄 Initializing Item Processor Manager...');
         this.config = settingsService.get('itemProcessor');
-
-        if (this.config.isEnabled) {
-            this.start();
-        } else {
-            this.emitStatus();
-        }
+        // Luôn khởi động tiến trình, không cần kiểm tra isEnabled
+        this.start();
     }
     
     async updateConfig(newConfig) {
@@ -37,14 +33,14 @@ class ItemProcessorManager extends EventEmitter {
         await settingsService.update('itemProcessor', this.config);
         console.log(`[ItemProcessor] Config updated: ${JSON.stringify(this.config)}`);
 
-        const wasEnabled = oldConfig.isEnabled;
-        const isNowEnabled = this.config.isEnabled;
+        // Chỉ kiểm tra nếu interval thay đổi để restart
         const intervalChanged = this.config.pollingInterval !== oldConfig.pollingInterval;
 
-        if (wasEnabled && !isNowEnabled) this.stop();
-        else if (!wasEnabled && isNowEnabled) this.start();
-        else if (wasEnabled && isNowEnabled && intervalChanged) this.restart();
-        else this.emitStatus();
+        if (intervalChanged) {
+            this.restart();
+        } else {
+            this.emitStatus();
+        }
     }
 
     start() {
@@ -106,11 +102,7 @@ class ItemProcessorManager extends EventEmitter {
                 for (const item of itemsToProcess) {
                     const worker = onlineWorkers[this.workerIndex % onlineWorkers.length];
                     this.workerIndex++;
-
-                    // === START: THAY ĐỔI QUAN TRỌNG ===
-                    // Luôn gọi dispatch qua API, không phân biệt local hay remote
                     await this.dispatchItemToWorker(worker, order._id, item);
-                    // === END: THAY ĐỔI QUAN TRỌNG ===
                 }
             }
         } catch (error) {
@@ -136,7 +128,12 @@ class ItemProcessorManager extends EventEmitter {
                 return;
             }
 
-            if(this.io) this.io.emit('itemProcessor:log', `- Gửi item ${item._id.toString().slice(-6)} tới worker ${worker.name}`);
+            // === START: THAY ĐỔI DÒNG LOG TẠI ĐÂY ===
+            if(this.io) {
+                const logMessage = `Đơn hàng ...${orderId.toString().slice(-6)}: Gửi item ...${item._id.toString().slice(-6)} tới worker <strong class="text-blue-400">${worker.name}</strong>`;
+                this.io.emit('itemProcessor:log', logMessage);
+            }
+            // === END: THAY ĐỔI DÒNG LOG TẠI ĐÂY ===
             
             const response = await fetch(`${url}/api/process-item`, {
                 method: 'POST',

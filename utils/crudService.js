@@ -26,13 +26,10 @@ class CrudService {
         
         const query = this._buildQuery(queryOptions);
 
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Thêm _id làm tiêu chí sắp xếp phụ để đảm bảo sự ổn định tuyệt đối
         const sortOptions = { 
             [sortBy]: sortOrder === 'asc' ? 1 : -1,
-            _id: 1 // Luôn sắp xếp tăng dần theo _id để phá vỡ sự trùng lặp
+            _id: 1 
         };
-        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
@@ -72,29 +69,33 @@ class CrudService {
         return this.Model.findByIdAndUpdate(id, { isDeleted: true, deletedAt: new Date() });
     }
 
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     async restore(id) {
-        // Reset dieStreak về 0 khi khôi phục
         return this.Model.findByIdAndUpdate(id, { isDeleted: false, deletedAt: null, dieStreak: 0 });
     }
-    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     async hardDelete(id) {
         return this.Model.findByIdAndDelete(id);
     }
     
+    // === START: THAY ĐỔI QUAN TRỌNG ===
     _buildQuery(queryOptions = {}) {
-        const query = {};
         const { search, inTrash, ...filters } = queryOptions;
-
-        // Lọc theo thùng rác
+        
+        // Nếu đang xem thùng rác, chỉ lọc theo isDeleted và bỏ qua các filter khác
         if (inTrash === 'true' || inTrash === true) {
-            query.isDeleted = true;
-        } else {
-            query.isDeleted = { $ne: true };
+            const trashQuery = { isDeleted: true };
+            // Vẫn cho phép tìm kiếm trong thùng rác
+            if (search && this.options.searchableFields.length > 0) {
+                trashQuery.$or = this.options.searchableFields.map(field => ({
+                    [field]: { $regex: search, $options: 'i' }
+                }));
+            }
+            return trashQuery;
         }
 
-        // Lọc theo các trường cụ thể (ví dụ: status)
+        // Logic cho chế độ xem thông thường
+        const query = { isDeleted: { $ne: true } };
+
         for (const key in filters) {
             if (Object.prototype.hasOwnProperty.call(filters, key) && filters[key]) {
                 const reservedKeys = ['page', 'limit', 'sortBy', 'sortOrder'];
@@ -104,7 +105,6 @@ class CrudService {
             }
         }
         
-        // Tìm kiếm
         if (search && this.options.searchableFields.length > 0) {
             query.$or = this.options.searchableFields.map(field => ({
                 [field]: { $regex: search, $options: 'i' }
@@ -112,6 +112,7 @@ class CrudService {
         }
         return query;
     }
+    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     // --- CÁC HÀM HÀNG LOẠT ---
     async softDeleteMany(queryOptions) {
@@ -119,13 +120,10 @@ class CrudService {
         return this.Model.updateMany(query, { isDeleted: true, deletedAt: new Date() });
     }
 
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     async restoreMany(queryOptions) {
         const query = this._buildQuery(queryOptions);
-        // Reset dieStreak về 0 khi khôi phục hàng loạt
         return this.Model.updateMany(query, { isDeleted: false, deletedAt: null, dieStreak: 0 });
     }
-    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     async hardDeleteMany(queryOptions) {
         const query = this._buildQuery(queryOptions);
@@ -140,13 +138,10 @@ class CrudService {
 
         const query = this._buildQuery(queryOptions);
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Thêm _id làm tiêu chí sắp xếp phụ ở đây nữa
         const sortOptions = { 
             [sortBy]: sortOrder === 'asc' ? 1 : -1,
             _id: 1
         };
-        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         const documents = await this.Model.find(query)
             .sort(sortOptions)

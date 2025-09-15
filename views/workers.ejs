@@ -91,49 +91,13 @@
             </div>
         <% }) %>
     </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-            <div class="p-6 border-b border-white/10">
-                <h3 class="text-lg font-semibold text-white">Điều khiển & Cấu hình Tiến trình</h3>
-            </div>
-            <div class="p-6">
-                <form id="processor-settings-form" class="space-y-6">
-                    <div>
-                        <h4 class="font-semibold text-gray-200 mb-2">Trạng thái Tổng</h4>
-                         <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
-                            <div>
-                                <strong class="text-sm">Trạng thái: </strong>
-                                <span id="proc-status-text" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button id="proc-start-btn" type="button" class="px-4 py-2 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
-                                <button id="proc-stop-btn" type="button" class="px-4 py-2 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chung</h4>
-                        <div class="grid grid-cols-1 gap-4">
-                             <div>
-                                <label for="proc-pollingInterval" class="block text-sm text-gray-300 mb-1">Quét DB mỗi (giây)</label>
-                                <input type="number" id="proc-pollingInterval" class="form-input text-sm" value="5" min="1">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="pt-6 border-t border-white/10">
-                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
-                    </div>
-                </form>
-            </div>
+
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
+         <div class="p-6 border-b border-white/10">
+            <h3 class="text-lg font-semibold text-white">Logs thời gian thực từ Tổng hành dinh</h3>
         </div>
-        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
-             <div class="p-6 border-b border-white/10">
-                <h3 class="text-lg font-semibold text-white">Logs thời gian thực từ Tổng hành dinh</h3>
-            </div>
-            <div id="processor-logs" class="p-4 flex-grow overflow-y-auto font-mono text-xs text-gray-300">
-                <div class="text-gray-500">Đang chờ kết nối...</div>
-            </div>
+        <div id="processor-logs" class="p-4 flex-grow overflow-y-auto font-mono text-xs text-gray-300" style="max-height: 400px;">
+            <div class="text-gray-500">Đang chờ kết nối...</div>
         </div>
     </div>
 </div>
@@ -240,7 +204,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const initialState = <%- JSON.stringify(initialState || {}) %>;
     const backdrop = document.getElementById('modal-backdrop');
-    
+
     // --- Generic Modal Logic ---
     const showModal = (modalEl) => {
         backdrop.classList.remove('hidden');
@@ -298,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
         }
     });
-    
+
     // --- Event Delegation for Worker Cards ---
     document.getElementById('worker-list').addEventListener('click', async (e) => {
         const card = e.target.closest('.flex-col');
@@ -323,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const editWorkerModal = document.getElementById('edit-worker-modal');
             const editWorkerForm = document.getElementById('edit-worker-form');
-            
             editWorkerForm.querySelector('#edit-worker-id').value = id;
             const nameInput = editWorkerForm.querySelector('#edit-worker-name');
             const urlInput = editWorkerForm.querySelector('#edit-worker-url');
@@ -336,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
             usernameInput.value = username;
             passwordInput.value = '';
             concurrencyInput.value = concurrency;
-            
             urlInput.disabled = isLocalBool;
             usernameInput.disabled = isLocalBool;
             passwordInput.parentElement.parentElement.style.display = isLocalBool ? 'none' : 'grid';
@@ -392,7 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
             logWorkerName.textContent = name;
             logContent.innerHTML = '<div class="text-gray-500">Đang tải logs...</div>';
             showModal(logModal);
-            
             try {
                 const response = await fetch(`/admin/workers/${id}/logs`);
                 const result = await response.json();
@@ -423,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
         }
     });
-    
+
     // --- Edit Worker Form Submission ---
     document.getElementById('edit-worker-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -451,61 +412,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // --- Processor Control & Real-time Logic ---
-    const procForm = document.getElementById('processor-settings-form');
-    const procPollingInput = document.getElementById('proc-pollingInterval');
-    const procStartBtn = document.getElementById('proc-start-btn');
-    const procStopBtn = document.getElementById('proc-stop-btn');
-    const procStatusText = document.getElementById('proc-status-text');
+    // --- Real-time Logic ---
     const procLogs = document.getElementById('processor-logs');
     
-    function updateProcUI(state) {
-        if (!state) return;
-        procPollingInput.value = state.config.pollingInterval;
-        
-        procStatusText.classList.remove('bg-gray-700', 'text-gray-300', 'bg-green-500/20', 'text-green-300', 'bg-red-500/20', 'text-red-300');
-        if (state.status === 'RUNNING') {
-            procStatusText.textContent = 'Đang chạy';
-            procStatusText.classList.add('bg-green-500/20', 'text-green-300');
-            procStartBtn.disabled = true;
-            procStopBtn.disabled = false;
-        } else {
-            procStatusText.textContent = 'Đã dừng';
-            procStatusText.classList.add('bg-red-500/20', 'text-red-300');
-            procStartBtn.disabled = false;
-            procStopBtn.disabled = true;
-        }
-    }
-
-    async function updateProcConfig(payload) {
-        try {
-            const response = await fetch('/admin/settings/item-processor/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            if (result.success) {
-                showToast(result.message, 'Thành công!', 'success');
-                updateProcUI(result.data);
-            } else {
-                showToast(result.message, 'Lỗi!', 'error');
-            }
-        } catch (error) {
-            showToast('Lỗi kết nối server', 'Lỗi', 'error');
-        }
-    }
-    
-    procForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        updateProcConfig({
-            pollingInterval: procPollingInput.value
-        });
-    });
-    procStartBtn.addEventListener('click', () => updateProcConfig({ isEnabled: true }));
-    procStopBtn.addEventListener('click', () => updateProcConfig({ isEnabled: false }));
-
     function addLogMessage(message) {
+        if(!procLogs) return;
         if (procLogs.childElementCount > 100) {
             procLogs.removeChild(procLogs.firstChild);
         }
@@ -521,17 +432,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const isOnline = workerCard.dataset.status === 'online';
         const toggleBtn = workerCard.querySelector('.btn-toggle-worker');
         const statusIndicator = workerCard.querySelector('.status-indicator');
-
+        
         // Card opacity and border
         workerCard.classList.toggle('opacity-50', !isEnabled);
-
+        
         // Toggle button icon
         if (toggleBtn) {
-            toggleBtn.innerHTML = isEnabled ? `<i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>` : `<i class="ri-play-circle-line" title="Tiếp tục Worker"></i>`;
+            toggleBtn.innerHTML = isEnabled ?
+                `<i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>` : `<i class="ri-play-circle-line" title="Tiếp tục Worker"></i>`;
         }
         
         // Status indicator color
-        statusIndicator.classList.remove('bg-green-400', 'bg-yellow-400', 'bg-red-400');
+        statusIndicator.classList.remove('bg-green-400', 'bg-yellow-400', 'bg-red-400', 'animate-pulse');
         if (isOnline) {
             if (isEnabled) {
                 statusIndicator.classList.add('bg-green-400', 'animate-pulse');
@@ -547,13 +459,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     document.querySelectorAll('#worker-list .flex-col').forEach(updateWorkerCardUI);
-
+    
     const socket = io();
     socket.on('connect', () => {
         console.log('Connected to server for real-time updates.');
         addLogMessage('Đã kết nối với server.');
     });
-
     socket.on('workers:update', (workers) => {
         workers.forEach(worker => {
             const workerCard = document.getElementById(`worker-${worker._id}`);
@@ -573,13 +484,8 @@ document.addEventListener('DOMContentLoaded', () => {
             updateWorkerCardUI(workerCard);
         });
     });
-
-    socket.on('itemProcessor:statusUpdate', (state) => updateProcUI(state));
+    
     socket.on('itemProcessor:log', (message) => addLogMessage(message));
-
-    if (initialState.itemProcessor) {
-        updateProcUI(initialState.itemProcessor);
-    }
 });
 </script>
 

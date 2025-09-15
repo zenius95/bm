@@ -9,145 +9,157 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div class="lg:col-span-1">
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-2 sticky top-8">
-           
-     <%# === START: THAY ĐỔI QUAN TRỌNG - Xóa tab processor === %>
                 <div class="space-y-1" id="settings-tab-list">
                     <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autocheck" role="tab">
                         <i class="ri-refresh-line w-5 h-5 mr-3"></i> Tự Động Check Live
                     </a>
-                    <a class="flex items-center px-4 py-2.5 
-rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-notifications" role="tab">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-processor" role="tab">
+                        <i class="ri-database-2-line w-5 h-5 mr-3"></i> Tiến Trình Xử Lý
+                    </a>
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-notifications" role="tab">
                         <i class="ri-notification-3-line w-5 h-5 mr-3"></i> Thông báo (Ví dụ)
                     </a>
                     <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-api" role="tab">
-         
-               <i class="ri-key-2-line w-5 h-5 mr-3"></i> API Keys (Ví dụ)
+                        <i class="ri-key-2-line w-5 h-5 mr-3"></i> API Keys (Ví dụ)
                     </a>
                 </div>
-                <%# === END: THAY ĐỔI QUAN TRỌNG === %>
             </div>
         </div>
 
         <div class="lg:col-span-3" id="settings-tab-content">
-           
- <%# === START: THAY ĐỔI QUAN TRỌNG - Xóa tab-pane processor === %>
             <div id="tab-autocheck" role="tabpanel" class="tab-pane">
-            <%# === END: THAY ĐỔI QUAN TRỌNG === %>
                 <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
                     <div class="p-6 border-b border-white/10"><h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Check Live Account</h3></div>
-       
-             <div class="p-6">
-                        <form id="settings-form" class="space-y-6">
+                    <div class="p-6">
+                        <form id="autocheck-settings-form" class="space-y-6">
                             <div>
-                                
-<h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
+                                <h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
                                 <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
                                     <div>
-                 
-                       <strong class="text-sm">Trạng thái: </strong>
+                                        <strong class="text-sm">Trạng thái: </strong>
                                         <span id="status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
-                         
-               <div id="next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
+                                        <div id="next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
                                             <i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="next-run-time" class="text-white"></strong>
-                           
-             </div>
+                                        </div>
                                     </div>
                                     <div class="flex items-center gap-2">
-            
-                            <button id="start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
+                                        <button id="start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
                                         <button id="stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
-        
-                            </div>
+                                    </div>
                                 </div>
                             </div>
-            
-                <div>
+                            <div>
                                 <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
-                          <div>
+                                    <div>
                                         <label for="intervalMinutes" class="block text-sm text-gray-300 mb-1">Chạy lại sau (phút)</label>
-                          
-              <input type="number" id="intervalMinutes" class="form-input text-sm" value="<%= settings.autoCheck.intervalMinutes %>" min="1">
+                                        <input type="number" id="intervalMinutes" class="form-input text-sm" value="<%= settings.autoCheck.intervalMinutes %>" min="1">
                                     </div>
                                     <div>
-      
-                                  <label for="concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
+                                        <label for="concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
                                         <input type="number" id="concurrency" class="form-input text-sm" value="<%= settings.autoCheck.concurrency %>" min="1">
-          
-                          </div>
+                                    </div>
                                     <div>
-                                      
-  <label for="delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task (ms)</label>
+                                        <label for="delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task (ms)</label>
                                         <input type="number" id="delay" class="form-input text-sm" value="<%= settings.autoCheck.delay %>" min="0">
                                     </div>
-     
-                               <div>
+                                    <div>
                                         <label for="timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi task (ms)</label>
-                     
-                   <input type="number" id="timeout" class="form-input text-sm" value="<%= settings.autoCheck.timeout %>" min="1000">
+                                        <input type="number" id="timeout" class="form-input text-sm" value="<%= settings.autoCheck.timeout %>" min="1000">
                                     </div>
                                 </div>
-     
-                       </div>
+                            </div>
                             <div class="pt-6 border-t border-white/10">
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 
-transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
                             </div>
                         </form>
                     </div>
                 </div>
-        
-    </div>
+            </div>
+            
+            <div id="tab-processor" role="tabpanel" class="tab-pane hidden">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+                    <div class="p-6 border-b border-white/10"><h3 class="text-lg font-semibold text-white">Cài Đặt Tiến Trình Xử Lý Đơn Hàng</h3></div>
+                    <div class="p-6">
+                        <form id="processor-settings-form" class="space-y-6">
+                             <div>
+                                <h4 class="font-semibold text-gray-200 mb-2">Trạng thái</h4>
+                                <div class="p-4 bg-gray-900/50 rounded-lg border border-white/10">
+                                    <strong class="text-sm">Trạng thái: </strong>
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-300">Luôn Chạy</span>
+                                    <p class="text-xs text-gray-400 mt-2">Tiến trình xử lý đơn hàng sẽ luôn chạy cùng với server để đảm bảo không bỏ lỡ bất kỳ item nào.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="proc-concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời (tổng)</label>
+                                        <input type="number" id="proc-concurrency" class="form-input text-sm" value="<%= settings.itemProcessor.concurrency %>" min="1">
+                                    </div>
+                                    <div>
+                                        <label for="proc-pollingInterval" class="block text-sm text-gray-300 mb-1">Quét đơn hàng mới mỗi (giây)</label>
+                                        <input type="number" id="proc-pollingInterval" class="form-input text-sm" value="<%= settings.itemProcessor.pollingInterval %>" min="1">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-6 border-t border-white/10">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
             <div id="tab-notifications" role="tabpanel" class="tab-pane hidden">
                 <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
                     <i class="ri-notification-off-line text-6xl text-gray-700"></i>
                     <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
-     
-               <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho các cài đặt về thông báo qua email, telegram...</p>
+                    <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho các cài đặt về thông báo qua email, telegram...</p>
                 </div>
             </div>
             <div id="tab-api" role="tabpanel" class="tab-pane hidden">
                 <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl text-center py-20 px-6">
- 
-                   <i class="ri-key-2-line text-6xl text-gray-700"></i>
+                    <i class="ri-key-2-line text-6xl text-gray-700"></i>
                     <h4 class="mt-4 text-xl font-semibold text-white">Tính năng đang phát triển</h4>
                     <p class="mt-2 text-gray-400">Khu vực này sẽ dành cho việc quản lý các API key của bên thứ ba.</p>
-             
-   </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<%# === START: THÊM DÒNG NÀY VÀO === %>
+<script src="/socket.io/socket.io.js"></script>
+<%# === END: THÊM DÒNG NÀY VÀO === %>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // === NEW Tailwind Tab Logic ===
     const tabLinks = document.querySelectorAll('#settings-tab-list a[role="tab"]');
-const tabPanes = document.querySelectorAll('#settings-tab-content .tab-pane');
+    const tabPanes = document.querySelectorAll('#settings-tab-content .tab-pane');
     const activeClasses = ['text-white', 'bg-blue-600/50'];
     const inactiveClasses = ['text-gray-400', 'hover:bg-white/10', 'hover:text-white'];
-function activateTab(targetId) {
+
+    function activateTab(targetId) {
         tabLinks.forEach(link => {
             const linkTarget = link.getAttribute('data-tab-target');
             if (linkTarget === targetId) {
                 link.classList.add(...activeClasses);
                 link.classList.remove(...inactiveClasses);
             } else {
-           
-     link.classList.remove(...activeClasses);
+                link.classList.remove(...activeClasses);
                 link.classList.add(...inactiveClasses);
             }
         });
-tabPanes.forEach(pane => {
+        tabPanes.forEach(pane => {
             if (pane.id === targetId.substring(1)) { // remove '#' from targetId
                 pane.classList.remove('hidden');
             } else {
                 pane.classList.add('hidden');
             }
         });
-}
+    }
 
     tabLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -156,92 +168,121 @@ tabPanes.forEach(pane => {
             activateTab(targetId);
         });
     });
-// Activate the first tab by default
+    // Activate the first tab by default
     if (tabLinks.length > 0) {
         activateTab(tabLinks[0].getAttribute('data-tab-target'));
-}
+    }
 
-    // === Original Settings Logic (No changes needed here) ===
+    // === Settings Logic ===
     const initialState = <%- initialState %>;
+    const socket = io();
 
     // --- Auto Check Live ---
-    const form = document.getElementById('settings-form');
-const intervalInput = document.getElementById('intervalMinutes');
-    const concurrencyInput = document.getElementById('concurrency');
-    const delayInput = document.getElementById('delay');
-    const timeoutInput = document.getElementById('timeout');
-    const startBtn = document.getElementById('start-btn');
-const stopBtn = document.getElementById('stop-btn');
-    const statusBadge = document.getElementById('status-badge');
-    const nextRunContainer = document.getElementById('next-run-container');
-    const nextRunTime = document.getElementById('next-run-time');
-function updateUI(state) {
-        if (!state) return;
-statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full '; // Reset classes
-        if (state.status === 'RUNNING') {
-            statusBadge.textContent = state.isJobRunning ?
-'Đang check...' : 'Đang chạy';
-            statusBadge.classList.add('bg-green-500/20', 'text-green-300');
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-} else {
-            statusBadge.textContent = 'Đã dừng';
-            statusBadge.classList.add('bg-red-500/20', 'text-red-300');
-startBtn.disabled = false;
-            stopBtn.disabled = true;
-        }
-        intervalInput.value = state.config.intervalMinutes;
-        concurrencyInput.value = state.config.concurrency;
-delayInput.value = state.config.delay;
-        timeoutInput.value = state.config.timeout;
-        if (state.nextRun && !state.isJobRunning) {
-            nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
-nextRunContainer.style.display = 'block';
-        } else {
-            nextRunContainer.style.display = 'none';
-}
-    }
+    const autoCheckForm = document.getElementById('autocheck-settings-form');
+    if (autoCheckForm) {
+        const intervalInput = document.getElementById('intervalMinutes');
+        const concurrencyInput = document.getElementById('concurrency');
+        const delayInput = document.getElementById('delay');
+        const timeoutInput = document.getElementById('timeout');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusBadge = document.getElementById('status-badge');
+        const nextRunContainer = document.getElementById('next-run-container');
+        const nextRunTime = document.getElementById('next-run-time');
 
-    async function updateConfig(payload) {
-        try {
-            const response = await fetch('/admin/settings/auto-check/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-         
-   });
-            const result = await response.json();
-            if (result.success) {
-                showToast(result.message, 'Thành công', 'success');
-updateUI(result.data);
+        function updateAutoCheckUI(state) {
+            if (!state) return;
+            statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full '; // Reset classes
+            if (state.status === 'RUNNING') {
+                statusBadge.textContent = state.isJobRunning ? 'Đang check...' : 'Đang chạy';
+                statusBadge.classList.add('bg-green-500/20', 'text-green-300');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
             } else {
-                showToast(result.message, 'Lỗi', 'error');
-}
-        } catch (error) {
-            showToast('Lỗi kết nối server', 'Lỗi', 'error');
-}
-    }
-    
-    if (form) {
-        form.addEventListener('submit', (e) => {
+                statusBadge.textContent = 'Đã dừng';
+                statusBadge.classList.add('bg-red-500/20', 'text-red-300');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+            intervalInput.value = state.config.intervalMinutes;
+            concurrencyInput.value = state.config.concurrency;
+            delayInput.value = state.config.delay;
+            timeoutInput.value = state.config.timeout;
+            if (state.nextRun && !state.isJobRunning) {
+                nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
+                nextRunContainer.style.display = 'block';
+            } else {
+                nextRunContainer.style.display = 'none';
+            }
+        }
+
+        async function updateAutoCheckConfig(payload) {
+            try {
+                const response = await fetch('/admin/settings/auto-check/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công', 'success');
+                    updateAutoCheckUI(result.data);
+                } else {
+                    showToast(result.message, 'Lỗi', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server', 'Lỗi', 'error');
+            }
+        }
+
+        autoCheckForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            updateConfig({
+            updateAutoCheckConfig({
                 intervalMinutes: intervalInput.value,
                 concurrency: concurrencyInput.value,
-                delay: 
-delayInput.value,
+                delay: delayInput.value,
                 timeout: timeoutInput.value
             });
         });
-startBtn.addEventListener('click', () => updateConfig({ isEnabled: true }));
-        stopBtn.addEventListener('click', () => updateConfig({ isEnabled: false }));
-}
+        startBtn.addEventListener('click', () => updateAutoCheckConfig({ isEnabled: true }));
+        stopBtn.addEventListener('click', () => updateAutoCheckConfig({ isEnabled: false }));
+        
+        updateAutoCheckUI(initialState.autoCheck);
+        socket.on('autoCheck:statusUpdate', (state) => updateAutoCheckUI(state));
+    }
+    
+    // --- Item Processor ---
+    const procForm = document.getElementById('processor-settings-form');
+    if (procForm) {
+        const procConcurrencyInput = document.getElementById('proc-concurrency');
+        const procPollingInput = document.getElementById('proc-pollingInterval');
+        
+        async function updateProcConfig(payload) {
+            try {
+                const response = await fetch('/admin/settings/item-processor/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server', 'Lỗi', 'error');
+            }
+        }
 
-    // --- Initial State & Socket.IO ---
-    updateUI(initialState.autoCheck);
-
-    const socket = io();
-socket.on('autoCheck:statusUpdate', (state) => updateUI(state));
+        procForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateProcConfig({
+                concurrency: procConcurrencyInput.value,
+                pollingInterval: procPollingInput.value
+            });
+        });
+    }
 });
 </script>
 

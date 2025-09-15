@@ -4,27 +4,14 @@ const settingsService = require('../utils/settingsService');
 
 const settingController = {};
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
-settingController.getWorkersPage = async (req, res) => {
-    try {
-        res.render('workers', {
-            initialState: JSON.stringify({
-                itemProcessor: itemProcessorManager.getStatus()
-            })
-        });
-    } catch (error) {
-        console.error("Error loading workers page:", error);
-        res.status(500).send("Could not load workers page.");
-    }
-};
-// === END: THAY ĐỔI QUAN TRỌNG ===
-
 settingController.getSettingsPage = async (req, res) => {
     try {
         res.render('settings', {
             settings: settingsService.getAll(),
             initialState: JSON.stringify({
-                autoCheck: autoCheckManager.getStatus()
+                autoCheck: autoCheckManager.getStatus(),
+                // Truyền trạng thái của itemProcessor vào view
+                itemProcessor: itemProcessorManager.getStatus() 
             }) 
         });
     } catch (error) {
@@ -71,12 +58,9 @@ settingController.updateAutoCheckConfig = async (req, res) => {
 // Cập nhật cấu hình cho Item Processor
 settingController.updateItemProcessorConfig = async (req, res) => {
     try {
-        const { isEnabled, concurrency, pollingInterval } = req.body;
+        // Chỉ còn nhận concurrency và pollingInterval
+        const { concurrency, pollingInterval } = req.body;
         const configToUpdate = {};
-
-        if (typeof isEnabled === 'boolean') {
-            configToUpdate.isEnabled = isEnabled;
-        }
 
         const parseAndValidate = (val, min = 0) => {
             const num = parseInt(val, 10);
@@ -86,9 +70,13 @@ settingController.updateItemProcessorConfig = async (req, res) => {
         configToUpdate.concurrency = parseAndValidate(concurrency, 1);
         configToUpdate.pollingInterval = parseAndValidate(pollingInterval, 1);
         
+        // Xóa các key không hợp lệ
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
-        await itemProcessorManager.updateConfig(configToUpdate);
+        // Chỉ update nếu có dữ liệu
+        if (Object.keys(configToUpdate).length > 0) {
+            await itemProcessorManager.updateConfig(configToUpdate);
+        }
 
         res.json({ success: true, message: 'Cập nhật cài đặt thành công.', data: itemProcessorManager.getStatus() });
     } catch (error) {
