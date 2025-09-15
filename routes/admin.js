@@ -28,6 +28,11 @@ router.post('/orders/soft-delete', adminController.handleSoftDelete);
 router.post('/orders/restore', adminController.handleRestore);
 router.post('/orders/hard-delete', adminController.handleHardDelete);
 
+// === START: THAY ĐỔI QUAN TRỌNG ===
+// --- Worker Management Route ---
+router.get('/workers', settingController.getWorkersPage);
+// === END: THAY ĐỔI QUAN TRỌNG ===
+
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
 // Auto Check

@@ -1,17 +1,30 @@
-// controllers/settingController.js
 const autoCheckManager = require('../utils/autoCheckManager');
 const itemProcessorManager = require('../utils/itemProcessorManager');
 const settingsService = require('../utils/settingsService');
 
 const settingController = {};
 
+// === START: THAY ĐỔI QUAN TRỌNG ===
+settingController.getWorkersPage = async (req, res) => {
+    try {
+        res.render('workers', {
+            initialState: JSON.stringify({
+                itemProcessor: itemProcessorManager.getStatus()
+            })
+        });
+    } catch (error) {
+        console.error("Error loading workers page:", error);
+        res.status(500).send("Could not load workers page.");
+    }
+};
+// === END: THAY ĐỔI QUAN TRỌNG ===
+
 settingController.getSettingsPage = async (req, res) => {
     try {
         res.render('settings', {
             settings: settingsService.getAll(),
             initialState: JSON.stringify({
-                autoCheck: autoCheckManager.getStatus(),
-                itemProcessor: itemProcessorManager.getStatus()
+                autoCheck: autoCheckManager.getStatus()
             }) 
         });
     } catch (error) {
@@ -19,7 +32,6 @@ settingController.getSettingsPage = async (req, res) => {
         res.status(500).send("Could not load settings page.");
     }
 };
-
 // Lấy trạng thái hiện tại của auto check
 settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());

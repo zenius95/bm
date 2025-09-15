@@ -48,59 +48,40 @@ disabled:opacity-50 disabled:cursor-not-allowed">
 
     <%# === START: THAY ĐỔI QUAN TRỌNG === %>
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-3 w-full md:w-auto">
-            <form method="GET" action="/admin/accounts" class="flex flex-col md:flex-row items-center gap-3">
-                <% if (inTrash) { %><input type="hidden" name="inTrash" value="true"><% } %>
-                <input type="text" name="search" class="form-input text-sm w-full md:w-64" placeholder="Tìm theo Username, Proxy..." value="<%= currentQuery.search || '' %>" onchange="this.form.submit()">
-                <select name="status" class="form-select text-sm w-full md:w-auto" onchange="this.form.submit()">
-                    <option value="">-- Lọc theo trạng thái --</option>
-                    <option value="UNCHECKED" <%= currentQuery.status === 'UNCHECKED' ? 'selected' : '' %>>Unchecked</option>
-                    <option value="LIVE" <%= currentQuery.status === 'LIVE' ? 'selected' : '' %>>Live</option>
-                    <option value="DIE" <%= currentQuery.status === 'DIE' ? 'selected' : '' %>>Die</option>
-                    <option value="CHECKING" <%= currentQuery.status === 'CHECKING' ? 'selected' : '' %>>Checking</option>
-                    <option value="ERROR" <%= currentQuery.status === 'ERROR' ? 'selected' : '' %>>Error</option>
-                </select>
-            </form>
-        </div>
+        <form method="GET" action="/admin/accounts" class="flex flex-col md:flex-row items-center gap-3">
+            <% if (inTrash) { %><input type="hidden" name="inTrash" value="true"><% } %>
+            <input type="text" name="search" class="form-input" placeholder="Tìm theo Username, Proxy..." value="<%= currentQuery.search || '' %>" onchange="this.form.submit()">
+            <select name="status" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Lọc theo trạng thái --</option>
+                <option value="UNCHECKED" <%= currentQuery.status === 'UNCHECKED' ? 'selected' : '' %>>Unchecked</option>
+                <option value="LIVE" <%= currentQuery.status === 'LIVE' ? 'selected' : '' %>>Live</option>
+                <option value="DIE" <%= currentQuery.status === 'DIE' ? 'selected' : '' %>>Die</option>
+                <option value="CHECKING" <%= currentQuery.status === 'CHECKING' ? 'selected' : '' %>>Checking</option>
+                <option value="ERROR" <%= currentQuery.status === 'ERROR' ? 'selected' : '' %>>Error</option>
+            </select>
+        </form>
         <div>
             <% if (inTrash) { %>
                 <a href="/admin/accounts" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
                 <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
                 <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
             <% } else { %>
-                <a href="/admin/accounts?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác</a>
+                <a href="/admin/accounts?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<%= typeof trashCount !== 'undefined' ? trashCount : 0 %>)</a>
+                <button id="checkSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-green-600/80 border border-green-500 rounded-md font-semibold text-sm text-white hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i id="checkSelectedIcon" class="ri-refresh-line mr-2"></i> Check Live</button>
                 <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
             <% } %>
         </div>
     </div>
     <%# === END: THAY ĐỔI QUAN TRỌNG === %>
     
-    <div class="flex 
-flex-col md:flex-row items-center justify-between gap-4">
-        <h2 class="text-xl font-semibold text-white">
-            <%= inTrash ?
-'Các mục đã xóa' : 'Danh Sách Hiện Có' %> 
-            <span class="text-base font-normal text-gray-400">(<%= pagination.totalItems %>)</span>
-        </h2>
-        <% if (!inTrash) { %>
-        <div class="flex items-center gap-2">
-            <button id="checkSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-green-600/80 border border-green-500 rounded-md font-semibold text-sm text-white hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                <i id="checkSelectedIcon" class="ri-refresh-line mr-2"></i> Check Live
-            </button>
-        </div>
-        <% } %>
-    </div>
-    
-   
- <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+    <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
         Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
-<a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+        <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
     </div>
     <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
         Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
-<a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+        <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
     </div>
-
 
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
          <% if (accounts && accounts.length > 0) { %>
@@ -208,7 +189,6 @@ query.set('page', i);
     </nav>
     <% } %>
 </div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const addAccountsForm = document.getElementById('add-accounts-form');
@@ -345,7 +325,8 @@ isSelectAllAcrossPages;
         if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
 }
 
-    async function handleAction(url, confirmMessage, reloadOnSuccess = true) {
+    // === START: THAY ĐỔI QUAN TRỌNG - SỬ DỤNG MODAL MỚI ===
+    async function handleAction(url, confirmMessage, confirmType = 'warning', reloadOnSuccess = true) {
         let payload = {};
 if (isSelectAllAcrossPages) {
             payload = { selectAll: true, filters: <%- JSON.stringify(currentQuery) %> };
@@ -360,7 +341,8 @@ return;
         const totalCount = isSelectAllAcrossPages ?
 <%= pagination.totalItems %> : payload.ids.length;
 
-        if (!confirmMessage || confirm(confirmMessage(totalCount))) {
+        const confirmed = await showConfirm(confirmMessage(totalCount), confirmType);
+        if (confirmed) {
             if (url.includes('check-selected')) {
                 isCheckLiveRunning = true;
 updateCheckLiveButtonState();
@@ -404,19 +386,20 @@ updateCheckLiveButtonState();
 }
     if (restoreSelectedBtn) {
         restoreSelectedBtn.addEventListener('click', () => {
-             handleAction('/admin/accounts/restore', (count) => `Bạn có chắc muốn khôi phục ${count} account?`);
+             handleAction('/admin/accounts/restore', (count) => `Bạn có chắc muốn khôi phục ${count} account?`, 'info');
         });
 }
     if (hardDeleteSelectedBtn) {
         hardDeleteSelectedBtn.addEventListener('click', () => {
-            handleAction('/admin/accounts/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} account? Dữ liệu sẽ không thể phục hồi.`);
+            handleAction('/admin/accounts/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} account? Dữ liệu sẽ không thể phục hồi.`, 'danger');
         });
 }
     if (checkSelectedBtn) {
         checkSelectedBtn.addEventListener('click', () => {
-             handleAction('/admin/accounts/check-selected', (count) => `Bạn có chắc muốn check live ${count} account?`, false);
+             handleAction('/admin/accounts/check-selected', (count) => `Bạn có chắc muốn check live ${count} account?`, 'info', false);
         });
 }
+    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     const socket = io();
     socket.on('connect', () => console.log('Connected to server via WebSocket.'));

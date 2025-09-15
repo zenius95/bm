@@ -14,7 +14,15 @@ const createCrudController = (crudService, viewName, options = {}) => {
     const handleGetAll = async (req, res) => {
         try {
             const { data, pagination } = await crudService.find(req.query);
-            renderData(res, viewName, { [plural]: data, pagination });
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Lấy số lượng mục trong thùng rác
+            const trashCount = await crudService.Model.countDocuments({ isDeleted: true });
+            // === END: THAY ĐỔI QUAN TRỌNG ===
+
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Truyền trashCount vào view
+            renderData(res, viewName, { [plural]: data, pagination, trashCount });
+            // === END: THAY ĐỔI QUAN TRỌNG ===
         } catch (error) {
             console.error(`Error getting all ${plural}:`, error);
             res.status(500).send(`Could not load ${plural}.`);

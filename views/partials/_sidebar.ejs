@@ -7,25 +7,39 @@
     <nav class="flex-grow">
         <ul class="space-y-2">
             <li>
-                <a href="/admin/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
+                <a href="/admin/dashboard" class="flex items-center px-4 py-2.5 
+rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
                     <i class="ri-dashboard-3-line w-5 h-5 mr-3"></i>
                     <span class="font-medium">Dashboard</span>
                 </a>
             </li>
-            <li>
+            
+<li>
                 <a href="/admin/orders" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'orders') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
                     <i class="ri-file-list-3-line w-5 h-5 mr-3"></i>
                     <span class="font-medium">Quản lý Đơn hàng</span>
-                </a>
+               
+ </a>
             </li>
             <li>
-                <a href="/admin/accounts" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
+                <a href="/admin/accounts" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'accounts') ?
+'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
                     <i class="ri-group-line w-5 h-5 mr-3"></i>
                     <span class="font-medium">Danh Sách Account</span>
                 </a>
             </li>
+            <%# === START: THAY ĐỔI QUAN TRỌNG === %>
             <li>
-                <a href="/admin/settings" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'settings') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
+                <a href="/admin/workers" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'workers') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
+                    <i class="ri-cpu-line w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Quản lý Workers</span>
+                </a>
+            </li>
+            <%# === END: THAY ĐỔI QUAN TRỌNG === %>
+            <li>
+      
+          <a href="/admin/settings" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'settings') ?
+'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>">
                     <i class="ri-settings-3-line w-5 h-5 mr-3"></i>
                     <span class="font-medium">Cài Đặt</span>
                 </a>
@@ -33,7 +47,8 @@
         </ul>
     </nav>
     <div class="mt-auto">
-        <div class="border-t border-gray-500/20 pt-4 text-center text-xs text-gray-400">
+  
+      <div class="border-t border-gray-500/20 pt-4 text-center text-xs text-gray-400">
             &copy; <%= new Date().getFullYear() %>. All Rights Reserved.
         </div>
     </div>
