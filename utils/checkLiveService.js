@@ -69,7 +69,7 @@ async function runCheckLive(accountIds, io, options) {
                         uid: currentAccount.uid,
                         password: currentAccount.password,
                         twofa: currentAccount.twofa,
-                        proxyKey: '42.115.87.255:46603:qXhlkJ:haoEBF'
+                        proxyKey: currentAccount.proxy
                     }
                 }, (action, data) => {
 
