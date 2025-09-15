@@ -1,0 +1,6 @@
+{
+    "autoCheck": {
+        "isEnabled": true,
+        "intervalMinutes": 1
+    }
+}

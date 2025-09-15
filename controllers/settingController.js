@@ -1,12 +1,17 @@
 // controllers/settingController.js
 const autoCheckManager = require('../utils/autoCheckManager');
+const settingsService = require('../utils/settingsService');
+
+const settingController = {}; // Tạo một object rỗng
 
 // Render trang cài đặt
-exports.getSettingsPage = async (req, res) => {
+settingController.getSettingsPage = async (req, res) => {
     try {
-        const status = autoCheckManager.getStatus();
         res.render('settings', {
-            initialState: JSON.stringify(status) // Truyền trạng thái ban đầu vào view
+            // Lấy tất cả setting để sau này dễ mở rộng
+            settings: settingsService.getAll(),
+            // Vẫn truyền initial state cho autoCheck để không phải sửa JS ở view
+            initialState: JSON.stringify(autoCheckManager.getStatus()) 
         });
     } catch (error) {
         console.error("Error loading settings page:", error);
@@ -15,35 +20,33 @@ exports.getSettingsPage = async (req, res) => {
 };
 
 // Lấy trạng thái hiện tại của auto check
-exports.getAutoCheckStatus = (req, res) => {
+settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
 };
 
 // Cập nhật cấu hình
-exports.updateAutoCheckConfig = async (req, res) => {
+settingController.updateAutoCheckConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes } = req.body;
         const configToUpdate = {};
+
         if (typeof isEnabled === 'boolean') {
             configToUpdate.isEnabled = isEnabled;
         }
+
         const interval = parseInt(intervalMinutes, 10);
         if (!isNaN(interval) && interval > 0) {
             configToUpdate.intervalMinutes = interval;
         }
         
+        // Giao toàn bộ việc xử lý cho manager
         await autoCheckManager.updateConfig(configToUpdate);
-        
-        if (typeof isEnabled === 'boolean') {
-            if (isEnabled) {
-                autoCheckManager.start();
-            } else {
-                autoCheckManager.stop();
-            }
-        }
 
         res.json({ success: true, message: 'Cập nhật cài đặt thành công.', data: autoCheckManager.getStatus() });
     } catch (error) {
+        console.error("Error updating auto check config:", error.message);
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+module.exports = settingController; // Export cả object sau khi đã định nghĩa xong tất cả các hàm

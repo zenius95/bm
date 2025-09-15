@@ -1,5 +1,5 @@
 // utils/autoCheckManager.js
-const Setting = require('../models/Setting');
+const settingsService = require('./settingsService'); // THAY ĐỔI
 const Account = require('../models/Account');
 const { runCheckLive } = require('./checkLiveService');
 const EventEmitter = require('events');
@@ -9,20 +9,17 @@ class AutoCheckManager extends EventEmitter {
         super();
         this.io = null;
         this.timer = null;
-        this.config = {
-            isEnabled: false,
-            intervalMinutes: 30
-        };
-        this.status = 'STOPPED'; // STOPPED, RUNNING, PENDING
+        this.config = {}; // Sẽ được load từ settingsService
+        this.status = 'STOPPED';
         this.nextRun = null;
         this.isJobRunning = false;
     }
 
-    async initialize(io) {
+    // THAY ĐỔI: Hàm initialize giờ đơn giản hơn
+    initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Check Manager...');
-        const savedConfig = await Setting.get('autoCheckConfig', this.config);
-        this.config = { ...this.config, ...savedConfig };
+        this.config = settingsService.get('autoCheck', { isEnabled: false, intervalMinutes: 30 });
 
         if (this.config.isEnabled) {
             this.start();
@@ -31,26 +28,28 @@ class AutoCheckManager extends EventEmitter {
         }
     }
 
+    // THAY ĐỔI: updateConfig giờ chỉ cần cập nhật settingsService
     async updateConfig(newConfig) {
-        const wasEnabled = this.config.isEnabled;
+        const oldConfig = { ...this.config };
         this.config = { ...this.config, ...newConfig };
-        await Setting.set('autoCheckConfig', this.config);
+        
+        await settingsService.update('autoCheck', this.config);
+        
         console.log(`[AutoCheck] Config updated: ${JSON.stringify(this.config)}`);
 
-        if (wasEnabled) {
-            this.restart();
-        }
-        this.emitStatus();
+        const wasEnabled = oldConfig.isEnabled;
+        const isNowEnabled = this.config.isEnabled;
+        const intervalChanged = this.config.intervalMinutes !== oldConfig.intervalMinutes;
+
+        if (wasEnabled && !isNowEnabled) this.stop();
+        else if (!wasEnabled && isNowEnabled) this.start();
+        else if (wasEnabled && isNowEnabled && intervalChanged) this.restart();
+        else this.emitStatus();
     }
 
     start() {
-        if (this.timer) {
-            console.log('[AutoCheck] Already running.');
-            return;
-        }
-        this.config.isEnabled = true;
-        Setting.set('autoCheckConfig', this.config);
-
+        if (this.timer) clearInterval(this.timer);
+        
         const intervalMs = this.config.intervalMinutes * 60 * 1000;
         console.log(`[AutoCheck] Service started. Interval: ${this.config.intervalMinutes} minutes.`);
         this.status = 'RUNNING';
@@ -62,19 +61,18 @@ class AutoCheckManager extends EventEmitter {
             }
             try {
                 this.isJobRunning = true;
-                console.log(`[AutoCheck] Starting scheduled check at ${new Date().toLocaleTimeString()}`);
+                this.emitStatus();
                 await this.executeCheck();
             } catch(e) {
                 console.error('[AutoCheck] Error during scheduled check:', e);
             } finally {
                 this.isJobRunning = false;
+                this.updateNextRunTime();
             }
         };
         
-        // Chạy ngay lần đầu, sau đó mới set interval
         runJob();
         this.timer = setInterval(runJob, intervalMs);
-
         this.updateNextRunTime();
     }
 
@@ -83,8 +81,6 @@ class AutoCheckManager extends EventEmitter {
             clearInterval(this.timer);
             this.timer = null;
         }
-        this.config.isEnabled = false;
-        Setting.set('autoCheckConfig', this.config);
         this.status = 'STOPPED';
         this.nextRun = null;
         console.log('[AutoCheck] Service stopped.');
@@ -94,38 +90,29 @@ class AutoCheckManager extends EventEmitter {
     restart() {
         console.log('[AutoCheck] Restarting service...');
         this.stop();
-        // Dùng setTimeout để đảm bảo stop hoàn tất trước khi start
-        setTimeout(() => this.start(), 100);
+        setTimeout(() => this.start(), 200);
     }
     
     async executeCheck() {
-        // Logic tìm account tương tự cronjob cũ
+        // ... (logic executeCheck không thay đổi)
         const uncheckedAccounts = await Account.find({ status: 'UNCHECKED', isDeleted: { $ne: true } }).limit(50).lean();
         let accountsToCheck = [...uncheckedAccounts];
         const remainingLimit = 50 - uncheckedAccounts.length;
-
         if (remainingLimit > 0) {
             const otherAccounts = await Account.find({
-                status: { $nin: ['UNCHECKED', 'CHECKING'] },
-                isDeleted: { $ne: true }
-            })
-            .sort({ lastCheckedAt: 1 })
-            .limit(remainingLimit)
-            .lean();
+                status: { $nin: ['UNCHECKED', 'CHECKING'] }, isDeleted: { $ne: true }
+            }).sort({ lastCheckedAt: 1 }).limit(remainingLimit).lean();
             accountsToCheck.push(...otherAccounts);
         }
-
         if (accountsToCheck.length > 0) {
-            const accountIds = accountsToCheck.map(acc => acc._id.toString());
-            await runCheckLive(accountIds, this.io);
+            await runCheckLive(accountsToCheck.map(a => a._id.toString()), this.io);
         } else {
             console.log('[AutoCheck] No accounts to check in this run.');
         }
-        this.updateNextRunTime(); // Cập nhật lại thời gian chạy lần tới
     }
 
     updateNextRunTime() {
-        if (this.status === 'RUNNING') {
+        if (this.status === 'RUNNING' && this.timer) {
             const intervalMs = this.config.intervalMinutes * 60 * 1000;
             this.nextRun = new Date(Date.now() + intervalMs);
         } else {
@@ -150,5 +137,4 @@ class AutoCheckManager extends EventEmitter {
     }
 }
 
-// Export một instance duy nhất (singleton pattern)
 module.exports = new AutoCheckManager();
