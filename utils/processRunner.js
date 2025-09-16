@@ -70,20 +70,21 @@ class ProcessRunner extends EventEmitter {
     _run() {
         if (this.status !== 'running') return;
 
-        if (this.errors >= this.options.maxErrors) {
+        // === START: THAY ĐỔI LOGIC maxErrors ===
+        // Chỉ kiểm tra maxErrors nếu nó lớn hơn 0 (tính năng được bật)
+        if (this.options.maxErrors > 0 && this.errors >= this.options.maxErrors) {
             this.status = 'stopped';
             this.emit('error', new Error(`Dừng tiến trình do vượt quá số lỗi tối đa (${this.options.maxErrors}).`));
             this.emit('end', { message: 'Đã dừng do quá nhiều lỗi.' });
             return;
         }
+        // === END: THAY ĐỔI LOGIC maxErrors ===
 
         while (this.activeTasks < this.options.concurrency && this.queue.length > 0) {
             this.activeTasks++;
             const taskWrapper = this.queue.shift();
             this._executeTask(taskWrapper);
         }
-        
-        // Logic kiểm tra hoàn thành đã được chuyển vào _executeTask
     }
 
     async _executeTask(taskWrapper, attempt = 1) {
@@ -99,7 +100,10 @@ class ProcessRunner extends EventEmitter {
             this.completedTasks++;
             this.emit('task:complete', { result, taskWrapper });
         } catch (error) {
-            if (attempt < this.options.retries) {
+            // === START: THAY ĐỔI LOGIC retries ===
+            // Thay đổi từ < thành <= để retries: 1 có nghĩa là "thử lại 1 lần"
+            if (attempt <= this.options.retries) {
+            // === END: THAY ĐỔI LOGIC retries ===
                 this.emit('task:retry', { error: error.message, taskWrapper, attempt: attempt + 1 });
                 await this._delay(1000);
                 this._executeTask(taskWrapper, attempt + 1);
@@ -113,8 +117,6 @@ class ProcessRunner extends EventEmitter {
         
         this.activeTasks--;
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Kiểm tra hoàn thành ngay tại đây sau khi một task kết thúc
         if (this.status === 'running' && this.activeTasks === 0 && this.queue.length === 0) {
             this.status = 'finished';
             this.emit('end', { 
@@ -123,11 +125,9 @@ class ProcessRunner extends EventEmitter {
                 failed: this.failedTasks
             });
         } else {
-            // Nếu chưa xong, tiếp tục chạy task tiếp theo
             await this._delay(this.options.delay);
             this._run();
         }
-        // === END: THAY ĐỔI QUAN TRỌNG ===
     }
 
     _runWithTimeout(taskFunc) {

@@ -19,7 +19,11 @@ class AutoProxyCheckManager extends EventEmitter {
         this.io = io;
         console.log('🔄 Initializing Auto Proxy Check Manager...');
         this.config = settingsService.get('autoProxyCheck');
-        this.emitStatus();
+        if (this.config.isEnabled) {
+            this.start();
+        } else {
+            this.emitStatus();
+        }
     }
 
     async updateConfig(newConfig) {

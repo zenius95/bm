@@ -44,7 +44,7 @@ async function runCheckProxy(proxyIds, io, options) {
         concurrency: options.concurrency || 5,
         delay: options.delay || 200,
         timeout: options.timeout || 20000,
-        retries: 1,
+        retries: 0,
     });
 
     const tasks = proxyIds.map(proxyId => ({

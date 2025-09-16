@@ -711,24 +711,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Lỗi kết nối server', 'Lỗi', 'error');
             }
         }
-        
-        function getProxyFormDataAnd(extras) {
-            const formData = {
+
+        autoProxyCheckForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateAutoProxyCheckConfig({
                 intervalMinutes: intervalInput.value,
                 concurrency: concurrencyInput.value,
                 delay: delayInput.value,
                 timeout: timeoutInput.value,
                 batchSize: batchSizeInput.value
-            };
-            return { ...formData, ...extras };
-        }
-
-        autoProxyCheckForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            updateAutoProxyCheckConfig(getProxyFormDataAnd({}));
+            });
         });
-        startBtn.addEventListener('click', () => updateAutoProxyCheckConfig(getProxyFormDataAnd({ isEnabled: true })));
-        stopBtn.addEventListener('click', () => updateAutoProxyCheckConfig(getProxyFormDataAnd({ isEnabled: false })));
+        
+        startBtn.addEventListener('click', () => updateAutoProxyCheckConfig({ isEnabled: true }));
+        stopBtn.addEventListener('click', () => updateAutoProxyCheckConfig({ isEnabled: false }));
         
         updateAutoProxyCheckUI(initialState.autoProxyCheck);
         socket.on('autoProxyCheck:statusUpdate', (state) => updateAutoProxyCheckUI(state));

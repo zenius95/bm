@@ -53,7 +53,7 @@
         "batchSize": 50
     },
     "autoProxyCheck": {
-        "isEnabled": true,
+        "isEnabled": false,
         "intervalMinutes": 60,
         "concurrency": 10,
         "delay": 500,

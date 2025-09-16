@@ -1,7 +1,7 @@
 // utils/checkLiveService.js
 const Account = require('../models/Account');
 const ProcessRunner = require('./processRunner');
-const runInsta = require('../../src/runInsta.js');
+const InstagramAuthenticator = require('./instagramAuthenticator');
 
 /**
  * Dịch vụ kiểm tra trạng thái live của các account.
@@ -30,8 +30,8 @@ async function runCheckLive(accountIds, io, options) {
         concurrency: options.concurrency || 10,
         delay: options.delay || 500,
         timeout: options.timeout || 180000,
-        retries: 2,
-        maxErrors: 20,
+        retries: 0,
+        maxErrors: 0,
     });
     // === END: THAY ĐỔI QUAN TRỌNG ===
 
@@ -51,41 +51,33 @@ async function runCheckLive(accountIds, io, options) {
            
             let isLive = false;
 
+            const credentials = {
+                username: currentAccount.uid,
+                password: currentAccount.password,
+                twofa: currentAccount.twofa,
+                // proxy: 'http://user:pass@host:port' // Bỏ trống nếu không dùng
+            };
+
+            const ig = new InstagramAuthenticator(credentials);
+
             try {
-
-                const setting = {
-                    timeout: {value: 100000},
-                    khangBm: {value: false},
-                    proxy: {value: 'httpProxy'},
-                    userAgent: {value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0'}
-                }
-
-                await runInsta({
-                    setting,
-                    type: 'instagram',
-                    mode: 'normal',
-                    item: {
-                        id: currentAccount._id,
-                        uid: currentAccount.uid,
-                        password: currentAccount.password,
-                        twofa: currentAccount.twofa,
-                        proxyKey: currentAccount.proxy
-                    }
-                }, (action, data) => {
-
-                    if (action === 'message' && data.message === 'Đăng nhập thành công') {
-
-                        isLive = true
-
-                    }
-
-                })
-
-
-            } catch (err) {
-
-                throw new Error(err);
                 
+                await ig.login();
+               
+                isLive = true
+
+            } catch (error) {
+
+                if (error instanceof CheckpointError) {
+                    console.error("Lý do: Tài khoản bị checkpoint.");
+                    console.error("URL xác thực:", error.checkpointUrl);
+                } else if (error instanceof InvalidCredentialsError) {
+                    console.error("Lý do: Sai thông tin đăng nhập.");
+                } else if (error instanceof TwoFactorError) {
+                    console.error("Lý do: Lỗi xác thực hai yếu tố.");
+                } else {
+                   throw new Error(error);
+                }
             }
 
             return { isLive, checkedAt: new Date() }; 
