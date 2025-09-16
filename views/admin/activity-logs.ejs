@@ -36,10 +36,12 @@
 
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
+            <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
         </div>
         <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
+            <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
         </div>
     <% } %>
 
@@ -51,7 +53,7 @@
                          <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Thời gian</th>
                         <th scope="col" class="px-6 py-3">Người dùng</th>
-                         <th scope="col" class="px-6 py-3">Hành động</th>
+                        <th scope="col" class="px-6 py-3">Hành động</th>
                         <th scope="col" class="px-6 py-3">Chi tiết</th>
                         <th scope="col" class="px-6 py-3">Ngữ cảnh</th>
                          <th scope="col" class="px-6 py-3">Địa chỉ IP</th>
@@ -59,37 +61,37 @@
                 </thead>
                 <tbody>
                     <% if (logs && logs.length > 0) { %>
-                         <% logs.forEach(log => { %>
+                        <% logs.forEach(log => { %>
                              <tr id="log-row-<%= log._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                 <td class="p-4"><input type="checkbox" value="<%= log._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
-                                 <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
+                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
                                 <td class="px-6 py-4 font-medium text-white"><%= log.user ? log.user.username : 'N/A' %></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <% const actionInfo = actionLabels[log.action] || { label: log.action, color: 'bg-gray-700 text-gray-300' }; %>
                                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= actionInfo.color %>">
                                         <%= actionInfo.label %>
-                                   </span>
-                                </td>
-                                <td class="px-6 py-4 text-gray-300"><%= log.details %></td>
-                                 <td class="px-6 py-4">
-                                    <span class="font-semibold <%= log.context === 'Admin' ? 'text-purple-400' : 'text-cyan-400' %>">
-                                      <%= log.context %>
                                     </span>
                                 </td>
-                                 <td class="px-6 py-4 text-gray-400 font-mono"><%= log.ipAddress %></td>
+                                <td class="px-6 py-4 text-gray-300"><%= log.details %></td>
+                                <td class="px-6 py-4">
+                                    <span class="font-semibold <%= log.context === 'Admin' ? 'text-purple-400' : 'text-cyan-400' %>">
+                                        <%= log.context %>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-400 font-mono"><%= log.ipAddress %></td>
                                 </tr>
                         <% }); %>
                     <% } else { %>
                         <tr>
                             <td colspan="7" class="text-center py-16 px-6">
-                                 <i class="ri-file-search-line text-6xl text-gray-700"></i>
+                                <i class="ri-file-search-line text-6xl text-gray-700"></i>
                                 <h4 class="mt-4 text-xl font-semibold text-white">Không tìm thấy nhật ký nào</h4>
                                 <p class="mt-2 text-gray-400">Hãy thử thay đổi bộ lọc hoặc đợi hoạt động mới.</p>
                             </td>
                         </tr>
                     <% } %>
                 </tbody>
-             </table>
+            </table>
         </div>
     </div>
 
@@ -98,12 +100,12 @@
         <ul class="inline-flex items-center -space-x-px">
             <% for(let i = 1; i <= pagination.totalPages; i++) { 
                 const query = new URLSearchParams(currentQuery);
- query.set('page', i);
+                query.set('page', i);
             %>
                 <li>
                     <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
                 </li>
-             <% } %>
+            <% } %>
         </ul>
     </nav>
     <% } %>
@@ -205,17 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
-                    if (payload.selectAll) {
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        payload.ids.forEach(id => {
-                            const row = document.getElementById(`log-row-${id}`);
-                            if (row) row.remove();
-                        });
-                        if (selectAllCheckbox) selectAllCheckbox.checked = false;
-                        toggleActionButtons();
-                        updateBanners();
-                    }
+                    // Luôn tải lại trang sau khi xóa thành công
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast(result.message, 'Lỗi!', 'error');
                 }

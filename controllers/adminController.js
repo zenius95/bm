@@ -19,26 +19,53 @@ const adminOrderController = createCrudController(orderService, 'orders', {
 
 adminOrderController.handleGetAll = async (req, res) => {
     try {
-        const { data, pagination } = await orderService.find(req.query);
-        const trashCount = await orderService.Model.countDocuments({ isDeleted: true });
-        
-        const users = await User.find({ isDeleted: false }).select('username balance').lean();
+        const { page = 1, limit = 20, search, status, inTrash } = req.query;
+        let query = { isDeleted: inTrash === 'true' };
 
-        data.forEach(order => {
+        if (status) {
+            query.status = status;
+        }
+
+        if (search) {
+            const users = await User.find({ username: { $regex: search, $options: 'i' } }).select('_id');
+            const userIds = users.map(u => u._id);
+            
+            query.$or = [
+                { shortId: { $regex: search, $options: 'i' } },
+                { user: { $in: userIds } }
+            ];
+        }
+
+        const totalItems = await Order.countDocuments(query);
+        const orders = await Order.find(query)
+            .sort({ createdAt: -1 })
+            .skip((parseInt(page, 10) - 1) * parseInt(limit, 10))
+            .limit(parseInt(limit, 10))
+            .populate('user', 'username')
+            .lean();
+        
+        const trashCount = await Order.countDocuments({ isDeleted: true });
+        const usersForForm = await User.find({ isDeleted: false }).select('username balance').lean();
+
+        orders.forEach(order => {
             order.completedItems = order.items.filter(item => item.status === 'completed').length;
             order.failedItems = order.items.filter(item => item.status === 'failed').length;
         });
 
         const title = 'Orders Management';
+        const pagination = {
+            totalItems,
+            currentPage: parseInt(page, 10),
+            totalPages: Math.ceil(totalItems / limit),
+            limit: parseInt(limit, 10),
+        };
 
         res.render('admin/orders', { 
-            orders: data, 
+            orders: orders, 
             pagination,
             trashCount,
-            users,
-            // === START: THAY ĐỔI TRUYỀN DỮ LIỆU GIÁ ===
+            users: usersForForm,
             pricingTiers: settingsService.get('order').pricingTiers,
-            // === END: THAY ĐỔI TRUYỀN DỮ LIỆU GIÁ ===
             title,
             page: 'orders',
             currentQuery: res.locals.currentQuery

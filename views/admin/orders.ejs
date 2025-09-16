@@ -66,6 +66,7 @@
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
         <form method="GET" action="/admin/orders" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <% if (inTrash) { %> <input type="hidden" name="inTrash" value="true"> <% } %>
+            <input type="text" name="search" class="form-input" placeholder="Tìm theo User, Order ID..." value="<%= currentQuery.search || '' %>">
             <select name="status" class="form-select">
                 <option value="">-- Lọc theo trạng thái --</option>
                 <option value="pending" <%= currentQuery.status === 'pending' ? 'selected' : '' %>>Pending</option>
@@ -93,10 +94,12 @@
     
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
+            <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
         </div>
         <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
+            <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
         </div>
     <% } %>
 
@@ -119,7 +122,7 @@
                     </thead>
                     <tbody>
                         <% orders.forEach(order => { %>
-                            <% 
+                             <% 
                                 let statusClass = 'bg-gray-700 text-gray-300';
                                 if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
                                 if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
@@ -194,16 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemCountEl = document.getElementById('item-count');
         const totalCostEl = document.getElementById('total-cost');
         const pricePerItemEl = document.getElementById('price-per-item');
-
         const pricingTiers = <%- JSON.stringify(pricingTiers || []) %>.sort((a, b) => b.quantity - a.quantity);
         const adminBalance = <%= user.balance %>;
-
         const getPriceForQuantity = (count) => {
             if (pricingTiers.length === 0) return 0;
             const applicableTier = pricingTiers.find(tier => count >= tier.quantity);
             return applicableTier ? applicableTier.price : (pricingTiers[pricingTiers.length - 1]?.price || 0);
         };
-        
         const updateCost = () => {
             const lines = itemsData.value.trim().split('\n').filter(line => line.trim() !== '');
             const count = lines.length;
@@ -234,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
         itemsData.addEventListener('input', updateCost);
         userSelect.addEventListener('change', updateCost);
         updateCost();
-
         createOrderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             createOrderBtn.disabled = true;
@@ -367,17 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
-                    if (payload.selectAll) {
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        payload.ids.forEach(id => {
-                            const row = document.getElementById(`order-row-${id}`);
-                            if (row) row.remove();
-                        });
-                        if (selectAllCheckbox) selectAllCheckbox.checked = false;
-                        toggleActionButtons();
-                        updateBanners();
-                    }
+                    // Luôn tải lại trang sau khi xóa thành công
+                    setTimeout(() => window.location.reload(), 1000);
                 } else {
                     showToast(result.message, 'Lỗi!', 'error');
                 }
@@ -392,11 +382,13 @@ document.addEventListener('DOMContentLoaded', () => {
             handleAction('/admin/orders/soft-delete', (count) => `Bạn có chắc muốn chuyển ${count} đơn hàng vào thùng rác?`);
         });
     }
+
     if (restoreSelectedBtn) {
         restoreSelectedBtn.addEventListener('click', () => {
             handleAction('/admin/orders/restore', (count) => `Bạn có chắc muốn khôi phục ${count} đơn hàng?`, 'info');
         });
     }
+
     if (hardDeleteSelectedBtn) {
         hardDeleteSelectedBtn.addEventListener('click', () => {
             handleAction('/admin/orders/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} đơn hàng? Dữ liệu sẽ không thể phục hồi.`, 'danger');
@@ -405,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const socket = io();
     socket.on('connect', () => console.log('Connected to server for real-time order updates.'));
+
     socket.on('order:update', (data) => {
         const { id, status } = data;
         const statusBadge = document.getElementById(`status-${id}`);
@@ -418,6 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBadge.textContent = status;
         statusBadge.className = `px-2.5 py-1 text-xs font-semibold rounded-full ${statusClass}`;
     });
+
     socket.on('order:item_update', (data) => {
         const { id, completedItems, failedItems } = data;
         const row = document.getElementById(`order-row-${id}`);
@@ -429,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (completedEl) completedEl.textContent = completedItems;
         if (failedEl) failedEl.textContent = failedItems;
     });
+
     socket.on('orders:trash:update', (data) => {
         const trashCountSpan = document.getElementById('trash-count');
         if (trashCountSpan) {
