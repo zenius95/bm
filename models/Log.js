@@ -6,7 +6,12 @@ const LogSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order',
         required: true,
-        index: true // Đánh index để truy vấn nhanh hơn
+        index: true 
+    },
+    itemId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Item',
+        index: true // Rất quan trọng để truy vấn log theo item nhanh
     },
     level: {
         type: String,

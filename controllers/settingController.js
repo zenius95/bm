@@ -52,7 +52,6 @@ settingController.updateMasterApiKey = async (req, res) => {
     }
 };
 
-// === START: CẬP NHẬT LOGIC LƯU BẬC GIÁ ===
 settingController.updateOrderConfig = async (req, res) => {
     try {
         const { pricingTiers } = req.body;
@@ -70,7 +69,6 @@ settingController.updateOrderConfig = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Một số bậc giá có giá trị không hợp lệ.' });
         }
         
-        // Sắp xếp lại trước khi lưu để đảm bảo tính nhất quán
         cleanedTiers.sort((a, b) => a.quantity - b.quantity);
 
         await settingsService.update('order', { pricingTiers: cleanedTiers });
@@ -82,7 +80,6 @@ settingController.updateOrderConfig = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// === END: CẬP NHẬT LOGIC LƯU BẬC GIÁ ===
 
 settingController.updateDepositConfig = async (req, res) => {
     try {
@@ -143,7 +140,6 @@ settingController.updateAutoCheckConfig = async (req, res) => {
     }
 };
 
-// Thêm hàm update config cho proxy check
 settingController.updateAutoProxyCheckConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize } = req.body;
@@ -168,11 +164,14 @@ settingController.updateAutoProxyCheckConfig = async (req, res) => {
 
 settingController.updateItemProcessorConfig = async (req, res) => {
     try {
-        const { concurrency, pollingInterval } = req.body;
+        const { concurrency, pollingInterval, maxSuccess, maxError } = req.body;
         const configToUpdate = {};
         const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
         configToUpdate.concurrency = parse(concurrency, 1);
         configToUpdate.pollingInterval = parse(pollingInterval, 1);
+        configToUpdate.maxSuccess = parse(maxSuccess, 0);
+        configToUpdate.maxError = parse(maxError, 0);
+
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
         if (Object.keys(configToUpdate).length > 0) {

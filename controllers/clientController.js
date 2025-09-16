@@ -1,7 +1,8 @@
 // controllers/clientController.js
 const User = require('../models/User');
 const Order = require('../models/Order');
-const Item = require('../models/Item'); // Thêm model Item mới
+const Item = require('../models/Item');
+const Log = require('../models/Log'); // Thêm Log model
 const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 
@@ -83,7 +84,6 @@ clientController.getCreateOrderPage = (req, res) => {
     });
 };
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
 clientController.postCreateOrder = async (req, res) => {
     try {
         const { itemsData } = req.body;
@@ -109,7 +109,6 @@ clientController.postCreateOrder = async (req, res) => {
         const balanceBefore = user.balance;
         user.balance -= totalCost;
         
-        // Tạo đơn hàng trước
         const newOrder = new Order({ 
             user: userId, 
             totalCost, 
@@ -117,18 +116,15 @@ clientController.postCreateOrder = async (req, res) => {
             totalItems: itemLines.length
         });
 
-        // Tạo danh sách các item mới, gắn orderId vào từng item
         const itemsToInsert = itemLines.map(line => ({
             orderId: newOrder._id,
             data: line.trim()
         }));
 
-        // Lưu tất cả các thay đổi vào database
-        // Sử dụng Promise.all để đảm bảo tất cả đều thành công
         await Promise.all([
             user.save(),
             newOrder.save(),
-            Item.insertMany(itemsToInsert) // Dùng insertMany để thêm hàng loạt, hiệu quả hơn
+            Item.insertMany(itemsToInsert)
         ]);
         
         await logActivity(userId, 'CLIENT_CREATE_ORDER', {
@@ -156,7 +152,6 @@ clientController.postCreateOrder = async (req, res) => {
         res.redirect('/create-order?error=' + encodeURIComponent('Lỗi server, không thể tạo đơn hàng.'));
     }
 };
-// === END: THAY ĐỔI QUAN TRỌNG ===
 
 clientController.getOrderListPage = async (req, res) => {
     const pageNum = parseInt(req.query.page, 10) || 1;
@@ -192,16 +187,28 @@ clientController.getOrderDetailPage = async (req, res) => {
             return res.status(404).send('Không tìm thấy đơn hàng.');
         }
 
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Lấy danh sách item từ bảng Items thay vì từ trong order
         const items = await Item.find({ orderId: order._id }).lean();
-        order.items = items; // Gắn lại vào object order để view có thể dùng
-        // === END: THAY ĐỔI QUAN TRỌNG ===
+        order.items = items;
+
+        const logs = await Log.find({ orderId: order._id }).sort({ timestamp: 1 }).lean();
+        
+        // Nhóm logs theo itemId để dễ dàng hiển thị trên giao diện
+        const logsByItem = logs.reduce((acc, log) => {
+            if (log.itemId) {
+                const itemIdStr = log.itemId.toString();
+                if (!acc[itemIdStr]) {
+                    acc[itemIdStr] = [];
+                }
+                acc[itemIdStr].push(log);
+            }
+            return acc;
+        }, {});
 
         res.render('client/order-detail', {
             page: 'orders',
             title: `Chi Tiết Đơn Hàng #${order.shortId}`,
-            order
+            order,
+            logsByItem // Gửi dữ liệu logs đã nhóm
         });
     } catch (error) {
         console.error("Client get order detail error:", error);

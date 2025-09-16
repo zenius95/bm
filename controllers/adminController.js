@@ -2,7 +2,7 @@
 const Order = require('../models/Order');
 const Account = require('../models/Account'); 
 const Log = require('../models/Log');
-const Item = require('../models/Item'); // Thêm model Item mới
+const Item = require('../models/Item');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const User = require('../models/User'); 
@@ -48,9 +48,6 @@ adminOrderController.handleGetAll = async (req, res) => {
         const trashCount = await Order.countDocuments({ isDeleted: true });
         const usersForForm = await User.find({ isDeleted: false }).select('username balance').lean();
 
-        // Dữ liệu completedItems và failedItems giờ đã có sẵn trong Order model
-        // nên không cần phải tính toán lại ở đây nữa.
-
         const title = 'Orders Management';
         const pagination = {
             totalItems,
@@ -83,18 +80,15 @@ adminOrderController.handleGetById = async (req, res) => {
             return res.status(404).send("Order not found.");
         }
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Lấy danh sách item từ bảng Items
         const items = await Item.find({ orderId: order._id }).lean();
-        // Gán lại vào object order để view có thể hiển thị
         order.items = items;
-        // === END: THAY ĐỔI QUAN TRỌNG ===
 
-        const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 });
+        // Lấy tất cả logs thuộc về orderId này, sắp xếp theo thời gian
+        const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 }).lean();
 
         res.render('admin/order-detail', { 
             order, 
-            logs, 
+            logs, // Truyền toàn bộ mảng logs của order cho view
             currentQuery: req.query,
             title: `Order #${order.shortId}`,
             page: 'orders'
@@ -105,7 +99,6 @@ adminOrderController.handleGetById = async (req, res) => {
     }
 };
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
 adminOrderController.handleCreate = async (req, res) => {
     try {
         const { itemsData, userId } = req.body;
@@ -137,7 +130,6 @@ adminOrderController.handleCreate = async (req, res) => {
         const balanceBefore = targetUser.balance;
         targetUser.balance -= totalCost;
 
-        // Tạo đơn hàng trước
         const newOrder = new Order({ 
             user: targetUser._id, 
             totalCost, 
@@ -145,13 +137,11 @@ adminOrderController.handleCreate = async (req, res) => {
             totalItems: itemLines.length 
         });
 
-        // Tạo danh sách các item mới để insert hàng loạt
         const itemsToInsert = itemLines.map(line => ({
             orderId: newOrder._id,
             data: line.trim()
         }));
 
-        // Lưu đồng thời user, order, và các item mới vào database
         await Promise.all([
             targetUser.save(),
             newOrder.save(),
@@ -184,7 +174,6 @@ adminOrderController.handleCreate = async (req, res) => {
         return res.status(500).json({ success: false, message: "Lỗi server khi tạo đơn hàng." });
     }
 };
-// === END: THAY ĐỔI QUAN TRỌNG ===
 
 const originalSoftDelete = adminOrderController.handleSoftDelete;
 adminOrderController.handleSoftDelete = async (req, res, next) => {
@@ -246,8 +235,6 @@ adminOrderController.getDashboard = async (req, res) => {
         const orderStats = { total: totalOrderCount, processing: processingOrderCount, completed: completedOrderCount, failed: failedOrderCount };
         const accountStats = { total: totalAccountCount, live: liveAccountCount, die: dieAccountCount, unchecked: uncheckedAccountCount };
         const userStats = { total: totalUserCount, admins: adminUserCount, users: totalUserCount - adminUserCount };
-
-        // Dữ liệu completedItems và failedItems đã có sẵn trong Order, không cần tính toán lại
 
         res.render('admin/dashboard', { 
             orderStats, 

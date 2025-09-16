@@ -9,13 +9,11 @@ const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 const DEFAULT_SETTINGS = {
     masterApiKey: '',
     order: {
-        // === START: THAY ĐỔI CẤU TRÚC GIÁ ===
         pricingTiers: [
             { quantity: 50, price: 10000 },
             { quantity: 20, price: 13000 },
             { quantity: 1, price: 15000 }
         ]
-        // === END: THAY ĐỔI CẤU TRÚC GIÁ ===
     },
     deposit: {
         bankName: "TCB",
@@ -47,7 +45,9 @@ const DEFAULT_SETTINGS = {
     itemProcessor: {
         isEnabled: false,
         concurrency: 10,
-        pollingInterval: 5
+        pollingInterval: 5,
+        maxSuccess: 4,
+        maxError: 5
     }
 };
 
@@ -121,41 +121,26 @@ class SettingsService extends EventEmitter {
         await this._save();
     }
 
-    // === START: THÊM HÀM LOGIC TÍNH GIÁ ===
-    /**
-     * Lấy danh sách các bậc giá đã được sắp xếp giảm dần theo số lượng
-     * @returns {Array<{quantity: number, price: number}>}
-     */
     getSortedTiers() {
         const tiers = this.get('order', {}).pricingTiers || [];
-        // Sao chép và sắp xếp để đảm bảo logic không ảnh hưởng đến dữ liệu gốc
         return [...tiers].sort((a, b) => b.quantity - a.quantity);
     }
 
-    /**
-     * Tính toán đơn giá dựa trên tổng số lượng item
-     * @param {number} itemCount - Tổng số lượng item
-     * @returns {number} - Đơn giá áp dụng
-     */
     calculatePricePerItem(itemCount) {
         const sortedTiers = this.getSortedTiers();
         
         if (sortedTiers.length === 0) {
-            return 0; // Trả về 0 nếu không có bậc giá nào được cấu hình
+            return 0;
         }
 
-        // Tìm bậc giá đầu tiên mà số lượng item lớn hơn hoặc bằng
         const applicableTier = sortedTiers.find(tier => itemCount >= tier.quantity);
 
-        // Nếu tìm thấy, trả về giá của bậc đó
         if (applicableTier) {
             return applicableTier.price;
         }
 
-        // Nếu không (ví dụ itemCount < bậc thấp nhất), trả về giá của bậc thấp nhất
         return sortedTiers[sortedTiers.length - 1]?.price || 0;
     }
-    // === END: THÊM HÀM LOGIC TÍNH GIÁ ===
 }
 
 module.exports = new SettingsService();

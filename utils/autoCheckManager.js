@@ -15,15 +15,12 @@ class AutoCheckManager extends EventEmitter {
         this.isJobRunning = false;
     }
 
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Check Manager...');
         this.config = settingsService.get('autoCheck');
-        // Luôn khởi động ở trạng thái STOPPED, không tự động chạy
         this.emitStatus();
     }
-    // === END: THAY ĐỔI QUAN TRỌNG ===
 
     async updateConfig(newConfig) {
         const oldConfig = { ...this.config };
@@ -96,31 +93,47 @@ class AutoCheckManager extends EventEmitter {
     
     async executeCheck() {
         const batchSize = parseInt(this.config.batchSize, 10) || 50;
+        
+        // Bước 1: "Đánh thức" các account đang nghỉ và chuyển về UNCHECKED
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const restedAccounts = await Account.updateMany(
+            { 
+                status: 'RESTING', 
+                lastUsedAt: { $lte: twentyFourHoursAgo },
+                isDeleted: false
+            },
+            {
+                $set: {
+                    status: 'UNCHECKED', // Chuyển về UNCHECKED để buộc phải check lại
+                    successCount: 0,
+                    errorCount: 0,
+                    lastCheckedAt: null // Reset lastCheckedAt để đảm bảo được ưu tiên
+                }
+            }
+        );
+        if (restedAccounts.modifiedCount > 0) {
+            console.log(`[AutoCheck] Resurrected and reset ${restedAccounts.modifiedCount} RESTING accounts to UNCHECKED.`);
+        }
+        
         let accountsToCheck = [];
 
-        if (batchSize === 0) {
-            const uncheckedAccounts = await Account.find({ status: 'UNCHECKED', isDeleted: { $ne: true } }).lean();
-            const otherAccounts = await Account.find({
-                status: { $nin: ['UNCHECKED', 'CHECKING'] }, isDeleted: { $ne: true }
-            }).sort({ lastCheckedAt: 1 }).lean();
-            accountsToCheck = [...uncheckedAccounts, ...otherAccounts];
-        } else {
-            const uncheckedQuery = Account.find({ status: 'UNCHECKED', isDeleted: { $ne: true } }).limit(batchSize).lean();
-            const uncheckedAccounts = await uncheckedQuery;
-            accountsToCheck = [...uncheckedAccounts];
+        // Bước 2: Ưu tiên lấy các account UNCHECKED
+        const uncheckedAccounts = await Account.find({ status: 'UNCHECKED', isDeleted: { $ne: true } }).limit(batchSize).lean();
+        accountsToCheck.push(...uncheckedAccounts);
 
-            const remainingLimit = batchSize - uncheckedAccounts.length;
-            if (remainingLimit > 0) {
-                const otherAccountsQuery = Account.find({
-                    status: { $nin: ['UNCHECKED', 'CHECKING'] }, isDeleted: { $ne: true }
-                }).sort({ lastCheckedAt: 1 }).limit(remainingLimit).lean();
-                const otherAccounts = await otherAccountsQuery;
-                accountsToCheck.push(...otherAccounts);
-            }
+        const remainingLimit = batchSize - accountsToCheck.length;
+
+        // Bước 3: Nếu còn chỗ, lấy các account LIVE (ưu tiên check cũ nhất trước)
+        if (remainingLimit > 0) {
+            const liveAccounts = await Account.find({
+                status: 'LIVE', isDeleted: { $ne: true }
+            }).sort({ lastCheckedAt: 1 }).limit(remainingLimit).lean(); // Sắp xếp tăng dần (cũ nhất trước)
+            accountsToCheck.push(...liveAccounts);
         }
 
         if (accountsToCheck.length > 0) {
             const accountIds = accountsToCheck.map(acc => acc._id.toString());
+            console.log(`[AutoCheck] Found ${accountIds.length} accounts to check.`);
             await runCheckLive(accountIds, this.io, {
                 concurrency: this.config.concurrency,
                 delay: this.config.delay,

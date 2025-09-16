@@ -5,7 +5,8 @@
             <p class="mt-1 text-gray-400">Giám sát, điều khiển và quản lý các server worker xử lý đơn hàng.</p>
         </div>
         <div>
-             <button id="add-worker-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
+             <button id="add-worker-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 
+ border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
                 <i class="ri-add-line -ml-1 mr-2"></i>
                 <span>Thêm Worker</span>
             </button>
@@ -14,93 +15,105 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="worker-list">
         <% workers.forEach(worker => { %>
-            <div id="worker-<%= worker._id %>" 
+          
+           <div id="worker-<%= worker._id %>" 
                  class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 space-y-4 flex flex-col transition-all duration-300"
                  data-id="<%= worker._id %>"
                  data-name="<%- worker.name %>"
                  data-url="<%- worker.url %>"
-                 data-api-key="<%- worker.apiKey %>"
+          
+                data-api-key="<%- worker.apiKey %>"
                  data-is-local="<%= worker.isLocal %>"
                  data-is-enabled="<%= worker.isEnabled %>"
                  data-concurrency="<%= worker.concurrency %>"
                  data-status="<%= worker.status %>">
-                
+               
+ 
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <span class="status-indicator w-3 h-3 rounded-full flex-shrink-0" title="Trạng thái"></span>
                         <div>
-                            <h3 class="font-bold text-lg text-white truncate leading-tight"><%= worker.name %></h3>
+ 
+                             <h3 class="font-bold text-lg text-white truncate leading-tight"><%= worker.name %></h3>
                             <div class="text-xs text-gray-400 font-mono break-all mt-1"><%= worker.url %></div>
                         </div>
-                    </div>
+       
+                     </div>
                     <div class="flex items-center gap-1 flex-shrink-0">
                         <% if (!worker.isLocal) { %>
                             <button class="btn-toggle-worker p-2 rounded-md hover:bg-white/10 text-gray-400 transition">
-                                <% if (worker.isEnabled) { %>
+ 
+                                 <% if (worker.isEnabled) { %>
                                     <i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>
-                                <% } else { %>
+                         
+                 <% } else { %>
                                     <i class="ri-play-circle-line" title="Tiếp tục Worker"></i>
                                 <% } %>
-                            </button>
+               
+                             </button>
                         <% } %>
                         <button class="btn-view-log p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Xem Logs"><i class="ri-file-text-line"></i></button>
                         <div class="relative dropdown-container">
-                            <button class="btn-toggle-dropdown p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Cài đặt"><i class="ri-settings-3-line"></i></button>
+  
+                             <button class="btn-toggle-dropdown p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Cài đặt"><i class="ri-settings-3-line"></i></button>
                             <div class="dropdown-menu absolute right-0 top-full mt-2 w-32 bg-gray-800 border border-white/10 rounded-md shadow-lg z-10 hidden">
-                                <a href="#" class="btn-edit-worker block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10">Sửa</a>
+                        
+                         <a href="#" class="btn-edit-worker block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/10">Sửa</a>
                                 <% if (!worker.isLocal) { %>
                                 <a href="#" class="btn-delete-worker block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10">Xóa</a>
-                                <% } %>
+    
+                                 <% } %>
                             </div>
                         </div>
-                    </div>
+                  
+                   </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-white/10 pt-4 mt-auto">
                      <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center flex-shrink-0"><i class="ri-stack-line ri-lg"></i></div>
+                  
+                       <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center flex-shrink-0"><i class="ri-stack-line ri-lg"></i></div>
                         <div>
                             <div class="text-sm text-gray-400">Đơn chờ</div>
-                            <div class="stat-pending-orders text-lg font-semibold text-white"><%= worker.stats.pendingOrders || 0 %></div>
+                            
+                             <div class="stat-pending-orders text-lg font-semibold text-white"><%= worker.stats.pendingOrders || 0 %></div>
                         </div>
                     </div>
                      <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-yellow-500/10 text-yellow-400 flex items-center justify-center flex-shrink-0"><i class="ri-loader-2-line ri-lg"></i></div>
+                        
+                         <div class="w-10 h-10 rounded-lg bg-yellow-500/10 text-yellow-400 flex items-center justify-center flex-shrink-0"><i class="ri-loader-2-line ri-lg"></i></div>
                         <div>
                             <div class="text-sm text-gray-400">Item xử lý</div>
-                            <div class="stat-processing-items text-lg font-semibold text-white"><%= worker.stats.processingItems || 0 %></div>
+                            <div class="stat-processing-items text-lg font-semibold text-white"><%= 
+ worker.stats.processingItems || 0 %></div>
                         </div>
                     </div>
                      <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center flex-shrink-0"><i class="ri-user-line ri-lg"></i></div>
+                        <div class="w-10 h-10 rounded-lg bg-green-500/10 
+ text-green-400 flex items-center justify-center flex-shrink-0"><i class="ri-user-line ri-lg"></i></div>
                         <div>
                             <div class="text-sm text-gray-400">Accounts</div>
-                            <div class="text-lg font-semibold text-white"><span class="stat-live-accounts"><%= worker.stats.liveAccounts || 0 %></span>/<span class="stat-total-accounts text-gray-400 text-base"><%= worker.stats.totalAccounts || 0 %></span></div>
+                            <div class="text-lg font-semibold text-white"><span class="stat-live-accounts"><%= worker.stats.liveAccounts ||
+ 0 %></span>/<span class="stat-total-accounts text-gray-400 text-base"><%= worker.stats.totalAccounts || 0 %></span></div>
                         </div>
                     </div>
                      <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center flex-shrink-0"><i class="ri-cpu-line ri-lg"></i></div>
+                        
+                         <div class="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center flex-shrink-0"><i class="ri-cpu-line ri-lg"></i></div>
                         <div>
                             <div class="text-sm text-gray-400">CPU / RAM</div>
-                            <div class="text-lg font-semibold text-white"><span class="stat-cpu"><%= worker.stats.cpu || 0 %></span>% / <span class="stat-ram"><%= worker.stats.freeMem || 0 %></span>MB</div>
+                            <div class="text-lg font-semibold text-white"><span class="stat-cpu"><%= 
+ worker.stats.cpu || 0 %></span>% / <span class="stat-ram"><%= worker.stats.freeMem || 0 %></span>MB</div>
                         </div>
                     </div>
                 </div>
             </div>
         <% }) %>
     </div>
-
-    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
-         <div class="p-6 border-b border-white/10">
-            <h3 class="text-lg font-semibold text-white">Logs thời gian thực từ Tổng hành dinh</h3>
-        </div>
-        <div id="processor-logs" class="p-4 flex-grow overflow-y-auto font-mono text-xs text-gray-300" style="max-height: 400px;">
-            <div class="text-gray-500">Đang chờ kết nối...</div>
-        </div>
-    </div>
 </div>
 
-<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
+<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm 
+ z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
 
 <div id="add-worker-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-lg p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
     <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20">
@@ -108,26 +121,31 @@
             <div class="p-6 border-b border-white/10">
                 <h3 class="text-xl font-bold text-white">Thêm Worker Mới</h3>
             </div>
-            <div class="p-6 space-y-4">
+         
+           <div class="p-6 space-y-4">
                 <div>
                     <label for="worker-name" class="block text-sm font-medium text-gray-300 mb-2">Tên Worker</label>
                     <input type="text" id="worker-name" name="name" class="form-input" placeholder="Ví dụ: Server Phụ #1" required>
                 </div>
-                 <div>
+      
+                      <div>
                     <label for="worker-url" class="block text-sm font-medium text-gray-300 mb-2">URL</label>
                     <input type="url" id="worker-url" name="url" class="form-input" placeholder="http://123.45.67.89:3000" required>
                 </div>
                 <div>
-                    <label for="worker-apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+     
+                     <label for="worker-apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
                     <input type="text" id="worker-apiKey" name="apiKey" class="form-input font-mono" required>
                 </div>
                 <div>
-                    <label for="worker-concurrency" class="block text-sm font-medium text-gray-300 mb-2">Số item đồng thời</label>
+                    
+                     <label for="worker-concurrency" class="block text-sm font-medium text-gray-300 mb-2">Số item đồng thời</label>
                     <input type="number" id="worker-concurrency" name="concurrency" class="form-input" value="10" min="1" required>
                 </div>
             </div>
             <div class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3">
-                <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Hủy</button>
+                
+                 <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Hủy</button>
                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition">Lưu Worker</button>
             </div>
         </form>
@@ -136,32 +154,38 @@
 
 <div id="edit-worker-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-lg p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
     <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20">
-        <form id="edit-worker-form">
+        <form 
+ id="edit-worker-form">
             <div class="p-6 border-b border-white/10">
                 <h3 class="text-xl font-bold text-white">Sửa thông tin Worker</h3>
             </div>
             <div class="p-6 space-y-4">
                 <input type="hidden" id="edit-worker-id" name="id">
                 <div>
-                    <label for="edit-worker-name" class="block text-sm font-medium text-gray-300 mb-2">Tên Worker</label>
+  
+                   <label for="edit-worker-name" class="block text-sm font-medium text-gray-300 mb-2">Tên Worker</label>
                     <input type="text" id="edit-worker-name" name="name" class="form-input" required>
                 </div>
                  <div>
-                    <label for="edit-worker-url" class="block text-sm font-medium text-gray-300 mb-2">URL</label>
+                 
+                   <label for="edit-worker-url" class="block text-sm font-medium text-gray-300 mb-2">URL</label>
                     <input type="url" id="edit-worker-url" name="url" class="form-input" required>
                 </div>
                  <div>
                     <label for="edit-worker-apiKey" class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-                    <input type="text" id="edit-worker-apiKey" name="apiKey" class="form-input font-mono" required>
+      
+                       <input type="text" id="edit-worker-apiKey" name="apiKey" class="form-input font-mono" required>
                 </div>
                  <div>
                     <label for="edit-worker-concurrency" class="block text-sm font-medium text-gray-300 mb-2">Số item đồng thời</label>
-                    <input type="number" id="edit-worker-concurrency" name="concurrency" class="form-input" required min="1">
+                  
+                   <input type="number" id="edit-worker-concurrency" name="concurrency" class="form-input" required min="1">
                 </div>
             </div>
             <div class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3">
                 <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Hủy</button>
-                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition">Lưu thay đổi</button>
+                <button 
+ type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition">Lưu thay đổi</button>
             </div>
         </form>
     </div>
@@ -171,13 +195,15 @@
     <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 flex flex-col" style="height: 80vh;">
         <div class="p-6 border-b border-white/10 flex justify-between items-center">
             <div>
-                <h3 class="text-xl font-bold text-white">Logs của Worker: <span id="log-worker-name"></span></h3>
+      
+                   <h3 class="text-xl font-bold text-white">Logs của Worker: <span id="log-worker-name"></span></h3>
                 <p class="text-sm text-gray-400 mt-1">Hiển thị 50 logs hệ thống gần nhất.</p>
             </div>
             <button class="btn-cancel p-2 rounded-md hover:bg-white/10 text-gray-400 transition"><i class="ri-close-line ri-lg"></i></button>
         </div>
         <div id="log-content" class="p-4 flex-grow overflow-y-auto font-mono text-xs text-gray-300">
-            <div class="text-gray-500">Đang tải logs...</div>
+  
+                   <div class="text-gray-500">Đang tải logs...</div>
         </div>
     </div>
 </div>
@@ -206,7 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     backdrop.addEventListener('click', () => document.querySelectorAll('.modal-container').forEach(hideModal));
     document.querySelectorAll('.btn-cancel').forEach(btn => btn.addEventListener('click', () => hideModal(btn.closest('.modal-container'))));
-
     // Add Worker Modal
     const addWorkerModal = document.getElementById('add-worker-modal');
     document.getElementById('add-worker-btn').addEventListener('click', () => showModal(addWorkerModal));
@@ -218,22 +243,24 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/admin/workers', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+           
+                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
             const result = await response.json();
             if (result.success) {
                 showToast(result.message, 'Thành công!', 'success');
-                hideModal(addWorkerModal);
+             
+                   hideModal(addWorkerModal);
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 showToast(result.message, 'Lỗi!', 'error');
             }
         } catch (error) {
             showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
-        }
+   
+             }
     });
-
     // Event Delegation for Worker Cards
     document.getElementById('worker-list').addEventListener('click', async (e) => {
         const card = e.target.closest('.flex-col');
@@ -244,7 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLocalBool = (isLocal === 'true');
 
         if (e.target.closest('.btn-toggle-dropdown')) {
-            e.stopPropagation();
+            
+             e.stopPropagation();
             const menu = card.querySelector('.dropdown-menu');
             document.querySelectorAll('.dropdown-menu').forEach(otherMenu => {
                 if(otherMenu !== menu) otherMenu.classList.add('hidden');
@@ -253,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (e.target.closest('.btn-edit-worker')) {
-            e.preventDefault();
+  
+                   e.preventDefault();
             const editWorkerModal = document.getElementById('edit-worker-modal');
             const form = document.getElementById('edit-worker-form');
             form.querySelector('#edit-worker-id').value = id;
@@ -261,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
             form.querySelector('#edit-worker-url').value = url;
             form.querySelector('#edit-worker-apiKey').value = apiKey;
             form.querySelector('#edit-worker-concurrency').value = concurrency;
-
             // Vô hiệu hóa sửa URL và API Key cho worker local
             form.querySelector('#edit-worker-url').disabled = isLocalBool;
             form.querySelector('#edit-worker-apiKey').disabled = isLocalBool;
@@ -281,7 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(result.message, 'Thành công', 'success');
                         card.remove();
                     } else { showToast(result.message, 'Lỗi!', 'error'); }
-                } catch (error) { showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error'); }
+                } catch (error) { showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
+                }
             }
         }
         
@@ -292,7 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ isEnabled: newIsEnabled })
-                });
+         
+                 });
                 const result = await response.json();
                 if(result.success) {
                     showToast(result.message, 'Thành công', 'success');
@@ -317,11 +347,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success && result.logs) {
                     logContent.innerHTML = result.logs.length === 0 
-                        ? '<div class="text-gray-500">Không có log nào.</div>'
+                        ?
+                         '<div class="text-gray-500">Không có log nào.</div>'
                         : result.logs.map(log => `
                             <div class="flex items-start">
                                 <span class="text-gray-500 mr-3">${new Date(log.timestamp).toLocaleTimeString('vi-VN')}</span>
-                                <span class="${log.level === 'ERROR' ? 'text-red-400' : 'text-green-400'} font-bold mr-2">[${log.level}]</span>
+    
+                                     <span class="${log.level === 'ERROR' ? 'text-red-400' : 'text-green-400'} font-bold mr-2">[${log.level}]</span>
                                 <span class="text-gray-300 flex-1">${log.message}</span>
                             </div>`).join('');
                 } else {
@@ -332,13 +364,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.dropdown-container')) {
             document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
         }
     });
-
     // Edit Worker Form Submission
     document.getElementById('edit-worker-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -348,34 +378,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = Object.fromEntries(formData.entries());
         try {
             const response = await fetch(`/admin/workers/${id}`, {
-                method: 'POST',
+         
+               method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
             const result = await response.json();
             if (result.success) {
-                showToast(result.message, 'Thành công!', 'success');
+             
+                   showToast(result.message, 'Thành công!', 'success');
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 showToast(result.message, 'Lỗi!', 'error');
             }
         } catch (error) {
             showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
-        }
+  
+             }
     });
-    
     // Real-time Logic
-    const procLogs = document.getElementById('processor-logs');
-    function addLogMessage(message) {
-        if(!procLogs) return;
-        if (procLogs.childElementCount > 100) procLogs.removeChild(procLogs.firstChild);
-        const logLine = document.createElement('div');
-        const time = new Date().toLocaleTimeString('vi-VN');
-        logLine.innerHTML = `<span class="text-gray-500 mr-3">[${time}]</span>${message}`;
-        procLogs.appendChild(logLine);
-        procLogs.scrollTop = procLogs.scrollHeight;
-    }
-
     function updateWorkerCardUI(workerCard) {
         const isEnabled = workerCard.dataset.isEnabled === 'true';
         const isOnline = workerCard.dataset.status === 'online';
@@ -383,9 +404,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const statusIndicator = workerCard.querySelector('.status-indicator');
         
         workerCard.classList.toggle('opacity-50', !isEnabled);
-        
         if (toggleBtn) {
-            toggleBtn.innerHTML = isEnabled ? `<i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>` : `<i class="ri-play-circle-line" title="Tiếp tục Worker"></i>`;
+            toggleBtn.innerHTML = isEnabled ?
+                `<i class="ri-pause-circle-line" title="Tạm dừng Worker"></i>` : `<i class="ri-play-circle-line" title="Tiếp tục Worker"></i>`;
         }
         
         statusIndicator.classList.remove('bg-green-400', 'bg-yellow-400', 'bg-red-400', 'animate-pulse');
@@ -395,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusIndicator.title = "Online & Active";
             } else {
                  statusIndicator.classList.add('bg-yellow-400');
-                 statusIndicator.title = "Paused";
+                statusIndicator.title = "Paused";
             }
         } else {
             statusIndicator.classList.add('bg-red-400');
@@ -404,9 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     document.querySelectorAll('#worker-list .flex-col').forEach(updateWorkerCardUI);
-    
     const socket = io();
-    socket.on('connect', () => addLogMessage('Đã kết nối với server.'));
     socket.on('workers:update', (workers) => {
         workers.forEach(worker => {
             const workerCard = document.getElementById(`worker-${worker._id}`);
@@ -415,12 +434,12 @@ document.addEventListener('DOMContentLoaded', () => {
             workerCard.dataset.status = worker.status;
             ['cpu', 'ram', 'processing-items', 'pending-orders', 'live-accounts', 'total-accounts'].forEach(stat => {
                 const el = workerCard.querySelector(`.stat-${stat}`);
-                if (el) el.textContent = `${worker.stats[stat.replace('-','')] || 0}`;
+      
+                   if (el) el.textContent = `${worker.stats[stat.replace('-','')] || 0}`;
             });
             
             updateWorkerCardUI(workerCard);
         });
     });
-    socket.on('itemProcessor:log', (message) => addLogMessage(message));
 });
 </script>

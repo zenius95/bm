@@ -63,6 +63,8 @@
     "itemProcessor": {
         "isEnabled": false,
         "concurrency": 10,
-        "pollingInterval": 5
+        "pollingInterval": 5,
+        "maxSuccess": 4,
+        "maxError": 5
     }
 }

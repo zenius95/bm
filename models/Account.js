@@ -27,14 +27,24 @@ const AccountSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING', 'ERROR', 'IN_USE'],
-        // === END: THAY ĐỔI QUAN TRỌNG ===
+        enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING', 'ERROR', 'IN_USE', 'RESTING'],
         default: 'UNCHECKED'
     },
     dieStreak: {
         type: Number,
         default: 0
+    },
+    successCount: {
+        type: Number,
+        default: 0
+    },
+    errorCount: {
+        type: Number,
+        default: 0
+    },
+    lastUsedAt: {
+        type: Date,
+        default: null
     },
     isDeleted: { type: Boolean, default: false, index: true },
     lastCheckedAt: {
