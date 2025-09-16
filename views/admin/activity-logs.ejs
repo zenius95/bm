@@ -37,7 +37,7 @@
                                 <td class="p-4"><input type="checkbox" value="<%= log._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
                                 <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
                                 <td class="px-6 py-4 font-medium text-white"><%= log.user ? log.user.username : 'N/A' %></td>
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     <% const actionInfo = actionLabels[log.action] || { label: log.action, color: 'bg-gray-700 text-gray-300' }; %>
                                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= actionInfo.color %>">
                                         <%= actionInfo.label %>

@@ -188,6 +188,18 @@ clientController.getOrderDetailPage = async (req, res) => {
     }
 };
 
+// Hiển thị trang nạp tiền
+
+clientController.getDepositPage = (req, res) => {
+    // Tạo nội dung chuyển khoản duy nhất cho người dùng
+    const transferContent = `NAPTIEN ${req.session.user.username.toUpperCase()}`;
+    res.render('client/deposit', {
+        page: 'deposit',
+        title: 'Nạp tiền vào tài khoản',
+        transferContent
+    });
+};
+
 // === END ===
 
 module.exports = clientController;

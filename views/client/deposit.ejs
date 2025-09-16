@@ -1,0 +1,100 @@
+<%# views/client/deposit.ejs %>
+
+<div class="space-y-8">
+    <div class="space-y-4 text-center">
+        <h1 class="text-4xl font-bold text-white tracking-tight">Nạp tiền vào tài khoản</h1>
+        <p class="text-lg text-gray-400 max-w-2xl mx-auto">Thực hiện theo hướng dẫn để nạp tiền nhanh chóng và an toàn.</p>
+    </div>
+
+    <div class="bg-gray-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2">
+            <!-- Cột Trái: Mã QR -->
+            <div class="p-8 bg-white/5 flex flex-col items-center justify-center text-center">
+                <h3 class="text-lg font-semibold text-white">Bước 1: Quét mã QR</h3>
+                <p class="text-sm text-gray-400 mt-1 mb-6">Sử dụng App ngân hàng để quét mã.</p>
+                <div class="bg-white p-4 rounded-xl shadow-lg">
+                    <% 
+                        const qrInfo = encodeURIComponent(transferContent);
+                        const qrAccountName = encodeURIComponent("NGUYEN VAN A");
+                        // Link QR Code động, không cần demo số tiền
+                        const qrCodeUrl = `https://img.vietqr.io/image/970407-19036903216011-print.png?addInfo=${qrInfo}&accountName=${qrAccountName}`;
+                    %>
+                    <img src="<%= qrCodeUrl %>" alt="QR Code thanh toán" class="w-52 h-52">
+                </div>
+                <div class="mt-4 flex items-center gap-2">
+                    <img src="https://api.vietqr.io/img/TCB.3d202128.svg" class="w-8 h-8 rounded-full" alt="Techcombank Logo">
+                    <span class="font-semibold text-white">Techcombank</span>
+                </div>
+            </div>
+
+            <!-- Cột Phải: Thông tin chuyển khoản thủ công -->
+            <div class="p-8">
+                <h3 class="text-lg font-semibold text-white">Bước 2: Kiểm tra thông tin</h3>
+                <p class="text-sm text-gray-400 mt-1 mb-6">Hoặc chuyển khoản thủ công với thông tin dưới đây.</p>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border border-white/10 rounded-lg p-3">
+                        <span class="text-sm text-gray-400">Số tài khoản</span>
+                        <div class="flex items-center gap-2">
+                            <strong id="info-acc-number" class="text-white font-mono">19036903216011</strong>
+                            <button class="btn-copy" data-target="info-acc-number" title="Copy"><i class="ri-file-copy-line"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center border border-white/10 rounded-lg p-3">
+                        <span class="text-sm text-gray-400">Chủ tài khoản</span>
+                        <div class="flex items-center gap-2">
+                            <strong id="info-acc-name" class="text-white">NGUYEN VAN A</strong>
+                            <button class="btn-copy" data-target="info-acc-name" title="Copy"><i class="ri-file-copy-line"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <label class="block text-sm font-semibold text-yellow-300 mb-2">Nội dung chuyển khoản (Bắt buộc)</label>
+                    <div class="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                        <strong id="info-content" class="text-yellow-300 font-mono text-lg flex-1"><%= transferContent %></strong>
+                        <button class="btn-copy text-yellow-300" data-target="info-content" title="Copy"><i class="ri-file-copy-line ri-lg"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+         <div class="p-4 bg-red-900/30 text-center text-red-300 text-sm border-t border-white/10">
+            <i class="ri-error-warning-fill align-middle mr-1"></i> Vui lòng chuyển khoản <strong>đúng nội dung</strong> để được xử lý tự động.
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-copy {
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s;
+    }
+    .btn-copy:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+</style>
+
+<script>
+    document.querySelectorAll('.btn-copy').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetId = button.dataset.target;
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+                const textToCopy = targetElement.textContent.trim();
+                // Sử dụng document.execCommand để tương thích tốt hơn trong iframe
+                const tempInput = document.createElement('textarea');
+                tempInput.value = textToCopy;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                try {
+                    document.execCommand('copy');
+                    showToast(`Đã sao chép: ${textToCopy}`, 'Thành công', 'success');
+                } catch (err) {
+                    showToast('Sao chép thất bại!', 'Lỗi', 'error');
+                }
+                document.body.removeChild(tempInput);
+            }
+        });
+    });
+</script>

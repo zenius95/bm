@@ -10,6 +10,8 @@ const ACTION_LABELS = {
     'PROFILE_UPDATE': { label: 'Cập nhật hồ sơ', color: 'bg-blue-500/20 text-blue-400' },
     'ADMIN_CREATE_USER': { label: 'Tạo người dùng', color: 'bg-yellow-500/20 text-yellow-400' },
     'ADMIN_ADJUST_BALANCE': { label: 'Thay đổi số dư', color: 'bg-purple-500/20 text-purple-400' },
+    'ADMIN_CREATE_ORDER': { label: 'Tạo đơn hàng', color: 'bg-sky-500/20 text-sky-400' },
+    'ORDER_REFUND': { label: 'Hoàn tiền', color: 'bg-red-500/20 text-red-400' }
 };
 
 const activityLogService = new CrudService(ActivityLog, {

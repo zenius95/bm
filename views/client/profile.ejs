@@ -1,55 +1,93 @@
-<div class="space-y-8">
-    <div>
-        <h1 class="text-3xl font-bold text-white">Thông tin cá nhân</h1>
-        <p class="mt-1 text-gray-400">Cập nhật email và mật khẩu của Bro tại đây.</p>
+<%# Thẻ div bao bọc ngoài cùng này sẽ bị xóa vì đã có trong layout %>
+<div class="w-full">
+    <div class="relative">
+        <div class="h-48 md:h-64 bg-gray-800">
+            <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto-format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
+                 alt="Ảnh bìa" 
+                 class="w-full h-full object-cover">
+        </div>
+
+        <div class="absolute bottom-0 left-0 right-0 z-10">
+            <div class="max-w-5xl mx-auto px-6 transform translate-y-1/2">
+                <div class="flex flex-col sm:flex-row items-center sm:items-end gap-4">
+                    <div class="w-32 h-32 md:w-40 md:h-40 bg-gray-800 rounded-full flex items-center justify-center font-bold text-white text-5xl shadow-lg flex-shrink-0 border-4 border-gray-950">
+                       <%= user.username.charAt(0).toUpperCase() %>
+                    </div>
+                    <div class="flex-1 text-center sm:text-left pb-4">
+                        <h1 class="text-2xl md:text-3xl font-bold text-white"><%= user.username %></h1>
+                        <p class="text-sm text-gray-400">Ngày tham gia: <%= new Date(user.createdAt).toLocaleDateString('vi-VN') %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <div class="w-full max-w-5xl mx-auto px-4 pb-8">
+        <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden mt-[-5rem] md:mt-[-6rem]">
+            <div class="pt-28 md:pt-32">
+                
+                <form action="/profile" method="POST">
+                    <div class="p-6 md:p-8 space-y-8">
+                        
+                        <%# Alert Section %>
+                        <% if (success) { %>
+                            <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg text-sm flex items-center gap-3">
+                                <i class="ri-checkbox-circle-line text-xl"></i>
+                                <span><%= success %></span>
+                            </div>
+                        <% } %>
+                        <% if (error) { %>
+                            <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm flex items-center gap-3">
+                                <i class="ri-error-warning-line text-xl"></i>
+                                <span><%= error %></span>
+                            </div>
+                        <% } %>
 
-    <% if (success) { %>
-        <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg text-sm">
-            <%= success %>
-        </div>
-    <% } %>
-    <% if (error) { %>
-        <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
-            <%= error %>
-        </div>
-    <% } %>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+                            <div class="md:col-span-1">
+                                <h3 class="font-semibold text-white">Thông tin cá nhân</h3>
+                                <p class="text-xs text-gray-400 mt-1">Cập nhật chi tiết tài khoản của bạn.</p>
+                            </div>
+                            <div class="md:col-span-2 space-y-4">
+                                <div>
+                                    <label for="username" class="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                                    <input type="text" id="username" name="username" class="form-input bg-gray-700/30 cursor-not-allowed" value="<%= user.username %>" readonly disabled>
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Địa chỉ Email</label>
+                                    <input type="email" id="email" name="email" class="form-input" value="<%= user.email %>" required>
+                                </div>
+                            </div>
+                        </div>
 
-    <div class="max-w-2xl">
-        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-            <form action="/profile" method="POST" class="space-y-6 p-6">
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-400 mb-2">Username</label>
-                    <input type="text" id="username" name="username" class="form-input bg-gray-700/30 cursor-not-allowed" value="<%= user.username %>" readonly disabled>
-                </div>
+                        <div class="border-t border-white/10"></div>
 
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                    <input type="email" id="email" name="email" class="form-input" value="<%= user.email %>" required>
-                </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+                            <div class="md:col-span-1">
+                                <h3 class="font-semibold text-white">Bảo mật</h3>
+                                <p class="text-xs text-gray-400 mt-1">Để trống nếu bạn không muốn thay đổi mật khẩu.</p>
+                            </div>
+                            <div class="md:col-span-2 space-y-4">
+                                <div>
+                                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Mật khẩu mới</label>
+                                    <input type="password" id="password" name="password" class="form-input" placeholder="Nhập mật khẩu mới">
+                                </div>
+                                <div>
+                                    <label for="passwordConfirm" class="block text-sm font-medium text-gray-300 mb-2">Xác nhận mật khẩu</label>
+                                    <input type="password" id="passwordConfirm" name="passwordConfirm" class="form-input" placeholder="Nhập lại mật khẩu mới">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="pt-6 border-t border-white/10">
-                    <h3 class="text-lg font-semibold text-white">Đổi mật khẩu</h3>
-                    <p class="text-sm text-gray-400 mt-1">Để trống nếu Bro không muốn thay đổi mật khẩu.</p>
-                </div>
-
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Mật khẩu mới</label>
-                    <input type="password" id="password" name="password" class="form-input" placeholder="••••••••">
-                </div>
-
-                <div>
-                    <label for="passwordConfirm" class="block text-sm font-medium text-gray-300 mb-2">Xác nhận mật khẩu mới</label>
-                    <input type="password" id="passwordConfirm" name="passwordConfirm" class="form-input" placeholder="••••••••">
-                </div>
-
-                <div class="pt-6 border-t border-white/10">
-                    <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105">
-                        <i class="ri-save-line -ml-1 mr-2"></i>
-                        <span>Lưu thay đổi</span>
-                    </button>
-                </div>
-            </form>
+                    <div class="px-6 py-4 bg-white/5 border-t border-white/10 flex justify-end">
+                        <button type="submit" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-950">
+                            <i class="ri-save-3-line -ml-1 mr-2"></i>
+                            <span>Lưu thay đổi</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

@@ -14,6 +14,9 @@ router.get('/create-order', clientController.getCreateOrderPage);
 router.post('/create-order', clientController.postCreateOrder);
 router.get('/orders', clientController.getOrderListPage);
 router.get('/orders/:id', clientController.getOrderDetailPage);
+
+router.get('/deposit', clientController.getDepositPage);
+
 // === END ===
 
 module.exports = router;
