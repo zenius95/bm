@@ -36,6 +36,14 @@ const DEFAULT_SETTINGS = {
         timeout: 45000,
         batchSize: 50
     },
+    autoProxyCheck: {
+        isEnabled: false,
+        intervalMinutes: 60,
+        concurrency: 10,
+        delay: 500,
+        timeout: 20000,
+        batchSize: 100
+    },
     itemProcessor: {
         isEnabled: false,
         concurrency: 10,
@@ -60,6 +68,7 @@ class SettingsService extends EventEmitter {
                 deposit: { ...DEFAULT_SETTINGS.deposit, ...(fileData.deposit || {}) },
                 autoDeposit: { ...DEFAULT_SETTINGS.autoDeposit, ...(fileData.autoDeposit || {}) },
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
+                autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) }
             };
             console.log('[SettingsService] Loaded config from settings.json');

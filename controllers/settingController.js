@@ -5,6 +5,7 @@ const settingsService = require('../utils/settingsService');
 const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
 const autoDepositManager = require('../utils/autoDepositManager');
+const autoProxyCheckManager = require('../utils/autoProxyCheckManager'); // Import manager mới
 
 const settingController = {};
 
@@ -22,6 +23,7 @@ settingController.getSettingsPage = async (req, res) => {
             settings: settingsService.getAll(),
             initialState: { 
                 autoCheck: autoCheckManager.getStatus(),
+                autoProxyCheck: autoProxyCheckManager.getStatus(), // Thêm state mới
                 itemProcessor: itemProcessorManager.getStatus(),
                 autoDeposit: autoDepositManager.getStatus() 
             },
@@ -137,6 +139,29 @@ settingController.updateAutoCheckConfig = async (req, res) => {
         res.json({ success: true, message: 'Cập nhật cài đặt Auto Check thành công.', data: autoCheckManager.getStatus() });
     } catch (error) {
         console.error("Error updating auto check config:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Thêm hàm update config cho proxy check
+settingController.updateAutoProxyCheckConfig = async (req, res) => {
+    try {
+        const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize } = req.body;
+        const configToUpdate = {};
+        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
+        const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
+        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
+        configToUpdate.concurrency = parse(concurrency, 1);
+        configToUpdate.delay = parse(delay, 0);
+        configToUpdate.timeout = parse(timeout, 1000);
+        configToUpdate.batchSize = parse(batchSize, 0);
+        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+        
+        await autoProxyCheckManager.updateConfig(configToUpdate);
+        await logSettingsChange(req, "Cấu hình Tự động Check Proxy");
+        res.json({ success: true, message: 'Cập nhật cài đặt Auto Proxy Check thành công.', data: autoProxyCheckManager.getStatus() });
+    } catch (error) {
+        console.error("Error updating auto proxy check config:", error.message);
         res.status(500).json({ success: false, message: error.message });
     }
 };

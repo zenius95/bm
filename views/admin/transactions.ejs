@@ -110,20 +110,7 @@
             </div>
     </div>
 
-    <% if (pagination.totalPages > 1) { %>
-    <nav class="flex justify-center">
-        <ul class="inline-flex items-center -space-x-px">
-            <% for(let i = 1; i <= pagination.totalPages; i++) { 
-                const query = new URLSearchParams(currentQuery);
-                query.set('page', i);
-            %>
-                <li>
-                    <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
-                </li>
-            <% } %>
-        </ul>
-    </nav>
-    <% } %>
+    <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
 </div>
 
 <script>

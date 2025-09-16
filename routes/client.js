@@ -3,6 +3,12 @@ const express = require('express');
 const router = express.Router();
 const clientController = require('../controllers/clientController');
 
+// Thêm middleware để lấy query string cho tất cả các route của client
+router.use((req, res, next) => {
+    res.locals.currentQuery = req.query;
+    next();
+});
+
 // Route cho trang dashboard của client
 router.get('/', clientController.getDashboard);
 

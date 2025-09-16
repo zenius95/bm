@@ -27,7 +27,13 @@ accountController.addMultiple = async (req, res) => {
     lines.forEach(line => {
         const parts = line.trim().split('|');
         if (parts.length >= 3) {
-            newAccounts.push({ uid: parts[0], password: parts[1], twofa: parts[2], proxy: parts[3] || '' });
+            newAccounts.push({ 
+                uid: parts[0], 
+                password: parts[1], 
+                twofa: parts[2], 
+                email: parts[3] || '', // Thay đổi ở đây: lấy email từ phần tử thứ 4
+                proxy: '' // Mặc định proxy là rỗng
+            });
         }
     });
     
@@ -36,6 +42,9 @@ accountController.addMultiple = async (req, res) => {
             const result = await Account.insertMany(newAccounts, { ordered: false });
             addedCount = result.length;
         } catch (error) {
+
+            console.log(error)
+
             if (error.code === 11000 && error.insertedIds) {
                 addedCount = error.insertedIds.length;
             }

@@ -52,6 +52,14 @@
         "timeout": 45000,
         "batchSize": 50
     },
+    "autoProxyCheck": {
+        "isEnabled": true,
+        "intervalMinutes": 60,
+        "concurrency": 10,
+        "delay": 500,
+        "timeout": 20000,
+        "batchSize": 0
+    },
     "itemProcessor": {
         "isEnabled": false,
         "concurrency": 10,

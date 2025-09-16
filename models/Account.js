@@ -16,6 +16,11 @@ const AccountSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    email: { // Thêm trường email
+        type: String,
+        trim: true,
+        default: ''
+    },
     proxy: {
         type: String,
         default: '' // Không bắt buộc

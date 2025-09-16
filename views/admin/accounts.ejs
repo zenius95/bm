@@ -28,7 +28,7 @@
             <form id="add-accounts-form">
                 <div class="mb-4">
                     <label for="accountsData" class="block text-sm font-medium text-gray-300 mb-2">Nhập danh sách account (mỗi account một dòng)</label>
-                    <textarea class="form-input font-mono" id="accountsData" name="accountsData" rows="6" placeholder="uid|password|2fa|proxy (proxy không bắt buộc)"></textarea>
+                    <textarea class="form-input font-mono" id="accountsData" name="accountsData" rows="6" placeholder="uid|password|2fa|email (email không bắt buộc)"></textarea>
                 </div>
                 <button type="submit" id="add-accounts-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-950 transition-transform duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span class="btn-text"><i class="ri-add-line -ml-1 mr-2"></i>Thêm Accounts</span>
@@ -71,12 +71,10 @@
     
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
-            <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
         </div>
         <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
-            <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
         </div>
     <% } %>
 
@@ -90,6 +88,7 @@
                         <th scope="col" class="px-6 py-3">Username</th>
                         <th scope="col" class="px-6 py-3">Password</th>
                         <th scope="col" class="px-6 py-3">2FA</th>
+                        <th scope="col" class="px-6 py-3">Email</th>
                         <th scope="col" class="px-6 py-3">Proxy</th>
                         <th scope="col" class="px-6 py-3">Trạng Thái</th>
                         <th scope="col" class="px-6 py-3 text-center">Die Streak</th>
@@ -109,6 +108,7 @@
                             <td class="px-6 py-4 font-medium text-white"><%= account.uid %></td>
                             <td class="px-6 py-4"><%= account.password %></td>
                             <td class="px-6 py-4"><%= account.twofa %></td>
+                            <td class="px-6 py-4 text-gray-400"><%= account.email || 'N/A' %></td>
                             <td class="px-6 py-4 text-gray-400"><%= account.proxy || 'N/A' %></td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
@@ -148,20 +148,7 @@
         <% } %>
     </div>
     
-    <% if (pagination.totalPages > 1) { %>
-    <nav class="flex justify-center">
-        <ul class="inline-flex items-center -space-x-px">
-            <% for(let i = 1; i <= pagination.totalPages; i++) { 
-                const query = new URLSearchParams(currentQuery);
-                query.set('page', i);
-            %>
-                <li>
-                    <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
-                </li>
-            <% } %>
-        </ul>
-    </nav>
-    <% } %>
+    <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -219,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemsOnPageCountSpan = document.getElementById('items-on-page-count');
     let isSelectAllAcrossPages = false;
     let isCheckLiveRunning = false;
-    
     function updateBanners() {
         if (!selectAllBanner) return;
         const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
@@ -273,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBanners();
         });
     });
-
     if (selectAllMatchingItemsLink) {
         selectAllMatchingItemsLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -324,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
-                    
                     if (!url.includes('check-selected')) {
                         if (payload.selectAll) {
                             setTimeout(() => window.location.reload(), 1000);
@@ -409,7 +393,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dieStreakCell.classList.toggle('text-white', dieStreak === 0 || typeof dieStreak === 'undefined');
         }
     });
-
     socket.on('account:trashed', (data) => {
         const { id, message } = data;
         const row = document.getElementById(`account-row-${id}`);
@@ -423,14 +406,12 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCheckLiveButtonState();
         showToast('Tiến trình Check Live đã hoàn tất!', 'Hoàn thành', 'success');
     });
-    
     socket.on('accounts:trash:update', (data) => {
         const trashCountSpan = document.getElementById('trash-count');
         if (trashCountSpan) {
             trashCountSpan.textContent = data.newTrashCount;
         }
     });
-
     toggleActionButtons();
 });
 </script>
