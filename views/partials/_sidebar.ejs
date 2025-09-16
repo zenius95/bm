@@ -1,4 +1,4 @@
-<aside class="w-64 flex-shrink-0 bg-gray-900/60 backdrop-blur-xl border-r border-gray-500/20 p-4 flex flex-col">
+<aside class="fixed top-0 left-0 z-20 h-screen w-64 bg-gray-900/60 backdrop-blur-xl border-r border-gray-500/20 p-4 flex flex-col">
     <div class="mb-4 text-center">
         <a href="<%= user.role === 'admin' ? '/admin/dashboard' : '/dashboard' %>" class="text-2xl font-bold text-white tracking-wider">
             <%= user.role === 'admin' && currentPath.startsWith('/admin') ? 'ADMINPRO' : 'CLIENTPRO' %>
@@ -8,12 +8,14 @@
     <% if (user) { %>
         <div class="relative" id="user-menu-container">
             <button id="user-menu-button" class="w-full flex items-center gap-3 text-left p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <!-- Avatar Section Updated -->
                 <div class="relative flex-shrink-0">
                     <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white shadow-md ring-2 ring-green-400/80 ring-offset-2 ring-offset-gray-800/50">
                         <%= user.username.charAt(0).toUpperCase() %>
                     </div>
                     <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-gray-800/50"></span>
                 </div>
+                <!-- End Avatar Section -->
                 <div class="flex-1 overflow-hidden">
                     <div class="font-semibold text-sm text-white truncate"><%= user.username %></div>
                     <div class="text-xs text-yellow-400 font-mono truncate">
