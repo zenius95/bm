@@ -98,10 +98,11 @@ activityLogController.handleGetAll = async (req, res) => {
     }
 };
 
+// === START: THÊM HÀM LẤY LỊCH SỬ GIAO DỊCH ===
 activityLogController.getTransactionLogs = async (req, res) => {
     try {
         const { page = 1, limit = 20, searchUser } = req.query;
-        const transactionActions = ['ADMIN_ADJUST_BALANCE', 'ORDER_REFUND', 'CLIENT_DEPOSIT', 'CLIENT_CREATE_ORDER', 'ADMIN_CREATE_ORDER'];
+        const transactionActions = ['ADMIN_ADJUST_BALANCE', 'ORDER_REFUND', 'CLIENT_DEPOSIT'];
         let query = { action: { $in: transactionActions } }; 
 
         if (searchUser) {
@@ -138,5 +139,6 @@ activityLogController.getTransactionLogs = async (req, res) => {
         res.status(500).send(`Không thể tải lịch sử giao dịch.`);
     }
 };
+// === END: THÊM HÀM LẤY LỊCH SỬ GIAO DỊCH ===
 
 module.exports = activityLogController;
