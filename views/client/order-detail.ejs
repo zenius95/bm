@@ -67,19 +67,19 @@
                 <!-- Left Column: 4 Stat Cards -->
                 <div class="lg:col-span-1 grid grid-cols-2 gap-4">
                     <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                        <div id="total-count" class="text-3xl font-bold text-sky-400"><%= order.items.length %></div>
+                        <div id="total-count" class="text-3xl font-bold font-mono text-sky-400"><%= order.items.length %></div>
                         <div class="text-sm text-gray-400 mt-1">Tổng Items</div>
                     </div>
                     <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                        <div id="completed-count" class="text-3xl font-bold text-green-400"><%= order.items.filter(i => i.status === 'completed').length %></div>
+                        <div id="completed-count" class="text-3xl font-bold font-mono text-green-400"><%= order.items.filter(i => i.status === 'completed').length %></div>
                         <div class="text-sm text-gray-400 mt-1">Thành Công</div>
                     </div>
                     <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                        <div id="failed-count" class="text-3xl font-bold text-red-400"><%= order.items.filter(i => i.status === 'failed').length %></div>
+                        <div id="failed-count" class="text-3xl font-bold font-mono text-red-400"><%= order.items.filter(i => i.status === 'failed').length %></div>
                         <div class="text-sm text-gray-400 mt-1">Thất Bại</div>
                     </div>
                     <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-                        <div id="pending-count" class="text-3xl font-bold text-gray-400"><%= order.items.filter(i => i.status === 'queued' || i.status === 'processing').length %></div>
+                        <div id="pending-count" class="text-3xl font-bold font-mono text-gray-400"><%= order.items.filter(i => i.status === 'queued' || i.status === 'processing').length %></div>
                         <div class="text-sm text-gray-400 mt-1">Đang Chờ</div>
                     </div>
                 </div>
