@@ -52,7 +52,7 @@
                 <option value="ERROR" <%= currentQuery.status === 'ERROR' ? 'selected' : '' %>>Error</option>
             </select>
              <div class="flex items-center gap-2">
-                 <button type="submit" class="w-full md:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Lọc</button>
+                <button type="submit" class="w-full md:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Lọc</button>
                  <a href="/admin/accounts<%= inTrash ? '?inTrash=true' : '' %>" class="w-full md:w-auto text-center px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-gray-300 transition whitespace-nowrap">Reset</a>
             </div>
         </form>
@@ -109,7 +109,7 @@
                             <td class="px-6 py-4"><%= account.password %></td>
                             <td class="px-6 py-4"><%= account.twofa %></td>
                             <td class="px-6 py-4 text-gray-400"><%= account.email || 'N/A' %></td>
-                            <td class="px-6 py-4 text-gray-400"><%= account.proxy || 'N/A' %></td>
+                            <td id="proxy-cell-<%= account._id %>" class="px-6 py-4 text-gray-400 font-mono"><%= account.proxy || 'N/A' %></td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
                                     <i id="spinner-<%= account._id %>" class="ri-loader-4-line animate-spin text-yellow-400 mr-2" style="display: <%= account.status === 'CHECKING' ? 'inline-block' : 'none' %>;"></i>
@@ -153,11 +153,9 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (logic hiện tại của trang accounts.ejs giữ nguyên)
     const addAccountsForm = document.getElementById('add-accounts-form');
     if (addAccountsForm) {
         const addAccountsBtn = document.getElementById('add-accounts-btn');
-        const originalBtnText = addAccountsBtn.querySelector('.btn-text').innerHTML;
         addAccountsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             addAccountsBtn.disabled = true;
@@ -206,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemsOnPageCountSpan = document.getElementById('items-on-page-count');
     let isSelectAllAcrossPages = false;
     let isCheckLiveRunning = false;
+
     function updateBanners() {
         if (!selectAllBanner) return;
         const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
@@ -259,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBanners();
         });
     });
+
     if (selectAllMatchingItemsLink) {
         selectAllMatchingItemsLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -309,19 +309,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
-                    if (!url.includes('check-selected')) {
-                        if (payload.selectAll) {
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            payload.ids.forEach(id => {
-                                const row = document.getElementById(`account-row-${id}`);
-                                if (row) row.remove();
-                            });
-                            if (selectAllCheckbox) selectAllCheckbox.checked = false;
-                            toggleActionButtons();
-                            updateBanners();
-                        }
+                    
+                    // === START: THAY ĐỔI QUAN TRỌNG ===
+                    // Luôn tải lại trang sau khi xóa hoặc khôi phục thành công
+                    if (url.includes('delete') || url.includes('restore')) {
+                         setTimeout(() => {
+                            const currentUrl = new URL(window.location);
+                            currentUrl.searchParams.delete('success');
+                            currentUrl.searchParams.delete('error');
+                            window.location.href = currentUrl.toString();
+                        }, 1000);
                     }
+                    // === END: THAY ĐỔI QUAN TRỌNG ===
+
                 } else {
                     showToast(result.message || 'Có lỗi xảy ra từ server.', 'Lỗi!', 'error');
                     if (url.includes('check-selected')) {
@@ -362,16 +362,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const socket = io();
     socket.on('connect', () => console.log('Connected to server via WebSocket.'));
+
     socket.on('account:update', (data) => {
-        const { id, status, lastCheckedAt, dieStreak } = data;
+        const { id, status, lastCheckedAt, dieStreak, proxy } = data;
         const statusBadge = document.getElementById(`status-${id}`);
         const spinner = document.getElementById(`spinner-${id}`);
         const lastCheckedCell = document.getElementById(`lastChecked-${id}`);
         const dieStreakCell = document.getElementById(`dieStreak-${id}`);
+        const proxyCell = document.getElementById(`proxy-cell-${id}`);
 
         if (!statusBadge || !spinner) return;
         
         const isChecking = status === 'CHECKING';
+    
         spinner.style.display = isChecking ? 'inline-block' : 'none';
         statusBadge.style.display = isChecking ? 'none' : 'inline-block';
      
@@ -392,7 +395,12 @@ document.addEventListener('DOMContentLoaded', () => {
             dieStreakCell.classList.toggle('text-red-400', dieStreak > 0);
             dieStreakCell.classList.toggle('text-white', dieStreak === 0 || typeof dieStreak === 'undefined');
         }
+        
+        if (proxyCell && typeof proxy !== 'undefined') {
+            proxyCell.textContent = proxy || 'N/A';
+        }
     });
+
     socket.on('account:trashed', (data) => {
         const { id, message } = data;
         const row = document.getElementById(`account-row-${id}`);
@@ -401,17 +409,20 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast(message, 'Tự động xóa', 'warning');
         }
     });
+
     socket.on('checklive:end', () => {
         isCheckLiveRunning = false;
         updateCheckLiveButtonState();
         showToast('Tiến trình Check Live đã hoàn tất!', 'Hoàn thành', 'success');
     });
+
     socket.on('accounts:trash:update', (data) => {
         const trashCountSpan = document.getElementById('trash-count');
         if (trashCountSpan) {
             trashCountSpan.textContent = data.newTrashCount;
         }
     });
+
     toggleActionButtons();
 });
 </script>

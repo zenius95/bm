@@ -1,5 +1,6 @@
 // utils/checkProxyService.js
 const Proxy = require('../models/Proxy');
+const Account = require('../models/Account');
 const ProcessRunner = require('./processRunner');
 const fetch = require('node-fetch');
 const { HttpsProxyAgent } = require('https-proxy-agent');
@@ -50,36 +51,49 @@ async function runCheckProxy(proxyIds, io, options) {
     const tasks = proxyIds.map(proxyId => ({
         id: proxyId,
         task: async () => {
-            const currentProxy = await Proxy.findById(proxyId).lean();
-            if (!currentProxy) throw new Error(`Không tìm thấy proxy: ${proxyId}`);
+            const originalProxy = await Proxy.findById(proxyId).lean();
+            if (!originalProxy) throw new Error(`Không tìm thấy proxy: ${proxyId}`);
 
             await Proxy.findByIdAndUpdate(proxyId, { status: 'CHECKING' });
             io.emit('proxy:update', { id: proxyId, status: 'CHECKING' });
             
-            return await checkSingleProxy(currentProxy.proxyString);
+            const checkResult = await checkSingleProxy(originalProxy.proxyString);
+            
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Trả về cả kết quả check và trạng thái gốc của proxy
+            return { ...checkResult, originalProxy };
+            // === END: THAY ĐỔI QUAN TRỌNG ===
         }
     }));
 
     checkProxyRunner.addTasks(tasks);
 
     checkProxyRunner.on('task:complete', async ({ result, taskWrapper }) => {
-        const { isLive, checkedAt } = result;
+        const { isLive, checkedAt, originalProxy } = result;
         const proxyId = taskWrapper.id;
+        
         let updateData = { lastCheckedAt: checkedAt };
 
         if (isLive) {
-            updateData.status = 'AVAILABLE';
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Dựa vào trạng thái gốc để quyết định status mới
+            updateData.status = originalProxy.status === 'ASSIGNED' ? 'ASSIGNED' : 'AVAILABLE';
+            // === END: THAY ĐỔI QUAN TRỌNG ===
         } else {
-            // === THAY ĐỔI QUAN TRỌNG: NÉM PROXY DIE VÀO THÙNG RÁC ===
             updateData.status = 'DEAD';
             updateData.isDeleted = true;
             updateData.deletedAt = new Date();
+            updateData.assignedTo = null;
+
+            if (originalProxy.assignedTo) {
+                console.log(`Proxy ${originalProxy.proxyString} DIE, gỡ khỏi account ${originalProxy.assignedTo}.`);
+                await Account.updateOne({ _id: originalProxy.assignedTo }, { $set: { proxy: '' } });
+            }
         }
 
         await Proxy.findByIdAndUpdate(proxyId, updateData);
         
         if (updateData.isDeleted) {
-            // Gửi sự kiện để giao diện xóa dòng proxy khỏi bảng
             const newTrashCount = await Proxy.countDocuments({ isDeleted: true });
             io.emit('proxies:trash:update', { newTrashCount });
             io.emit('proxy:trashed', { id: proxyId, message: `Proxy ${proxyId.slice(-6)} đã bị chuyển vào thùng rác do không hoạt động.` });
@@ -94,13 +108,21 @@ async function runCheckProxy(proxyIds, io, options) {
 
     checkProxyRunner.on('task:error', async ({ error, taskWrapper }) => {
         console.error(`Lỗi khi kiểm tra Proxy ID ${taskWrapper.id}: ${error.message}`);
-        const checkedAt = new Date();
-        // Cập nhật trạng thái và ném vào thùng rác khi có lỗi
+        
+        const proxy = await Proxy.findById(taskWrapper.id);
+        if (!proxy) return;
+
+        if (proxy.assignedTo) {
+            console.log(`Proxy ${proxy.proxyString} gặp lỗi, gỡ khỏi account ${proxy.assignedTo}.`);
+            await Account.updateOne({ _id: proxy.assignedTo }, { $set: { proxy: '' } });
+        }
+        
         const updateData = { 
             status: 'DEAD', 
-            lastCheckedAt: checkedAt,
+            lastCheckedAt: new Date(),
             isDeleted: true,
-            deletedAt: new Date()
+            deletedAt: new Date(),
+            assignedTo: null
         };
         await Proxy.findByIdAndUpdate(taskWrapper.id, updateData);
 

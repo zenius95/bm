@@ -1,5 +1,6 @@
 // controllers/accountController.js
 const Account = require('../models/Account');
+const Proxy = require('../models/Proxy'); // Thêm model Proxy
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const { runCheckLive } = require('../utils/checkLiveService');
@@ -14,6 +15,35 @@ const accountController = createCrudController(accountService, 'accounts', {
     single: 'account',
     plural: 'accounts'
 });
+
+// --- Hàm helper để giải phóng proxy và làm rỗng cột proxy trong account ---
+const releaseProxiesForAccounts = async (accountIds) => {
+    if (!accountIds || accountIds.length === 0) return;
+    
+    // Lấy danh sách các proxy string đang được sử dụng bởi các account sắp bị xóa
+    const accountsToDelete = await Account.find({ _id: { $in: accountIds } }).select('proxy').lean();
+    const proxyStringsToRelease = accountsToDelete
+        .map(acc => acc.proxy)
+        .filter(p => p); // Lọc ra các chuỗi proxy không rỗng
+
+    if (proxyStringsToRelease.length > 0) {
+        console.log(`[Proxy Release] Releasing proxies: ${proxyStringsToRelease.join(', ')}`);
+        // Cập nhật các proxy tương ứng: gỡ gán và đặt lại trạng thái AVAILABLE
+        await Proxy.updateMany(
+            { proxyString: { $in: proxyStringsToRelease } },
+            { $set: { assignedTo: null, status: 'AVAILABLE' } }
+        );
+    }
+    
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    // Luôn làm rỗng trường proxy của các account đang được xử lý
+    await Account.updateMany(
+        { _id: { $in: accountIds } },
+        { $set: { proxy: '' } }
+    );
+    console.log(`[Proxy Release] Cleared proxy field for ${accountIds.length} accounts.`);
+    // === END: THAY ĐỔI QUAN TRỌNG ===
+};
 
 accountController.addMultiple = async (req, res) => {
     const { accountsData } = req.body;
@@ -31,8 +61,8 @@ accountController.addMultiple = async (req, res) => {
                 uid: parts[0], 
                 password: parts[1], 
                 twofa: parts[2], 
-                email: parts[3] || '', // Thay đổi ở đây: lấy email từ phần tử thứ 4
-                proxy: '' // Mặc định proxy là rỗng
+                email: parts[3] || '',
+                proxy: ''
             });
         }
     });
@@ -42,9 +72,6 @@ accountController.addMultiple = async (req, res) => {
             const result = await Account.insertMany(newAccounts, { ordered: false });
             addedCount = result.length;
         } catch (error) {
-
-            console.log(error)
-
             if (error.code === 11000 && error.insertedIds) {
                 addedCount = error.insertedIds.length;
             }
@@ -102,10 +129,16 @@ accountController.checkSelected = async (req, res) => {
     }
 };
 
-// Ghi đè các hàm xóa để thêm log
 const originalSoftDelete = accountController.handleSoftDelete;
 accountController.handleSoftDelete = async (req, res, next) => {
-    const { ids, selectAll } = req.body;
+    const { ids, selectAll, filters } = req.body;
+    try {
+        const accountIds = selectAll ? await accountService.findAllIds(filters) : ids;
+        await releaseProxiesForAccounts(accountIds);
+    } catch (error) {
+        console.error("[Proxy Release] Error during soft delete:", error);
+    }
+
     const count = selectAll ? 'tất cả' : ids.length;
     await originalSoftDelete(req, res, next);
     await logActivity(req.session.user.id, 'ADMIN_SOFT_DELETE_ACCOUNTS', {
@@ -129,7 +162,14 @@ accountController.handleRestore = async (req, res, next) => {
 
 const originalHardDelete = accountController.handleHardDelete;
 accountController.handleHardDelete = async (req, res, next) => {
-    const { ids, selectAll } = req.body;
+    const { ids, selectAll, filters } = req.body;
+    try {
+        const accountIds = selectAll ? await accountService.findAllIds(filters) : ids;
+        await releaseProxiesForAccounts(accountIds);
+    } catch (error) {
+        console.error("[Proxy Release] Error during hard delete:", error);
+    }
+    
     const count = selectAll ? 'tất cả' : ids.length;
     await originalHardDelete(req, res, next);
     await logActivity(req.session.user.id, 'ADMIN_HARD_DELETE_ACCOUNTS', {
@@ -138,6 +178,5 @@ accountController.handleHardDelete = async (req, res, next) => {
         context: 'Admin'
     });
 };
-
 
 module.exports = accountController;

@@ -1,17 +1,15 @@
 // utils/checkLiveService.js
 const Account = require('../models/Account');
-const Proxy = require('../models/Proxy'); // Import Proxy model
+const Proxy = require('../models/Proxy');
 const ProcessRunner = require('./processRunner');
 const InstagramAuthenticator = require('./instagramAuthenticator');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const fetch = require('node-fetch');
 
-// Helper function to check if a single proxy is live
 async function isProxyLive(proxyString) {
     if (!proxyString) return false;
     try {
         const agent = new HttpsProxyAgent(proxyString);
-        // Sử dụng một API endpoint nhẹ và nhanh để kiểm tra
         const response = await fetch('https://api.ipify.org?format=json', { agent, timeout: 10000 });
         return response.ok;
     } catch (error) {
@@ -20,12 +18,43 @@ async function isProxyLive(proxyString) {
     }
 }
 
-/**
- * Dịch vụ kiểm tra trạng thái live của các account.
- * @param {string[]} accountIds - Mảng các ID của account cần kiểm tra.
- * @param {import('socket.io').Server} io - Instance của Socket.IO server để gửi sự kiện.
- * @param {object} options - Các tùy chọn cho ProcessRunner.
- */
+async function acquireProxyForAccount(currentAccount) {
+    console.log(`[ProxyLogic] Bắt đầu tìm proxy cho account ${currentAccount.uid}...`);
+    let assignedProxy = null;
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (!assignedProxy && attempts < maxAttempts) {
+        attempts++;
+        const availableProxy = await Proxy.findOneAndUpdate(
+            { status: 'AVAILABLE', isDeleted: false, assignedTo: null },
+            { $set: { assignedTo: currentAccount._id, status: 'ASSIGNED' } },
+            { new: true, sort: { lastCheckedAt: -1 } }
+        );
+
+        if (availableProxy) {
+            console.log(`[ProxyLogic] Đã tìm thấy proxy ${availableProxy.proxyString}. Kiểm tra lại...`);
+            const live = await isProxyLive(availableProxy.proxyString);
+            if (live) {
+                assignedProxy = availableProxy.proxyString;
+                await currentAccount.updateOne({ proxy: assignedProxy });
+                console.log(`[ProxyLogic] Proxy ${assignedProxy} LIVE. Đã gán cho account ${currentAccount.uid}.`);
+            } else {
+                console.log(`[ProxyLogic] Proxy ${availableProxy.proxyString} DIE khi kiểm tra lại. Ném vào thùng rác...`);
+                await Proxy.updateOne({ _id: availableProxy._id }, { isDeleted: true, deletedAt: new Date(), status: 'DEAD', assignedTo: null });
+            }
+        } else {
+            console.log(`[ProxyLogic] Không còn proxy nào khả dụng.`);
+            break; 
+        }
+    }
+
+    if (!assignedProxy) {
+        throw new Error(`Không tìm thấy proxy nào khả dụng cho account ${currentAccount.uid} sau ${attempts} lần thử.`);
+    }
+    return assignedProxy;
+}
+
 async function runCheckLive(accountIds, io, options) {
     if (!accountIds || accountIds.length === 0) {
         console.log('[CheckLiveService] Không có account nào để kiểm tra.');
@@ -49,60 +78,34 @@ async function runCheckLive(accountIds, io, options) {
             if (!currentAccount) throw new Error(`Account không tồn tại: ${accountId}`);
 
             await Account.findByIdAndUpdate(accountId, { status: 'CHECKING' });
-            io.emit('account:update', {
-                id: accountId,
-                status: 'CHECKING',
-                dieStreak: currentAccount.dieStreak || 0
-            });
+            io.emit('account:update', { id: accountId, status: 'CHECKING', dieStreak: currentAccount.dieStreak || 0 });
 
-            let assignedProxy = null;
+            let assignedProxy = currentAccount.proxy;
 
-            // Logic tìm và gán proxy
-            if (currentAccount.proxy) {
-                console.log(`[ProxyLogic] Account ${currentAccount.uid} đã có proxy. Kiểm tra...`);
-                const live = await isProxyLive(currentAccount.proxy);
-                if (live) {
-                    console.log(`[ProxyLogic] Proxy ${currentAccount.proxy} vẫn LIVE.`);
-                    assignedProxy = currentAccount.proxy;
-                } else {
-                    console.log(`[ProxyLogic] Proxy ${currentAccount.proxy} đã DIE. Tìm proxy mới...`);
-                    // Ném proxy cũ vào thùng rác
-                    await Proxy.updateOne({ proxyString: currentAccount.proxy }, { isDeleted: true, deletedAt: new Date(), status: 'DEAD', assignedTo: null });
-                    await currentAccount.updateOne({ proxy: '' }); // Xóa proxy khỏi account
+            // === START: THAY ĐỔI QUAN TRỌNG: Dọn dẹp proxy không tồn tại ===
+            if (assignedProxy) {
+                const proxyInDb = await Proxy.findOne({ proxyString: assignedProxy, isDeleted: false }).lean();
+                if (!proxyInDb) {
+                    console.log(`[ProxyCleanup] Proxy ${assignedProxy} không còn tồn tại. Xóa khỏi account ${currentAccount.uid}.`);
+                    await currentAccount.updateOne({ proxy: '' });
+                    assignedProxy = null; // Xóa để logic bên dưới tìm proxy mới
                 }
             }
+            // === END: THAY ĐỔI QUAN TRỌNG ===
 
-            if (!assignedProxy) {
-                 console.log(`[ProxyLogic] Account ${currentAccount.uid} chưa có proxy hoặc proxy cũ đã die. Đang tìm proxy mới...`);
-                 let foundProxy = false;
-                 // Vòng lặp để tìm proxy sống
-                 while(!foundProxy) {
-                    // Tìm proxy AVAILABLE, chưa gán, check gần nhất và gán ngay lập tức
-                    const availableProxy = await Proxy.findOneAndUpdate(
-                        { status: 'AVAILABLE', isDeleted: false, assignedTo: null },
-                        { $set: { assignedTo: currentAccount._id, status: 'ASSIGNED' } },
-                        { new: true, sort: { lastCheckedAt: -1 } }
-                    );
-
-                    if (availableProxy) {
-                         console.log(`[ProxyLogic] Đã tìm thấy proxy ${availableProxy.proxyString}. Kiểm tra lại...`);
-                         const live = await isProxyLive(availableProxy.proxyString);
-                         if(live) {
-                            assignedProxy = availableProxy.proxyString;
-                            await currentAccount.updateOne({ proxy: assignedProxy });
-                             console.log(`[ProxyLogic] Proxy ${assignedProxy} LIVE. Đã gán cho account ${currentAccount.uid}.`);
-                            foundProxy = true; // Thoát khỏi vòng lặp
-                         } else {
-                             console.log(`[ProxyLogic] Proxy ${availableProxy.proxyString} DIE khi kiểm tra lại. Ném vào thùng rác...`);
-                             await Proxy.updateOne({ _id: availableProxy._id }, { isDeleted: true, deletedAt: new Date(), status: 'DEAD', assignedTo: null });
-                             // Vòng lặp sẽ tiếp tục để tìm proxy khác
-                         }
-                    } else {
-                        // Nếu không còn proxy nào trong DB
-                        console.log(`[ProxyLogic] Không còn proxy nào khả dụng.`);
-                        throw new Error(`Không tìm thấy proxy nào khả dụng cho account ${currentAccount.uid}`);
-                    }
-                 }
+            if (assignedProxy) {
+                console.log(`[ProxyLogic] Account ${currentAccount.uid} đã có proxy. Kiểm tra...`);
+                const live = await isProxyLive(assignedProxy);
+                if (!live) {
+                    console.log(`[ProxyLogic] Proxy ${assignedProxy} đã DIE. Tìm proxy mới...`);
+                    await Proxy.updateOne({ proxyString: assignedProxy }, { isDeleted: true, deletedAt: new Date(), status: 'DEAD', assignedTo: null });
+                    await currentAccount.updateOne({ proxy: '' });
+                    assignedProxy = await acquireProxyForAccount(currentAccount);
+                } else {
+                    console.log(`[ProxyLogic] Proxy ${assignedProxy} vẫn LIVE.`);
+                }
+            } else {
+                assignedProxy = await acquireProxyForAccount(currentAccount);
             }
 
             let isLive = false;
@@ -110,7 +113,7 @@ async function runCheckLive(accountIds, io, options) {
                 username: currentAccount.uid,
                 password: currentAccount.password,
                 twofa: currentAccount.twofa,
-                proxy: assignedProxy // Sử dụng proxy đã được gán
+                proxy: assignedProxy
             };
 
             const ig = new InstagramAuthenticator(credentials);
@@ -119,28 +122,17 @@ async function runCheckLive(accountIds, io, options) {
                 await ig.login();
                 isLive = true
             } catch (error) {
-                 if (error instanceof CheckpointError) {
-                    console.error("Lý do: Tài khoản bị checkpoint.");
-                    console.error("URL xác thực:", error.checkpointUrl);
-                } else if (error instanceof InvalidCredentialsError) {
-                    console.error("Lý do: Sai thông tin đăng nhập.");
-                } else if (error instanceof TwoFactorError) {
-                    console.error("Lý do: Lỗi xác thực hai yếu tố.");
+                 if (error instanceof CheckpointError || error instanceof InvalidCredentialsError || error instanceof TwoFactorError) {
+                    console.error(`Lỗi đăng nhập cho ${currentAccount.uid}: ${error.message}`);
                 } else {
-                   throw new Error(error);
+                   throw error;
                 }
             }
-
-            // Nếu check live thất bại, giải phóng proxy để account khác dùng
-            if (!isLive) {
-                console.log(`[ProxyLogic] Account ${currentAccount.uid} DIE. Giải phóng proxy ${assignedProxy}...`);
-                 await Proxy.updateOne({ proxyString: assignedProxy }, { $set: { assignedTo: null, status: 'AVAILABLE' } });
-            }
-
+            
             return { isLive, checkedAt: new Date() };
         }
     }));
-
+    
     checkLiveRunner.addTasks(tasks);
 
     checkLiveRunner.on('task:complete', async ({ result, taskWrapper }) => {
@@ -161,7 +153,6 @@ async function runCheckLive(accountIds, io, options) {
         if (updateData.dieStreak >= 5) {
             updateData.isDeleted = true;
             updateData.deletedAt = new Date();
-            // Giải phóng proxy khi account bị xóa
             if (account.proxy) {
                  await Proxy.updateOne({ proxyString: account.proxy }, { $set: { assignedTo: null, status: 'AVAILABLE' } });
             }
@@ -174,7 +165,7 @@ async function runCheckLive(accountIds, io, options) {
                 status: updateData.status,
                 lastCheckedAt: checkedAt.toLocaleString('vi-VN'),
                 dieStreak: updateData.dieStreak,
-                proxy: account.proxy // Gửi cả thông tin proxy về client
+                proxy: account.proxy
             });
         }
     });
@@ -183,7 +174,6 @@ async function runCheckLive(accountIds, io, options) {
         console.error(`Lỗi không thể thử lại với account ID ${taskWrapper.id}: ${error.message}`);
         const account = await Account.findById(taskWrapper.id);
         if (account) {
-            // Giải phóng proxy khi có lỗi
             if (account.proxy) {
                  await Proxy.updateOne({ proxyString: account.proxy }, { $set: { assignedTo: null, status: 'AVAILABLE' } });
             }

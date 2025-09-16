@@ -85,25 +85,26 @@ class AutoProxyCheckManager extends EventEmitter {
     }
     
     async executeCheck() {
-        const batchSize = parseInt(this.config.batchSize, 10) || 0; // 0 nghĩa là không giới hạn
+        const batchSize = parseInt(this.config.batchSize, 10) || 0;
         let proxiesToCheck = [];
 
-        // Ưu tiên lấy các proxy UNCHECKED trước
         const uncheckedProxies = await Proxy.find({ status: 'UNCHECKED' })
-            .sort({ createdAt: 1 }) // Sắp xếp theo ngày tạo cũ nhất trước
+            .sort({ createdAt: 1 })
             .limit(batchSize)
             .lean();
 
         proxiesToCheck = [...uncheckedProxies];
 
-        // Nếu vẫn còn chỗ trong batch, lấy các proxy khác (không phải UNCHECKED hoặc CHECKING)
         const remainingLimit = batchSize > 0 ? batchSize - proxiesToCheck.length : 0;
         
         if (batchSize === 0 || remainingLimit > 0) {
-            const otherProxies = await Proxy.find({ status: { $nin: ['UNCHECKED', 'CHECKING'] } })
-                .sort({ lastCheckedAt: 1, createdAt: 1 }) // Ưu tiên check proxy cũ nhất hoặc chưa check bao giờ
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Chỉ check các proxy AVAILABLE và ASSIGNED, bỏ qua các proxy đã DEAD
+            const otherProxies = await Proxy.find({ status: { $in: ['AVAILABLE', 'ASSIGNED'] } })
+                .sort({ lastCheckedAt: 1, createdAt: 1 }) 
                 .limit(batchSize === 0 ? 0 : remainingLimit)
                 .lean();
+            // === END: THAY ĐỔI QUAN TRỌNG ===
             proxiesToCheck.push(...otherProxies);
         }
 
