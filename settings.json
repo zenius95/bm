@@ -1,15 +1,15 @@
 {
-    "masterApiKey": "c56e265d450af920b66ce875028506512a293da9622fbb0d6f1df1dce3e8ed7e",
+    "masterApiKey": "2b26be39141b87dceccb22b003db6a177e260d353dcddf1e4d9b916b35eee130",
     "order": {
-        "pricePerItem": 1000000
+        "pricePerItem": 100
     },
     "deposit": {
         "bankName": "BIDV",
-        "accountName": "NGUYỄN TIẾN HƯNG",
+        "accountName": "NGUYEN TIEN HUNG",
         "accountNumber": "96386910035"
     },
     "autoDeposit": {
-        "isEnabled": true,
+        "isEnabled": false,
         "intervalMinutes": 1,
         "apiKey": "1BF493CB-ED54-264B-3C5D-C5DF48AD3BD7",
         "prefix": "NAPTIEN"

@@ -4,9 +4,7 @@ const itemProcessorManager = require('../utils/itemProcessorManager');
 const settingsService = require('../utils/settingsService');
 const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
-// === START: THÊM DỊCH VỤ MỚI ===
 const autoDepositManager = require('../utils/autoDepositManager');
-// === END: THÊM DỊCH VỤ MỚI ===
 
 const settingController = {};
 
@@ -22,11 +20,14 @@ settingController.getSettingsPage = async (req, res) => {
     try {
         res.render('admin/settings', {
             settings: settingsService.getAll(),
-            initialState: { // Chuyển sang object để dễ quản lý
+            // === START: SỬA LỖI LOGIC ===
+            // Truyền thẳng object, không chuyển thành chuỗi JSON
+            initialState: { 
                 autoCheck: autoCheckManager.getStatus(),
                 itemProcessor: itemProcessorManager.getStatus(),
-                autoDeposit: autoDepositManager.getStatus() // Thêm trạng thái của autoDeposit
+                autoDeposit: autoDepositManager.getStatus() 
             },
+            // === END: SỬA LỖI LOGIC ===
             title: 'System Settings',
             page: 'settings'
         });
@@ -84,7 +85,6 @@ settingController.updateDepositConfig = async (req, res) => {
     }
 };
 
-// === START: HÀM MỚI CHO TỰ ĐỘNG NẠP TIỀN ===
 settingController.updateAutoDepositConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes, apiKey, prefix } = req.body;
@@ -105,7 +105,6 @@ settingController.updateAutoDepositConfig = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// === END: HÀM MỚI ===
 
 settingController.updateAutoCheckConfig = async (req, res) => {
     try {

@@ -158,6 +158,16 @@ class AutoDepositManager extends EventEmitter {
         });
 
         this.addLog(`<span class="text-green-400">Thành công!</span> Cộng ${amount.toLocaleString('vi-VN')}đ cho user <strong class="text-white">${user.username}</strong> (GD: #${transactionID})`);
+
+        // === START: THAY ĐỔI QUAN TRỌNG - GỬI THÔNG BÁO TỚI CLIENT ===
+        if (this.io) {
+            this.io.to(`user_${user._id.toString()}`).emit('deposit:success', {
+                amount: amount,
+                newBalance: user.balance,
+                transactionId: transactionID
+            });
+        }
+        // === END: THAY ĐỔI QUAN TRỌNG ===
     }
     
     addLog(message) {

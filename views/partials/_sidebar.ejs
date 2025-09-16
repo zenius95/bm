@@ -5,6 +5,30 @@
         </a>
     </div>
 
+    <div class="my-4 border-t border-gray-500/20"></div>
+
+    <nav class="flex-grow">
+        <ul class="space-y-2">
+            <% if(user.role === 'admin' && currentPath.startsWith('/admin')) { %>
+            
+                 <li><a href="/admin/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Dashboard</span></a></li>
+                <li><a href="/admin/orders" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'orders') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-file-list-3-line w-5 h-5 mr-3"></i><span class="font-medium">Đơn hàng</span></a></li>
+                <li><a href="/admin/accounts" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-group-line w-5 h-5 mr-3"></i><span class="font-medium">Accounts</span></a></li>
+                <li><a href="/admin/workers" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'workers') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-cpu-line w-5 h-5 mr-3"></i><span class="font-medium">Workers</span></a></li>
+                <li><a href="/admin/users" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'users') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-user-settings-line w-5 h-5 mr-3"></i><span class="font-medium">Users</span></a></li>
+                <li><a href="/admin/transactions" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'transactions') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-exchange-dollar-line w-5 h-5 mr-3"></i><span class="font-medium">Lịch sử giao dịch</span></a></li>
+                <li><a href="/admin/activity-logs" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'activity-logs') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-history-line w-5 h-5 mr-3"></i><span class="font-medium">Nhật ký hệ thống</span></a></li>
+                <li><a href="/admin/settings" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'settings') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-settings-3-line w-5 h-5 mr-3"></i><span class="font-medium">Cài Đặt</span></a></li>
+            <% } else { %>
+                <li><a href="/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Tổng Quan</span></a></li>
+                <li><a href="/create-order" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'create-order') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-add-circle-line w-5 h-5 mr-3"></i><span class="font-medium">Tạo Đơn Hàng</span></a></li>
+                <li><a href="/deposit" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'deposit') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-wallet-3-line w-5 h-5 mr-3"></i><span class="font-medium">Nạp Tiền</span></a></li>
+                <li><a href="/orders" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'orders') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-list-ordered-2 w-5 h-5 mr-3"></i><span class="font-medium">Lịch Sử Đơn Hàng</span></a></li>
+                <li><a href="/profile" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'profile') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-user-line w-5 h-5 mr-3"></i><span class="font-medium">Hồ sơ</span></a></li>
+            <% } %>
+        </ul>
+    </nav>
+
     <% if (user) { %>
         <div class="relative" id="user-menu-container">
             <button id="user-menu-button" class="w-full flex items-center gap-3 text-left p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -36,30 +60,6 @@
              </div>
             </div>
     <% } %>
-
-    <div class="my-4 border-t border-gray-500/20"></div>
-
-    <nav class="flex-grow">
-        <ul class="space-y-2">
-            <% if(user.role === 'admin' && currentPath.startsWith('/admin')) { %>
-            
-                 <li><a href="/admin/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Dashboard</span></a></li>
-                <li><a href="/admin/orders" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'orders') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-file-list-3-line w-5 h-5 mr-3"></i><span class="font-medium">Đơn hàng</span></a></li>
-                <li><a href="/admin/accounts" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'accounts') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-group-line w-5 h-5 mr-3"></i><span class="font-medium">Accounts</span></a></li>
-                <li><a href="/admin/workers" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'workers') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-cpu-line w-5 h-5 mr-3"></i><span class="font-medium">Workers</span></a></li>
-                <li><a href="/admin/users" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'users') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-user-settings-line w-5 h-5 mr-3"></i><span class="font-medium">Users</span></a></li>
-                <li><a href="/admin/transactions" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'transactions') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-exchange-dollar-line w-5 h-5 mr-3"></i><span class="font-medium">Lịch sử giao dịch</span></a></li>
-                <li><a href="/admin/activity-logs" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'activity-logs') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-history-line w-5 h-5 mr-3"></i><span class="font-medium">Nhật ký hệ thống</span></a></li>
-                <li><a href="/admin/settings" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'settings') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-settings-3-line w-5 h-5 mr-3"></i><span class="font-medium">Cài Đặt</span></a></li>
-            <% } else { %>
-                <li><a href="/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'dashboard') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-dashboard-3-line w-5 h-5 mr-3"></i><span class="font-medium">Tổng Quan</span></a></li>
-                <li><a href="/create-order" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'create-order') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-add-circle-line w-5 h-5 mr-3"></i><span class="font-medium">Tạo Đơn Hàng</span></a></li>
-                <li><a href="/deposit" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'deposit') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-wallet-3-line w-5 h-5 mr-3"></i><span class="font-medium">Nạp Tiền</span></a></li>
-                <li><a href="/orders" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'orders') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-list-ordered-2 w-5 h-5 mr-3"></i><span class="font-medium">Lịch Sử Đơn Hàng</span></a></li>
-                <li><a href="/profile" class="flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 <%= (page === 'profile') ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10 hover:text-white' %>"><i class="ri-user-line w-5 h-5 mr-3"></i><span class="font-medium">Hồ sơ</span></a></li>
-            <% } %>
-        </ul>
-    </nav>
     
     <% if (user.role === 'admin') { %>
         <div class="mt-4 pt-4 border-t border-gray-500/20">

@@ -9,12 +9,11 @@
             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-2 sticky top-8">
                 <div class="space-y-1" id="settings-tab-list">
  
-
                     <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-security" role="tab">
                         <i class="ri-shield-keyhole-line w-5 h-5 mr-3"></i> Bảo Mật & API
                     </a>
                 
-    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-order" role="tab">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-order" role="tab">
                         <i class="ri-shopping-cart-line w-5 h-5 mr-3"></i> Đơn Hàng
                     </a>
                     <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-deposit" role="tab">
@@ -41,8 +40,7 @@
         <div class="lg:col-span-3" id="settings-tab-content">
    
             <div id="tab-security" role="tabpanel" class="tab-pane">
-                <div class="bg-white/5 backdrop-blur-lg border border-white/10 
-rounded-xl">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
                     <div class="p-6 border-b border-white/10"><h3 class="text-lg font-semibold text-white">Master API Key</h3></div>
                     <div class="p-6">
                        <form id="api-key-form" class="space-y-6">
@@ -56,8 +54,7 @@ rounded-xl">
                                  
    <button type="button" id="regenerate-api-key-btn" class="p-3 bg-blue-600/80 hover:bg-blue-600 rounded-lg transition" title="Tạo key mới"><i class="ri-refresh-line"></i></button>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-2">API key này được dùng để xác thực kết nối giữa các server worker.
-Worker cục bộ sẽ tự động dùng key này.</p>
+                                <p class="text-xs text-gray-500 mt-2">API key này được dùng để xác thực kết nối giữa các server worker. Worker cục bộ sẽ tự động dùng key này.</p>
                             </div>
                              <div class="pt-6 border-t border-white/10">
                                 
@@ -99,8 +96,7 @@ Worker cục bộ sẽ tự động dùng key này.</p>
             </div>
 
             <div id="tab-deposit" role="tabpanel" class="tab-pane hidden">
-                <div class="bg-white/5 backdrop-blur-lg border 
-border-white/10 rounded-xl">
+                <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
                     <div class="p-6 border-b border-white/10">
                         <h3 class="text-lg font-semibold text-white">Thông Tin Nạp Tiền</h3>
                     </div>
@@ -111,8 +107,7 @@ border-white/10 rounded-xl">
                                 <label for="bankName" class="block text-sm font-medium text-gray-300 mb-2">Tên ngân hàng (Mã VietQR)</label>
          
                        <input type="text" id="bankName" name="bankName" class="form-input" value="<%= settings.deposit.bankName %>" placeholder="Ví dụ: TCB, VCB, MBBANK" required>
-                                <p class="text-xs text-gray-500 mt-2">Sử dụng mã ngân hàng theo chuẩn VietQR để hiển thị logo.
-Ví dụ: Techcombank là TCB.</p>
+                                <p class="text-xs text-gray-500 mt-2">Sử dụng mã ngân hàng theo chuẩn VietQR để hiển thị logo. Ví dụ: Techcombank là TCB.</p>
                             </div>
                             <div>
                                 <label for="accountName" class="block text-sm font-medium text-gray-300 mb-2">Tên chủ 
@@ -216,8 +211,7 @@ tài khoản</label>
                        
              </div>
                                     <div class="flex items-center gap-2">
-                                        <button id="start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 
-rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
+                                        <button id="start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
                                         <button id="stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
                                      </div>
        
@@ -334,6 +328,7 @@ function activateTab(targetId) {
                 link.classList.remove(...inactiveClasses);
             } else {
            
+
      link.classList.remove(...activeClasses);
                 link.classList.add(...inactiveClasses);
             }
@@ -381,18 +376,21 @@ apiKeyForm.addEventListener('submit', async (e) => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
      
+
                body: JSON.stringify({ masterApiKey: apiKeyInput.value })
                 });
                 const result = await response.json();
                 if (result.success) {
                      showToast(result.message, 'Thành công!', 'success');
    
+
               } else {
                     showToast(result.message, 'Lỗi!', 'error');
                 }
             } catch (error) {
                  showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
         
+
    }
         });
 }
@@ -407,18 +405,21 @@ if (orderSettingsForm) {
                 const response = await fetch('/admin/settings/order/config', {
                     method: 'POST',
     
+
                 headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pricePerItem })
                 });
                 const result = await response.json();
                 if (result.success) {
    
+
                   showToast(result.message, 'Thành công', 'success');
                 } else {
                     showToast(result.message, 'Lỗi!', 'error');
                 }
             } catch (error) {
         
+
          showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
             }
         });
@@ -434,18 +435,21 @@ if (depositSettingsForm) {
             try {
                 const response = await fetch('/admin/settings/deposit/config', {
          
+
            method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
                 const result = await response.json();
        
+
          if (result.success) {
                     showToast(result.message, 'Thành công', 'success');
                 } else {
                     showToast(result.message, 'Lỗi!', 'error');
                 }
           
+
   } catch (error) {
                 showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
             }
@@ -500,6 +504,7 @@ nextRunContainer.style.display = 'block';
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
   
+
                   body: JSON.stringify(payload)
                 });
 const result = await response.json();
@@ -521,6 +526,7 @@ updateAutoCheckUI(result.data);
                 concurrency: concurrencyInput.value,
                 delay: delayInput.value,
       
+
           timeout: timeoutInput.value,
                 batchSize: batchSizeInput.value
             });
@@ -534,53 +540,54 @@ startBtn.addEventListener('click', () => updateAutoCheckConfig({ isEnabled: true
     
     // === START: JAVASCRIPT CHO TỰ ĐỘNG NẠP TIỀN ===
     const autoDepositForm = document.getElementById('autodeposit-settings-form');
-    if (autoDepositForm) {
+if (autoDepositForm) {
         const apiKeyInput = document.getElementById('ad-apiKey');
         const intervalInput = document.getElementById('ad-intervalMinutes');
-        const prefixInput = document.getElementById('ad-prefix');
+const prefixInput = document.getElementById('ad-prefix');
         const startBtn = document.getElementById('ad-start-btn');
         const stopBtn = document.getElementById('ad-stop-btn');
         const statusBadge = document.getElementById('ad-status-badge');
         const nextRunContainer = document.getElementById('ad-next-run-container');
-        const nextRunTime = document.getElementById('ad-next-run-time');
+const nextRunTime = document.getElementById('ad-next-run-time');
         const logsContainer = document.getElementById('autodeposit-logs');
 
         function addLogMessage(logEntry) {
             if(!logsContainer) return;
-            const firstChild = logsContainer.querySelector('div:first-child');
+const firstChild = logsContainer.querySelector('div:first-child');
             if(firstChild && firstChild.textContent.includes('Đang chờ')) {
                 logsContainer.innerHTML = '';
-            }
+}
             if (logsContainer.childElementCount > 100) logsContainer.removeChild(logsContainer.lastChild);
-            const logLine = document.createElement('div');
+const logLine = document.createElement('div');
             logLine.innerHTML = `<span class="text-gray-500 mr-3">[${new Date(logEntry.timestamp).toLocaleTimeString('vi-VN')}]</span> ${logEntry.message}`;
             logsContainer.insertBefore(logLine, logsContainer.firstChild);
-        }
+}
 
         function updateAutoDepositUI(state) {
             if (!state) return;
-            statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full '; 
+statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full '; 
             if (state.status === 'RUNNING') {
-                statusBadge.textContent = state.isJobRunning ? 'Đang quét...' : 'Đang chạy';
+                statusBadge.textContent = state.isJobRunning ?
+'Đang quét...' : 'Đang chạy';
                 statusBadge.classList.add('bg-green-500/20', 'text-green-300');
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
-            } else {
+} else {
                 statusBadge.textContent = 'Đã dừng';
-                statusBadge.classList.add('bg-red-500/20', 'text-red-300');
+statusBadge.classList.add('bg-red-500/20', 'text-red-300');
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
             }
             apiKeyInput.value = state.config.apiKey;
-            intervalInput.value = state.config.intervalMinutes;
+intervalInput.value = state.config.intervalMinutes;
             prefixInput.value = state.config.prefix;
             
             if (state.nextRun && !state.isJobRunning) {
                 nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
-                nextRunContainer.style.display = 'block';
+nextRunContainer.style.display = 'block';
             } else {
                 nextRunContainer.style.display = 'none';
-            }
+}
         }
 
         async function updateAutoDepositConfig(payload) {
@@ -588,34 +595,42 @@ startBtn.addEventListener('click', () => updateAutoCheckConfig({ isEnabled: true
                 const response = await fetch('/admin/settings/auto-deposit/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+  
+                  body: JSON.stringify(payload)
                 });
-                const result = await response.json();
+const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công', 'success');
-                    updateAutoDepositUI(result.data);
+updateAutoDepositUI(result.data);
                 } else {
                     showToast(result.message, 'Lỗi', 'error');
-                }
+}
             } catch (error) {
                 showToast('Lỗi kết nối server', 'Lỗi', 'error');
-            }
+}
+        }
+
+        // === START: SỬA LỖI LOGIC ===
+        function getFormDataAnd(extras) {
+            const formData = {
+                apiKey: apiKeyInput.value,
+                intervalMinutes: intervalInput.value,
+                prefix: prefixInput.value
+            };
+            return { ...formData, ...extras };
         }
 
         autoDepositForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            updateAutoDepositConfig({
-                apiKey: apiKeyInput.value,
-                intervalMinutes: intervalInput.value,
-                prefix: prefixInput.value
-            });
+            updateAutoDepositConfig(getFormDataAnd({}));
         });
-        startBtn.addEventListener('click', () => updateAutoDepositConfig({ isEnabled: true }));
-        stopBtn.addEventListener('click', () => updateAutoDepositConfig({ isEnabled: false }));
+        startBtn.addEventListener('click', () => updateAutoDepositConfig(getFormDataAnd({ isEnabled: true })));
+        stopBtn.addEventListener('click', () => updateAutoDepositConfig(getFormDataAnd({ isEnabled: false })));
+        // === END: SỬA LỖI LOGIC ===
         
         updateAutoDepositUI(initialState.autoDeposit);
         socket.on('autoDeposit:statusUpdate', (state) => updateAutoDepositUI(state));
-        socket.on('autoDeposit:log', (logEntry) => addLogMessage(logEntry));
+socket.on('autoDeposit:log', (logEntry) => addLogMessage(logEntry));
     }
     // === END: JAVASCRIPT CHO TỰ ĐỘNG NẠP TIỀN ===
 
@@ -630,6 +645,7 @@ async function updateProcConfig(payload) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                   
+
   body: JSON.stringify(payload)
                 });
 const result = await response.json();
