@@ -45,17 +45,16 @@ router.delete('/workers/:id', workerController.deleteWorker);
 router.get('/workers/:id/logs', workerController.getWorkerLogs);
 router.post('/workers/:id/toggle', workerController.toggleWorker);
 
-// --- Activity Log Routes ---
+// --- Activity Log & Transaction Routes ---
 router.get('/activity-logs', activityLogController.handleGetAll);
 router.post('/activity-logs/hard-delete', activityLogController.handleHardDelete);
+router.get('/transactions', activityLogController.getTransactionLogs); // <-- ROUTE MỚI
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
 router.post('/settings/api-key/update', settingController.updateMasterApiKey);
 router.post('/settings/order/config', settingController.updateOrderConfig);
-// === START: THÊM ROUTE NẠP TIỀN ===
 router.post('/settings/deposit/config', settingController.updateDepositConfig);
-// === END: THÊM ROUTE NẠP TIỀN ===
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);

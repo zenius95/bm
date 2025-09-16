@@ -98,4 +98,45 @@ activityLogController.handleGetAll = async (req, res) => {
     }
 };
 
+activityLogController.getTransactionLogs = async (req, res) => {
+    try {
+        const { page = 1, limit = 20, searchUser } = req.query;
+        const transactionActions = ['ADMIN_ADJUST_BALANCE', 'ORDER_REFUND', 'CLIENT_DEPOSIT', 'CLIENT_CREATE_ORDER', 'ADMIN_CREATE_ORDER'];
+        let query = { action: { $in: transactionActions } }; 
+
+        if (searchUser) {
+            const users = await require('../models/User').find({ username: { $regex: searchUser, $options: 'i' } }).select('_id');
+            const userIds = users.map(u => u._id);
+            query.user = { $in: userIds };
+        }
+
+        const totalItems = await ActivityLog.countDocuments(query);
+        const logs = await ActivityLog.find(query)
+            .populate('user', 'username')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit))
+            .lean();
+
+        const pagination = {
+            totalItems,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalItems / limit),
+            limit: parseInt(limit),
+        };
+
+        res.render('admin/transactions', { 
+            logs, 
+            pagination, 
+            currentQuery: req.query,
+            title: 'Lịch sử giao dịch',
+            page: 'transactions',
+            actionLabels: ACTION_LABELS
+        });
+    } catch (error) {
+        console.error(`Lỗi khi lấy lịch sử giao dịch:`, error);
+        res.status(500).send(`Không thể tải lịch sử giao dịch.`);
+    }
+};
+
 module.exports = activityLogController;
