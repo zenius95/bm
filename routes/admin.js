@@ -13,7 +13,7 @@ router.use(accountController.parseQueryMiddleware);
 router.use(adminController.parseQueryMiddleware);
 router.use(userController.parseQueryMiddleware);
 
-router.get('/dashboard', adminController.getDashboard);
+router.get('/', adminController.getDashboard);
 
 // --- Account Routes ---
 router.get('/accounts', accountController.handleGetAll);

@@ -1,8 +1,10 @@
 // controllers/authController.js
+
 const User = require('../models/User');
 const { logActivity } = require('../utils/activityLogService');
 
 const authController = {};
+const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/; // Biến dùng chung
 
 authController.getLoginPage = (req, res) => {
     res.render('client/login', { layout: false, error: req.query.error, success: req.query.success });
@@ -19,6 +21,13 @@ authController.register = async (req, res) => {
         if (!username || !email || !password || !passwordConfirm) {
             return res.redirect('/register?error=' + encodeURIComponent('Vui lòng điền đầy đủ thông tin.'));
         }
+        
+        // === START: THÊM KIỂM TRA USERNAME ===
+        if (!USERNAME_REGEX.test(username)) {
+            return res.redirect('/register?error=' + encodeURIComponent('Username chỉ được chứa chữ cái, số và dấu gạch dưới (_).'));
+        }
+        // === END: THÊM KIỂM TRA USERNAME ===
+
         if (password !== passwordConfirm) {
             return res.redirect('/register?error=' + encodeURIComponent('Mật khẩu xác nhận không khớp.'));
         }
@@ -43,6 +52,11 @@ authController.register = async (req, res) => {
         res.redirect('/login?success=' + encodeURIComponent('Đăng ký thành công! Vui lòng đăng nhập.'));
     } catch (error) {
         console.error("Register error:", error);
+        // === START: HIỂN THỊ LỖI TỪ VALIDATOR ===
+        if (error.errors && error.errors.username) {
+             return res.redirect('/register?error=' + encodeURIComponent(error.errors.username.message));
+        }
+        // === END: HIỂN THỊ LỖI TỪ VALIDATOR ===
         res.redirect('/register?error=' + encodeURIComponent('Lỗi server, không thể đăng ký.'));
     }
 };

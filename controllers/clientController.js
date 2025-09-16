@@ -73,14 +73,16 @@ clientController.updateProfile = async (req, res) => {
     }
 };
 
+// === START: CẬP NHẬT ĐỂ TRUYỀN DỮ LIỆU BẬC GIÁ ===
 clientController.getCreateOrderPage = (req, res) => {
     res.render('client/create-order', {
         page: 'create-order',
         title: 'Tạo Đơn Hàng Mới',
-        pricePerItem: settingsService.get('order').pricePerItem,
+        pricingTiers: settingsService.get('order').pricingTiers, // Truyền danh sách bậc giá
         error: req.query.error
     });
 };
+// === END: CẬP NHẬT ĐỂ TRUYỀN DỮ LIỆU BẬC GIÁ ===
 
 clientController.postCreateOrder = async (req, res) => {
     try {
@@ -97,21 +99,22 @@ clientController.postCreateOrder = async (req, res) => {
             return res.redirect('/create-order?error=' + encodeURIComponent('Không có item nào hợp lệ.'));
         }
         
-        const pricePerItem = settingsService.get('order').pricePerItem;
+        // === START: THAY ĐỔI CÁCH TÍNH GIÁ ===
+        const pricePerItem = settingsService.calculatePricePerItem(items.length);
         const totalCost = items.length * pricePerItem;
+        // === END: THAY ĐỔI CÁCH TÍNH GIÁ ===
 
         if (user.balance < totalCost) {
             return res.redirect('/create-order?error=' + encodeURIComponent('Số dư không đủ.'));
         }
 
-        const balanceBefore = user.balance; // Ghi lại số dư trước khi trừ
+        const balanceBefore = user.balance;
         user.balance -= totalCost;
         await user.save();
 
         const newOrder = new Order({ user: userId, items, totalCost, pricePerItem });
         await newOrder.save();
         
-        // --- CẬP NHẬT LOGIC GHI LOG ---
         await logActivity(userId, 'CLIENT_CREATE_ORDER', {
             details: `Tạo đơn hàng #${newOrder._id.toString().slice(-6)} với ${items.length} items.`,
             ipAddress: req.ip || req.connection.remoteAddress,
@@ -119,7 +122,7 @@ clientController.postCreateOrder = async (req, res) => {
             metadata: {
                 balanceBefore: balanceBefore,
                 balanceAfter: user.balance,
-                change: -totalCost // Ghi lại sự thay đổi là một số âm
+                change: -totalCost
             }
         });
 

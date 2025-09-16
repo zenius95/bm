@@ -12,9 +12,8 @@
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-5xl mx-auto rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-gray-700/50">
+    <div class="w-full max-w-6xl mx-auto rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-gray-700/50">
         
-        <!-- Left Side - Mesh Gradient & Branding -->
         <div class="w-full md:w-1/2 hidden md:block relative bg-gray-900 overflow-hidden md:border-r md:border-gray-700/50">
             <div class="absolute -top-20 -left-20 w-80 h-80 bg-purple-500/30 rounded-full blur-[100px] animate-[spin_20s_linear_infinite]"></div>
             <div class="absolute -bottom-20 -right-10 w-96 h-96 bg-blue-500/30 rounded-full blur-[120px] animate-[spin_25s_linear_infinite_reverse]"></div>
@@ -27,7 +26,6 @@
             </div>
         </div>
 
-        <!-- Right Side - Form -->
         <div class="w-full md:w-1/2 p-8 sm:p-12 bg-gray-900 flex flex-col justify-center">
             <div>
                 <h2 class="text-3xl font-bold text-white">Tạo tài khoản mới</h2>
@@ -35,6 +33,7 @@
             </div>
 
             <div class="mt-8">
+            
                 <% if (typeof error !== 'undefined' && error) { %>
                     <div class="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm mb-6 flex items-center gap-3">
                         <i class="ri-error-warning-line"></i>
@@ -42,12 +41,16 @@
                     </div>
                 <% } %>
 
-                <form class="space-y-6" action="/register" method="POST">
+                <form class="space-y-6" action="/register" method="POST" id="register-form">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-400 mb-2">Username</label>
                         <div class="relative">
                             <i class="ri-user-line absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
                             <input id="username" name="username" type="text" required placeholder="Chọn một username độc nhất" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-3 pr-4 pl-12 text-sm text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                        </div>
+                        <div id="username-error" class="text-xs text-red-400 mt-2 hidden">
+                            <i class="ri-error-warning-line align-middle"></i>
+                            Username chỉ được chứa chữ, số, và dấu gạch dưới (_).
                         </div>
                     </div>
                     <div>
@@ -89,6 +92,37 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const usernameInput = document.getElementById('username');
+            const usernameError = document.getElementById('username-error');
+            const registerForm = document.getElementById('register-form');
+            const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
+
+            let isUsernameValid = false;
+
+            usernameInput.addEventListener('input', () => {
+                const username = usernameInput.value;
+                if (username && !USERNAME_REGEX.test(username)) {
+                    usernameError.classList.remove('hidden');
+                    usernameInput.classList.add('border-red-500');
+                    isUsernameValid = false;
+                } else {
+                    usernameError.classList.add('hidden');
+                    usernameInput.classList.remove('border-red-500');
+                    isUsernameValid = true;
+                }
+            });
+
+            registerForm.addEventListener('submit', (e) => {
+                if (!isUsernameValid) {
+                    e.preventDefault(); // Ngăn form gửi đi nếu username không hợp lệ
+                    usernameError.classList.remove('hidden');
+                    usernameInput.focus();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
-

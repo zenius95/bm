@@ -2,28 +2,32 @@
 const fs = require('fs').promises;
 const path = require('path');
 const EventEmitter = require('events');
-const crypto = require('crypto'); // Thêm module crypto của Node.js
+const crypto = require('crypto');
 
 const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 
 const DEFAULT_SETTINGS = {
     masterApiKey: '',
     order: {
-        pricePerItem: 100 // Giá mặc định là 100
+        // === START: THAY ĐỔI CẤU TRÚC GIÁ ===
+        pricingTiers: [
+            { quantity: 50, price: 10000 },
+            { quantity: 20, price: 13000 },
+            { quantity: 1, price: 15000 }
+        ]
+        // === END: THAY ĐỔI CẤU TRÚC GIÁ ===
     },
     deposit: {
         bankName: "TCB",
         accountName: "NGUYEN VAN A",
         accountNumber: "19036903216011"
     },
-    // === START: THÊM CÀI ĐẶT MỚI ===
     autoDeposit: {
         isEnabled: false,
         intervalMinutes: 1,
         apiKey: '',
         prefix: 'NAPTIEN'
     },
-    // === END: THÊM CÀI ĐẶT MỚI ===
     autoCheck: {
         isEnabled: false,
         intervalMinutes: 30,
@@ -54,9 +58,7 @@ class SettingsService extends EventEmitter {
                 ...fileData,
                 order: { ...DEFAULT_SETTINGS.order, ...(fileData.order || {}) },
                 deposit: { ...DEFAULT_SETTINGS.deposit, ...(fileData.deposit || {}) },
-                // === START: MERGE CÀI ĐẶT MỚI ===
                 autoDeposit: { ...DEFAULT_SETTINGS.autoDeposit, ...(fileData.autoDeposit || {}) },
-                // === END: MERGE CÀI ĐẶT MỚI ===
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) }
             };
@@ -72,7 +74,7 @@ class SettingsService extends EventEmitter {
             if (error.code === 'ENOENT') {
                 console.log('[SettingsService] settings.json not found. Creating with default values.');
                 this._data = DEFAULT_SETTINGS;
-                this._data.masterApiKey = crypto.randomBytes(32).toString('hex'); // Tạo key cho file mới
+                this._data.masterApiKey = crypto.randomBytes(32).toString('hex');
                 await this._save();
             } else {
                 console.error('[SettingsService] Error reading settings.json:', error);
@@ -109,6 +111,42 @@ class SettingsService extends EventEmitter {
         }
         await this._save();
     }
+
+    // === START: THÊM HÀM LOGIC TÍNH GIÁ ===
+    /**
+     * Lấy danh sách các bậc giá đã được sắp xếp giảm dần theo số lượng
+     * @returns {Array<{quantity: number, price: number}>}
+     */
+    getSortedTiers() {
+        const tiers = this.get('order', {}).pricingTiers || [];
+        // Sao chép và sắp xếp để đảm bảo logic không ảnh hưởng đến dữ liệu gốc
+        return [...tiers].sort((a, b) => b.quantity - a.quantity);
+    }
+
+    /**
+     * Tính toán đơn giá dựa trên tổng số lượng item
+     * @param {number} itemCount - Tổng số lượng item
+     * @returns {number} - Đơn giá áp dụng
+     */
+    calculatePricePerItem(itemCount) {
+        const sortedTiers = this.getSortedTiers();
+        
+        if (sortedTiers.length === 0) {
+            return 0; // Trả về 0 nếu không có bậc giá nào được cấu hình
+        }
+
+        // Tìm bậc giá đầu tiên mà số lượng item lớn hơn hoặc bằng
+        const applicableTier = sortedTiers.find(tier => itemCount >= tier.quantity);
+
+        // Nếu tìm thấy, trả về giá của bậc đó
+        if (applicableTier) {
+            return applicableTier.price;
+        }
+
+        // Nếu không (ví dụ itemCount < bậc thấp nhất), trả về giá của bậc thấp nhất
+        return sortedTiers[sortedTiers.length - 1]?.price || 0;
+    }
+    // === END: THÊM HÀM LOGIC TÍNH GIÁ ===
 }
 
 module.exports = new SettingsService();

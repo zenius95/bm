@@ -20,14 +20,11 @@ settingController.getSettingsPage = async (req, res) => {
     try {
         res.render('admin/settings', {
             settings: settingsService.getAll(),
-            // === START: SỬA LỖI LOGIC ===
-            // Truyền thẳng object, không chuyển thành chuỗi JSON
             initialState: { 
                 autoCheck: autoCheckManager.getStatus(),
                 itemProcessor: itemProcessorManager.getStatus(),
                 autoDeposit: autoDepositManager.getStatus() 
             },
-            // === END: SỬA LỖI LOGIC ===
             title: 'System Settings',
             page: 'settings'
         });
@@ -53,21 +50,37 @@ settingController.updateMasterApiKey = async (req, res) => {
     }
 };
 
+// === START: CẬP NHẬT LOGIC LƯU BẬC GIÁ ===
 settingController.updateOrderConfig = async (req, res) => {
     try {
-        const { pricePerItem } = req.body;
-        const price = parseInt(pricePerItem, 10);
-        if (isNaN(price) || price < 0) {
-            return res.status(400).json({ success: false, message: 'Giá tiền không hợp lệ.' });
+        const { pricingTiers } = req.body;
+        
+        if (!Array.isArray(pricingTiers) || pricingTiers.length === 0) {
+            return res.status(400).json({ success: false, message: 'Dữ liệu bậc giá không hợp lệ.' });
         }
-        await settingsService.update('order', { pricePerItem: price });
+
+        const cleanedTiers = pricingTiers.map(tier => ({
+            quantity: parseInt(tier.quantity, 10),
+            price: parseInt(tier.price, 10)
+        })).filter(tier => !isNaN(tier.quantity) && tier.quantity > 0 && !isNaN(tier.price) && tier.price >= 0);
+
+        if (cleanedTiers.length !== pricingTiers.length) {
+            return res.status(400).json({ success: false, message: 'Một số bậc giá có giá trị không hợp lệ.' });
+        }
+        
+        // Sắp xếp lại trước khi lưu để đảm bảo tính nhất quán
+        cleanedTiers.sort((a, b) => a.quantity - b.quantity);
+
+        await settingsService.update('order', { pricingTiers: cleanedTiers });
+
         await logSettingsChange(req, "Cấu hình Đơn hàng");
-        res.json({ success: true, message: 'Cập nhật cài đặt đơn hàng thành công.' });
+        res.json({ success: true, message: 'Cập nhật cài đặt bậc giá thành công.' });
     } catch (error) {
         console.error("Error updating order config:", error.message);
         res.status(500).json({ success: false, message: error.message });
     }
 };
+// === END: CẬP NHẬT LOGIC LƯU BẬC GIÁ ===
 
 settingController.updateDepositConfig = async (req, res) => {
     try {

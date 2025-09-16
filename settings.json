@@ -1,6 +1,36 @@
 {
     "masterApiKey": "2b26be39141b87dceccb22b003db6a177e260d353dcddf1e4d9b916b35eee130",
     "order": {
+        "pricingTiers": [
+            {
+                "quantity": 1,
+                "price": 15000
+            },
+            {
+                "quantity": 20,
+                "price": 13000
+            },
+            {
+                "quantity": 50,
+                "price": 10000
+            },
+            {
+                "quantity": 1000,
+                "price": 8000
+            },
+            {
+                "quantity": 2000,
+                "price": 7000
+            },
+            {
+                "quantity": 5000,
+                "price": 6000
+            },
+            {
+                "quantity": 6000,
+                "price": 5000
+            }
+        ],
         "pricePerItem": 100
     },
     "deposit": {

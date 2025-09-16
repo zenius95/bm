@@ -4,7 +4,7 @@ const router = express.Router();
 const clientController = require('../controllers/clientController');
 
 // Route cho trang dashboard của client
-router.get('/dashboard', clientController.getDashboard);
+router.get('/', clientController.getDashboard);
 
 // === START: THÊM ROUTE MỚI ===
 router.get('/profile', clientController.getProfilePage);

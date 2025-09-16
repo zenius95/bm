@@ -1,4 +1,5 @@
 // models/User.js
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -8,9 +9,17 @@ const UserSchema = new mongoose.Schema({
         required: true,
         unique: true,
         trim: true,
-        lowercase: true
+        lowercase: true,
+        // === START: THÊM VALIDATOR ===
+        validate: {
+            validator: function(v) {
+                // Chỉ cho phép chữ, số, và dấu gạch dưới
+                return /^[a-zA-Z0-9_]+$/.test(v);
+            },
+            message: props => `${props.value} không phải là username hợp lệ! Chỉ cho phép chữ, số và dấu gạch dưới.`
+        }
+        // === END: THÊM VALIDATOR ===
     },
-    // === START: THÊM TRƯỜNG MỚI ===
     email: {
         type: String,
         required: true,
@@ -19,7 +28,6 @@ const UserSchema = new mongoose.Schema({
         lowercase: true,
         match: [/\S+@\S+\.\S+/, 'is invalid']
     },
-    // === END: THÊM TRƯỜNG MỚI ===
     password: {
         type: String,
         required: true,
@@ -41,7 +49,6 @@ const UserSchema = new mongoose.Schema({
 
 // Middleware để hash mật khẩu trước khi lưu
 UserSchema.pre('save', async function(next) {
-    // Chỉ hash mật khẩu nếu nó được thay đổi (hoặc là user mới)
     if (!this.isModified('password')) {
         return next();
     }

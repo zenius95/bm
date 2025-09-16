@@ -36,7 +36,9 @@ adminOrderController.handleGetAll = async (req, res) => {
             pagination,
             trashCount,
             users,
-            currentPricePerItem: settingsService.get('order').pricePerItem,
+            // === START: THAY ĐỔI TRUYỀN DỮ LIỆU GIÁ ===
+            pricingTiers: settingsService.get('order').pricingTiers,
+            // === END: THAY ĐỔI TRUYỀN DỮ LIỆU GIÁ ===
             title,
             page: 'orders',
             currentQuery: res.locals.currentQuery
@@ -93,21 +95,22 @@ adminOrderController.handleCreate = async (req, res) => {
             return res.status(404).json({ success: false, message: "Không tìm thấy người dùng được chọn." });
         }
 
-        const pricePerItem = settingsService.get('order').pricePerItem;
+        // === START: THAY ĐỔI CÁCH TÍNH GIÁ ===
+        const pricePerItem = settingsService.calculatePricePerItem(items.length);
         const totalCost = items.length * pricePerItem;
+        // === END: THAY ĐỔI CÁCH TÍNH GIÁ ===
 
         if (targetUser.balance < totalCost) {
             return res.status(400).json({ success: false, message: `Số dư của user ${targetUser.username} không đủ. Cần ${totalCost.toLocaleString('vi-VN')}đ, hiện có ${targetUser.balance.toLocaleString('vi-VN')}đ.` });
         }
 
-        const balanceBefore = targetUser.balance; // Ghi lại số dư trước khi trừ
+        const balanceBefore = targetUser.balance;
         targetUser.balance -= totalCost;
         await targetUser.save();
 
         const newOrder = { user: targetUser._id, items, totalCost, pricePerItem };
         const createdOrder = await orderService.create(newOrder);
 
-        // --- CẬP NHẬT LOGIC GHI LOG ---
         await logActivity(targetUser._id, 'ADMIN_CREATE_ORDER', {
             details: `Tạo đơn hàng #${createdOrder._id.toString().slice(-6)} bởi Admin '${req.session.user.username}' với ${items.length} items.`,
             ipAddress: req.ip || req.connection.remoteAddress,
@@ -115,7 +118,7 @@ adminOrderController.handleCreate = async (req, res) => {
             metadata: {
                 balanceBefore: balanceBefore,
                 balanceAfter: targetUser.balance,
-                change: -totalCost // Ghi lại sự thay đổi là một số âm
+                change: -totalCost
             }
         });
 

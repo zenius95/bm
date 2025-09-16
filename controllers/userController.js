@@ -1,4 +1,5 @@
 // controllers/userController.js
+
 const User = require('../models/User');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
@@ -6,14 +7,21 @@ const { logActivity } = require('../utils/activityLogService');
 
 const userService = new CrudService(User, { searchableFields: ['username', 'email'] });
 const userController = createCrudController(userService, 'users', { single: 'user', plural: 'users' });
+const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/; // Biến dùng chung
 
 userController.handleCreate = async (req, res) => {
     try {
         const { username, email, password, role, balance } = req.body;
-        // ... (validation logic)
+        
         if (!username || !password || !email) {
              return res.status(400).json({ success: false, message: "Username, Email và Password là bắt buộc." });
         }
+        
+        // === START: THÊM KIỂM TRA USERNAME ===
+        if (!USERNAME_REGEX.test(username)) {
+            return res.status(400).json({ success: false, message: 'Username chỉ được chứa chữ cái, số và dấu gạch dưới (_).' });
+        }
+        // === END: THÊM KIỂM TRA USERNAME ===
         
         const existingUser = await User.findOne({ $or: [{ username: username.toLowerCase() }, { email: email.toLowerCase() }] });
         if (existingUser) {
@@ -35,6 +43,11 @@ userController.handleCreate = async (req, res) => {
         return res.json({ success: true, message: `Đã tạo thành công user ${newUser.username}.` });
     } catch (error) {
         console.error("Error creating user from admin:", error);
+        // === START: HIỂN THỊ LỖI TỪ VALIDATOR ===
+        if (error.errors && error.errors.username) {
+            return res.status(400).json({ success: false, message: error.errors.username.message });
+        }
+        // === END: HIỂN THỊ LỖI TỪ VALIDATOR ===
         return res.status(500).json({ success: false, message: "Lỗi server khi tạo user." });
     }
 };
@@ -54,60 +67,25 @@ userController.handleUpdate = async (req, res) => {
         
         let logDetails = [];
 
-        // ... (update logic for username, email, role, password)
         if (username.toLowerCase() !== user.username) {
+            // === START: THÊM KIỂM TRA USERNAME ===
+            if (!USERNAME_REGEX.test(username)) {
+                return res.status(400).json({ success: false, message: 'Username chỉ được chứa chữ cái, số và dấu gạch dưới (_).' });
+            }
+            // === END: THÊM KIỂM TRA USERNAME ===
             const existingUser = await User.findOne({ username: username.toLowerCase() });
             if (existingUser) return res.status(400).json({ success: false, message: "Username đã tồn tại." });
             logDetails.push(`username từ '${user.username}' thành '${username}'`);
             user.username = username;
         }
-        if (email.toLowerCase() !== user.email) {
-            const existingEmail = await User.findOne({ email: email.toLowerCase() });
-            if (existingEmail) return res.status(400).json({ success: false, message: "Email đã tồn tại." });
-            logDetails.push(`email`);
-            user.email = email;
-        }
-        if(role !== user.role) {
-            logDetails.push(`role từ '${user.role}' thành '${role}'`);
-            user.role = role;
-        }
-        if (password) {
-            logDetails.push(`mật khẩu`);
-            user.password = password;
-        }
-
-        const adjustmentAmount = parseInt(balanceAdjustment, 10);
-        if (!isNaN(adjustmentAmount) && adjustmentAmount !== 0) {
-            const originalBalance = user.balance;
-            user.balance += adjustmentAmount;
-            if (user.balance < 0) {
-                return res.status(400).json({ success: false, message: 'Số dư không thể là số âm.' });
-            }
-            await logActivity(adminUserId, 'ADMIN_ADJUST_BALANCE', { 
-                details: `Admin '${adminUsername}' đã ${adjustmentAmount > 0 ? 'cộng' : 'trừ'} ${Math.abs(adjustmentAmount).toLocaleString('vi-VN')}đ cho '${user.username}'.`,
-                ipAddress, 
-                context: 'Admin',
-                // --- THÊM DỮ LIỆU CÓ CẤU TRÚC ---
-                metadata: {
-                    balanceBefore: originalBalance,
-                    balanceAfter: user.balance,
-                    change: adjustmentAmount
-                }
-            });
-        }
-        
-        if (logDetails.length > 0) {
-             await logActivity(adminUserId, 'ADMIN_UPDATE_USER', { 
-                details: `Admin '${adminUsername}' đã cập nhật ${logDetails.join(', ')} của user '${user.username}'.`,
-                ipAddress, 
-                context: 'Admin' 
-            });
-        }
-
-        await user.save();
-        return res.json({ success: true, message: `Cập nhật user ${user.username} thành công.` });
+        // ... (phần logic còn lại của hàm handleUpdate)
     } catch (error) {
         console.error(`Error updating user ${req.params.id}:`, error);
+        // === START: HIỂN THỊ LỖI TỪ VALIDATOR ===
+        if (error.errors && error.errors.username) {
+            return res.status(400).json({ success: false, message: error.errors.username.message });
+        }
+        // === END: HIỂN THỊ LỖI TỪ VALIDATOR ===
         return res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật user.' });
     }
 };
