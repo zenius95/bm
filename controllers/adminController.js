@@ -61,7 +61,7 @@ adminOrderController.handleGetById = async (req, res) => {
             order, 
             logs, 
             currentQuery: req.query,
-            title: `Order #${order._id.toString().slice(-6)}`,
+            title: `Order #${order.shortId}`,
             page: 'orders'
         });
     } catch (error) {
@@ -112,7 +112,7 @@ adminOrderController.handleCreate = async (req, res) => {
         const createdOrder = await orderService.create(newOrder);
 
         await logActivity(targetUser._id, 'ADMIN_CREATE_ORDER', {
-            details: `Tạo đơn hàng #${createdOrder._id.toString().slice(-6)} bởi Admin '${req.session.user.username}' với ${items.length} items.`,
+            details: `Tạo đơn hàng #${createdOrder.shortId} bởi Admin '${req.session.user.username}' với ${items.length} items.`,
             ipAddress: req.ip || req.connection.remoteAddress,
             context: 'Admin',
             metadata: {

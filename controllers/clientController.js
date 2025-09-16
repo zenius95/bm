@@ -116,7 +116,7 @@ clientController.postCreateOrder = async (req, res) => {
         await newOrder.save();
         
         await logActivity(userId, 'CLIENT_CREATE_ORDER', {
-            details: `Tạo đơn hàng #${newOrder._id.toString().slice(-6)} với ${items.length} items.`,
+            details: `Tạo đơn hàng #${newOrder.shortId} với ${items.length} items.`,
             ipAddress: req.ip || req.connection.remoteAddress,
             context: 'Client',
             metadata: {
@@ -182,7 +182,7 @@ clientController.getOrderDetailPage = async (req, res) => {
 
         res.render('client/order-detail', {
             page: 'orders',
-            title: `Chi Tiết Đơn Hàng #${order._id.toString().slice(-6)}`,
+            title: `Chi Tiết Đơn Hàng #${order.shortId}`,
             order
         });
     } catch (error) {

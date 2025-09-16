@@ -131,7 +131,7 @@ class ItemProcessorManager extends EventEmitter {
             if(!updatedOrder) return;
 
             if(this.io) {
-                const logMessage = `Đơn hàng ...${orderId.toString().slice(-6)}: Gửi item ...${item._id.toString().slice(-6)} tới worker <strong class="text-blue-400">${worker.name}</strong>`;
+                const logMessage = `Đơn hàng ...${orderId.toString().slice(-6)}: Gửi item ...${item.shortId} tới worker <strong class="text-blue-400">${worker.name}</strong>`;
                 this.io.emit('itemProcessor:log', logMessage);
             }
             
@@ -247,7 +247,7 @@ class ItemProcessorManager extends EventEmitter {
             }
             
             const originalBalance = updatedUser.balance - refundAmount;
-            const logDetails = `Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user '${updatedUser.username}' do item trong đơn hàng #${order._id.toString().slice(-6)} thất bại. Lý do: ${reason}.`;
+            const logDetails = `Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user '${updatedUser.username}' do item trong đơn hàng #${order.shortId} thất bại. Lý do: ${reason}.`;
 
             await this.writeLog(order._id, 'INFO', `Refunded ${refundAmount} to user ${updatedUser.username}.`);
             await logActivity(updatedUser._id, 'ORDER_REFUND', {
@@ -262,7 +262,7 @@ class ItemProcessorManager extends EventEmitter {
             });
 
             console.log(`[Refund] ${logDetails}`);
-            if(this.io) this.io.emit('itemProcessor:log', `💰 Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong>${updatedUser.username}</strong> (đơn hàng ...${order._id.toString().slice(-6)})`);
+            if(this.io) this.io.emit('itemProcessor:log', `💰 Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong>${updatedUser.username}</strong> (đơn hàng ...${order.shortId})`);
 
         } catch (e) {
             console.error(`[Refund] CRITICAL ERROR during refund for order ${order._id}:`, e);
@@ -296,7 +296,7 @@ class ItemProcessorManager extends EventEmitter {
                 }
             });
 
-            const logMessage = `🎉 Order ${order._id.toString().slice(-6)} đã HOÀN THÀNH (status: ${finalStatus})!`;
+            const logMessage = `🎉 Order ${order.shortId} đã HOÀN THÀNH (status: ${finalStatus})!`;
             if(this.io) this.io.emit('itemProcessor:log', logMessage);
             await this.writeLog(order._id, 'INFO', `Order has been fully processed with final status: ${finalStatus}.`);
         }

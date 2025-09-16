@@ -130,7 +130,7 @@
                                     <input type="checkbox" value="<%= order._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
                                 </td>
                                 <td class="px-6 py-4 font-mono font-medium text-white">
-                                    <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
+                                    <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline">#<%= order.shortId %></a>
                                 </td>
                                 <td class="px-6 py-4 font-semibold text-white">
                                     <%= order.user ? order.user.username : 'N/A' %>

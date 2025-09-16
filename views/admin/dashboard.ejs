@@ -132,7 +132,7 @@
                                 %>
                                 <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                     <td class="px-6 py-4 font-mono font-medium text-white">
-                                       <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
+                                       <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline">#<%= order.shortId %></a>
                                     </td>
                                     <td class="px-6 py-4 font-semibold text-white">
                                         <%= order.user ? order.user.username : 'N/A' %>

@@ -21,7 +21,7 @@
         </div>
         <%# === START: THAY ĐỔI QUAN TRỌNG === %>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <p class="text-gray-300"><strong>ID:</strong> <span class="font-mono text-blue-400"><%= order._id %></span></p>
+            <p class="text-gray-300"><strong>ID:</strong> <span class="font-mono text-blue-400">#<%= order.shortId %></span></p>
             <p class="text-gray-300"><strong>User đặt hàng:</strong> <span class="font-semibold text-white"><%= order.user ? order.user.username : 'N/A' %></span></p>
             <p class="text-gray-300"><strong>Ngày tạo:</strong> <span class="text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></span></p>
             <p class="text-gray-300"><strong>Tổng chi phí:</strong> <span class="font-mono font-semibold text-yellow-400"><%= order.totalCost.toLocaleString('vi-VN') %>đ</span></p>

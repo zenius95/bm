@@ -1,5 +1,6 @@
 // models/Order.js
 const mongoose = require('mongoose');
+const shortId = require('short-id');
 
 const ItemSchema = new mongoose.Schema({
     data: { type: String, required: true },
@@ -11,7 +12,11 @@ const ItemSchema = new mongoose.Schema({
 });
 
 const OrderSchema = new mongoose.Schema({
-    // === START: THAY ĐỔI QUAN TRỌNG ===
+    shortId: {
+        type: String,
+        unique: true,
+        index: true
+    },
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -27,7 +32,6 @@ const OrderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    // === END: THAY ĐỔI QUAN TRỌNG ===
     items: [ItemSchema],
     status: {
         type: String,
@@ -38,6 +42,13 @@ const OrderSchema = new mongoose.Schema({
     deletedAt: { type: Date, default: null },
 }, {
     timestamps: true 
+});
+
+OrderSchema.pre('save', function(next) {
+    if (this.isNew) {
+        this.shortId = shortId.generate().toUpperCase();
+    }
+    next();
 });
 
 module.exports = mongoose.model('Order', OrderSchema);
