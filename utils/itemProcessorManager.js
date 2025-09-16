@@ -1,6 +1,6 @@
 // utils/itemProcessorManager.js
 const EventEmitter = require('events');
-const settingsService = require('./settingsService');
+const settingsService = require('../utils/settingsService');
 const Order = require('../models/Order');
 const Item = require('../models/Item');
 const Account = require('../models/Account');
@@ -97,7 +97,16 @@ class ItemProcessorManager extends EventEmitter {
      * Logic chính cho một phiên làm việc của worker.
      */
     async runWorkerSession() {
-        // 1. Tìm và "khóa" một account
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        // 1. Kiểm tra xem có item nào đang chờ không TRƯỚC KHI lấy account
+        const queuedItemCount = await Item.countDocuments({ status: 'queued' });
+        if (queuedItemCount === 0) {
+            // Nếu không có item, không cần làm gì cả, kết thúc phiên ngay lập tức.
+            return; 
+        }
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+
+        // 2. Tìm và "khóa" một account (chỉ chạy khi đã xác nhận có item)
         const account = await this.acquireAccount();
         if (!account) {
             this.addLogToUI('Không tìm thấy account nào khả dụng để xử lý.');
@@ -110,22 +119,23 @@ class ItemProcessorManager extends EventEmitter {
             // Giả lập quá trình đăng nhập
             await this.simulateLogin(account);
 
-            // 2. Lấy một batch item để xử lý
+            // 3. Lấy một batch item để xử lý
             const items = await this.acquireItems(ITEMS_PER_ACCOUNT_SESSION);
             if (items.length === 0) {
+                 // Trường hợp này hiếm khi xảy ra do đã kiểm tra ở trên, nhưng vẫn giữ lại để đảm bảo an toàn
                 this.addLogToUI('Không có item nào đang chờ xử lý.');
-                return; // Kết thúc phiên nếu không có việc
+                return;
             }
 
             this.addLogToUI(`Account <strong class="text-green-400">${account.uid}</strong> đã nhận <strong class="text-yellow-400">${items.length}</strong> item để xử lý.`);
 
-            // 3. Xử lý lần lượt từng item
+            // 4. Xử lý lần lượt từng item
             for (const item of items) {
                 await this.processSingleItem(item, account);
                 await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_TASKS));
             }
         } finally {
-            // 4. Luôn phải giải phóng account sau khi kết thúc phiên
+            // 5. Luôn phải giải phóng account sau khi kết thúc phiên
             await this.releaseAccount(account);
             this.addLogToUI(`Account <strong class="text-green-400">${account.uid}</strong> đã được giải phóng.`);
         }
@@ -167,8 +177,8 @@ class ItemProcessorManager extends EventEmitter {
 
     async processSingleItem(item, account) {
         try {
-            this.addLogToUI(`> Account <strong class="text-green-400">${account.uid}</strong> đang xử lý item ...${item.shortId}`);
-            await this.writeLog(item.orderId, 'INFO', `Account ${account.uid} started processing item ${item.shortId}. Data: "${item.data}"`);
+            this.addLogToUI(`> Account <strong class="text-green-400">${account.uid}</strong> đang xử lý item ...${item.data}`);
+            await this.writeLog(item.orderId, 'INFO', `Account ${account.uid} started processing item ${item.data}"`);
             
             // Giả lập thời gian xử lý
             await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
@@ -184,8 +194,8 @@ class ItemProcessorManager extends EventEmitter {
                 processedWith: account._id
             }, { new: true });
 
-            await this.writeLog(item.orderId, 'INFO', `Item ${item.shortId} completed successfully.`);
-            this.addLogToUI(`✔ Hoàn thành item ...${item.shortId}`);
+            await this.writeLog(item.orderId, 'INFO', `Item ${item.data} completed successfully.`);
+            this.addLogToUI(`✔ Hoàn thành item ...${item.data}`);
     
             await this.updateOrderProgress(item.orderId, 'completed');
 

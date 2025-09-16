@@ -8,7 +8,8 @@ const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 
 const accountService = new CrudService(Account, {
-    searchableFields: ['uid', 'proxy']
+    searchableFields: ['uid', 'proxy'],
+    additionalSoftDeleteFields: { status: 'UNCHECKED' } // Thêm dòng này
 });
 
 const accountController = createCrudController(accountService, 'accounts', {
@@ -35,14 +36,12 @@ const releaseProxiesForAccounts = async (accountIds) => {
         );
     }
     
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     // Luôn làm rỗng trường proxy của các account đang được xử lý
     await Account.updateMany(
         { _id: { $in: accountIds } },
         { $set: { proxy: '' } }
     );
     console.log(`[Proxy Release] Cleared proxy field for ${accountIds.length} accounts.`);
-    // === END: THAY ĐỔI QUAN TRỌNG ===
 };
 
 accountController.addMultiple = async (req, res) => {

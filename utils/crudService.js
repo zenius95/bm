@@ -5,14 +5,14 @@ class CrudService {
      * @param {Object} options - Các tùy chọn
      * @param {string[]} options.searchableFields - Các trường có thể tìm kiếm
      * @param {Object | string} options.populateFields - Tùy chọn populate cho Mongoose
+     * @param {Object} options.additionalSoftDeleteFields - Các trường bổ sung để cập nhật khi xóa mềm
      */
     constructor(Model, options = {}) {
         this.Model = Model;
         this.options = {
             searchableFields: [],
-            // === START: THAY ĐỔI QUAN TRỌNG ===
             populateFields: null, 
-            // === END: THAY ĐỔI QUAN TRỌNG ===
+            additionalSoftDeleteFields: {}, // Thêm tùy chọn mới
             ...options
         };
     }
@@ -39,7 +39,6 @@ class CrudService {
 
         const totalItems = await this.Model.countDocuments(query);
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
         let queryBuilder = this.Model.find(query);
 
         if (this.options.populateFields) {
@@ -51,7 +50,6 @@ class CrudService {
             .skip(skip)
             .limit(parseInt(limit, 10))
             .lean();
-        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         return {
             data,
@@ -65,13 +63,11 @@ class CrudService {
     }
     
     async getById(id) {
-        // === START: THAY ĐỔI QUAN TRỌNG ===
         let queryBuilder = this.Model.findById(id);
         if (this.options.populateFields) {
             queryBuilder = queryBuilder.populate(this.options.populateFields);
         }
         return queryBuilder.lean();
-        // === END: THAY ĐỔI QUAN TRỌNG ===
     }
 
     async create(data) {
@@ -85,7 +81,12 @@ class CrudService {
 
     // --- CÁC HÀM ĐƠN LẺ ---
     async softDelete(id) {
-        return this.Model.findByIdAndUpdate(id, { isDeleted: true, deletedAt: new Date() });
+        const updateQuery = { 
+            isDeleted: true, 
+            deletedAt: new Date(), 
+            ...this.options.additionalSoftDeleteFields 
+        };
+        return this.Model.findByIdAndUpdate(id, updateQuery);
     }
 
     async restore(id) {
@@ -131,7 +132,12 @@ class CrudService {
     // --- CÁC HÀM HÀNG LOẠT ---
     async softDeleteMany(queryOptions) {
         const query = this._buildQuery(queryOptions);
-        return this.Model.updateMany(query, { isDeleted: true, deletedAt: new Date() });
+        const updateQuery = { 
+            isDeleted: true, 
+            deletedAt: new Date(), 
+            ...this.options.additionalSoftDeleteFields 
+        };
+        return this.Model.updateMany(query, updateQuery);
     }
 
     async restoreMany(queryOptions) {
