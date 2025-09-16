@@ -1,59 +1,11 @@
 <%# Remove full-page structure and styles that are in the main layout %>
 
-<style>
-    /* Aurora Background - specific to this page for a unique feel */
-    .aurora-bg {
-        position: fixed;
-        inset: 0;
-        z-index: -1; /* Behind the sidebar and main content */
-        overflow: hidden;
-        background-color: #020617;
-    }
-    .aurora-bg::before, .aurora-bg::after {
-        content: '';
-        position: absolute;
-        width: 50vw;
-        height: 50vw;
-        border-radius: 50%;
-        opacity: 0.15;
-        filter: blur(100px);
-        will-change: transform;
-    }
-    .aurora-bg::before {
-        background: radial-gradient(circle, #8b5cf6, transparent 60%); /* Purple */
-        top: -10%; left: 15%; /* Adjusted to be within the main content area */
-        animation: moveAurora1 25s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    .aurora-bg::after {
-        background: radial-gradient(circle, #3b82f6, transparent 60%); /* Blue */
-        bottom: -10%; right: -10%;
-        animation: moveAurora2 25s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    @keyframes moveAurora1 {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        25% { transform: translate(20%, 10%) scale(1.2); }
-        50% { transform: translate(5%, -15%) scale(0.9); }
-        75% { transform: translate(-15%, 5%) scale(1.1); }
-    }
-    @keyframes moveAurora2 {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        25% { transform: translate(-20%, -10%) scale(0.8); }
-        50% { transform: translate(-5%, 15%) scale(1.1); }
-        75% { transform: translate(15%, -5%) scale(1); }
-    }
-    .form-input {
-        '@apply w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 shadow-sm placeholder:text-slate-500': {};
-    }
-</style>
-
-<div class="aurora-bg"></div>
-
 <div class="space-y-10">
-    <!-- Header -->
-    <header class="text-center">
-        <h1 class="text-3xl lg:text-4xl font-bold text-white">Tạo Đơn Hàng Mới</h1>
-        <p class="mt-2 text-slate-400 max-w-2xl mx-auto">Nền tảng tự động hoá quy trình, giúp bạn tiết kiệm thời gian và tối ưu chi phí.</p>
-    </header>
+
+    <div>
+        <h1 class="text-3xl font-bold text-white">Tạo Đơn Hàng Mới</h1>
+        <p class="mt-1 text-gray-400">Nền tảng tự động hoá quy trình, giúp bạn tiết kiệm thời gian và tối ưu chi phí.</p>
+    </div>
     
     <% if (error) { %>
         <div class="max-w-4xl mx-auto bg-red-900/50 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
@@ -61,23 +13,17 @@
         </div>
     <% } %>
 
-    <!-- Pricing Card -->
-
     <div id="pricing-tiers-container" class="grid grid-cols-1 sm:grid-cols-7 gap-4">
-        <!-- JS will populate pricing cards here -->
-    </div>
+        </div>
 
-    <!-- Main Content Grid -->
     <form action="/create-order" method="POST" class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         
-        <!-- Left Column -->
         <div class="lg:col-span-3 space-y-8">
 
-            <!-- Item Input Card -->
-             <div class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20">
+            <div class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20">
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-3">
-                         <label for="itemsData" class="block font-medium text-white">
+                        <label for="itemsData" class="block font-medium text-white">
                             <i class="ri-file-list-3-line mr-1 align-bottom"></i>
                             Danh sách Items
                         </label>
@@ -90,7 +36,6 @@
             </div>
         </div>
 
-        <!-- Right Column (Sticky) -->
         <div class="lg:col-span-2 lg:sticky top-8">
             <div id="summary-card" class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20 transition-all duration-300">
                 <div class="p-5">
@@ -147,14 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const userBalanceEl = document.getElementById('user-balance');
     const pricingTiersContainer = document.getElementById('pricing-tiers-container');
     const summaryCard = document.getElementById('summary-card');
-
     const pricingTiersForCalc = <%- JSON.stringify(pricingTiers || []) %>.sort((a, b) => b.quantity - a.quantity);
     const userBalance = <%= user.balance %>;
     userBalanceEl.textContent = userBalance.toLocaleString('vi-VN') + 'đ';
     
-    const sortedRenderTiers = [...pricingTiersForCalc].sort((a, b) => b.quantity - a.quantity);
+    const sortedRenderTiers = [...pricingTiersForCalc].sort((a, b) => a.quantity - b.quantity);
     pricingTiersContainer.innerHTML = '';
-
     if (sortedRenderTiers.length > 0) {
         sortedRenderTiers.forEach((tier, index) => {
             const card = document.createElement('div');
@@ -162,13 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let quantityText = '';
             let badge = '';
 
-            if (index === 0) {
-                quantityText = `Từ <strong>${tier.quantity}</strong> trở lên`;
-                cardClasses += ' relative border-purple-500/50';
-                badge = `<div class="absolute -top-2.5 left-0 right-0 text-xs bg-purple-600 text-white font-semibold px-2 py-0.5 rounded-full shadow-lg mx-auto w-24">Giá Tốt Nhất</div>`;
+            const nextTier = sortedRenderTiers[index + 1];
+            if (nextTier) {
+                 quantityText = `Từ <strong>${tier.quantity}</strong> - <strong>${nextTier.quantity - 1}</strong>`;
             } else {
-                const upperBound = sortedRenderTiers[index - 1].quantity - 1;
-                quantityText = `Từ <strong>${tier.quantity}</strong> - <strong>${upperBound}</strong>`;
+                 quantityText = `Từ <strong>${tier.quantity}</strong> trở lên`;
+                 cardClasses += ' relative border-purple-500/50';
+                 badge = `<div class="absolute -top-2.5 left-0 right-0 text-xs bg-purple-600 text-white font-semibold px-2 py-0.5 rounded-full shadow-lg mx-auto w-24">Giá Tốt Nhất</div>`;
             }
             
             card.className = cardClasses;
@@ -202,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
         itemCountEl.textContent = count;
         pricePerItemEl.textContent = currentPrice.toLocaleString('vi-VN') + 'đ';
         totalCostEl.textContent = totalCost.toLocaleString('vi-VN') + 'đ';
-
         if (totalCost > userBalance) {
             totalCostEl.classList.add('text-red-400');
             totalCostEl.classList.remove('text-yellow-400');
@@ -226,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         itemsData.focus();
         updateCost();
     });
-
     updateCost();
 });
 </script>
