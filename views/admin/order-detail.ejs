@@ -13,21 +13,22 @@
             <h3 class="text-lg font-semibold text-white">Thông tin chung</h3>
             <% 
                 let statusClass = 'bg-gray-700 text-gray-300';
- if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
                 if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
- if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
+                if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
             %>
             <span class="px-3 py-1 text-sm font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
         </div>
-        <%# === START: THAY ĐỔI QUAN TRỌNG === %>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <p class="text-gray-300"><strong>ID:</strong> <span class="font-mono text-blue-400">#<%= order.shortId %></span></p>
             <p class="text-gray-300"><strong>User đặt hàng:</strong> <span class="font-semibold text-white"><%= order.user ? order.user.username : 'N/A' %></span></p>
             <p class="text-gray-300"><strong>Ngày tạo:</strong> <span class="text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></span></p>
             <p class="text-gray-300"><strong>Tổng chi phí:</strong> <span class="font-mono font-semibold text-yellow-400"><%= order.totalCost.toLocaleString('vi-VN') %>đ</span></p>
             <p class="text-gray-300"><strong>Đơn giá tại thời điểm đặt:</strong> <span class="text-gray-400"><%= order.pricePerItem.toLocaleString('vi-VN') %>đ / item</span></p>
+            <%# === START: THAY ĐỔI QUAN TRỌNG: Hiển thị tiến độ từ các trường mới === %>
+            <p class="text-gray-300"><strong>Tiến độ:</strong> <span class="font-semibold text-white"><%= order.completedItems + order.failedItems %> / <%= order.totalItems %></span></p>
+            <%# === END: THAY ĐỔI QUAN TRỌNG === %>
         </div>
-        <%# === END: THAY ĐỔI QUAN TRỌNG === %>
     </div>
 
   
@@ -42,44 +43,35 @@
                     <table class="w-full text-sm text-left text-gray-300">
                         <thead class="text-xs text-gray-400 uppercase bg-white/5 sticky top-0">
                             <tr>
-   
                                <th class="px-6 py-3">Item Data</th>
                                 <th class="px-6 py-3 text-center">Trạng Thái</th>
                             </tr>
-    
                          </thead>
                         <tbody class="divide-y divide-white/10">
                             <% order.items.forEach(item => { %>
-                      
-                     <tr class="hover:bg-white/5">
+                                <tr class="hover:bg-white/5">
                                     <td class="px-6 py-3"><%= item.data %></td>
                                     <td class="px-6 py-3 text-center">
-          
                                        <% if (item.status === 'completed') { %>
                                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400" title="Completed">
-            
-                                                     <i class="ri-check-line"></i>
+                                                <i class="ri-check-line"></i>
                                             </span>
                                        <% } else if (item.status === 'failed') { %>
                                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400" title="Failed">
-                                                     <i class="ri-close-line"></i>
+                                                <i class="ri-close-line"></i>
                                             </span>
                                        <% } else if (item.status === 'processing') { %>
                                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400" title="Processing">
-                                                     <i class="ri-loader-4-line animate-spin"></i>
+                                                <i class="ri-loader-4-line animate-spin"></i>
                                             </span>
                                        <% } else { %>
                                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-500/20 text-gray-400" title="Queued">
-                       
-                                                 <i class="ri-time-line"></i>
+                                                <i class="ri-time-line"></i>
                                             </span>
-                              
-                     <% } %>
+                                       <% } %>
                                     </td>
                                 </tr>
-                    
-                   <% });
- %>
+                            <% }); %>
                         </tbody>
                     </table>
                 </div>
@@ -87,39 +79,31 @@
         </div>
 
         <div class="lg:col-span-7">
-           
              <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full flex flex-col">
                 <div class="px-6 py-4 border-b border-white/10">
                     <h3 class="text-lg font-semibold text-white">Logs</h3>
                 </div>
                 <div class="p-4 flex-grow overflow-y-auto max-h-96 font-mono text-xs space-y-2">
-         
                    <% if (logs && logs.length > 0) { %>
                         <% logs.forEach(log => { %>
                             <div class="flex items-start">
-                       
-                       <span class="text-gray-500 mr-3"><%= new Date(log.timestamp).toLocaleTimeString('vi-VN') %></span>
+                               <span class="text-gray-500 mr-3"><%= new Date(log.timestamp).toLocaleTimeString('vi-VN') %></span>
                                 <% if (log.level === 'INFO') { %>
                                     <span class="text-green-400 font-bold mr-2">[INFO]</span>
-         
                                    <% } else { %>
                                     <span class="text-red-400 font-bold mr-2">[ERROR]</span>
-                                <% } 
- %>
+                                <% } %>
                                 <span class="text-gray-300 flex-1"><%= log.message %></span>
                             </div>
-                        <% });
- %>
+                        <% }); %>
                     <% } else { %>
                         <div class="text-center py-10 text-gray-500">
                             <i class="ri-terminal-box-line text-4xl"></i>
-                   
-                   <p class="mt-2">Không có log nào được ghi lại.</p>
+                            <p class="mt-2">Không có log nào được ghi lại.</p>
                         </div>
                     <% } %>
                 </div>
             </div>
         </div>
-  
      </div>
 </div>

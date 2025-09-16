@@ -2,14 +2,8 @@
 const mongoose = require('mongoose');
 const shortId = require('short-id');
 
-const ItemSchema = new mongoose.Schema({
-    data: { type: String, required: true },
-    status: {
-        type: String,
-        enum: ['queued', 'processing', 'completed', 'failed'],
-        default: 'queued'
-    },
-});
+// ItemSchema không còn ở đây nữa
+// const ItemSchema = new mongoose.Schema({ ... });
 
 const OrderSchema = new mongoose.Schema({
     shortId: {
@@ -32,11 +26,29 @@ const OrderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    items: [ItemSchema],
+    // === START: THAY ĐỔI QUAN TRỌNG ===
+    // Xóa trường 'items' cũ
+    // items: [ItemSchema], 
+    
+    // Thêm các trường để theo dõi tiến độ tổng quan
+    totalItems: {
+        type: Number,
+        default: 0
+    },
+    completedItems: {
+        type: Number,
+        default: 0
+    },
+    failedItems: {
+        type: Number,
+        default: 0
+    },
+    // === END: THAY ĐỔI QUAN TRỌNG ===
     status: {
         type: String,
         enum: ['pending', 'processing', 'completed', 'failed'],
-        default: 'pending'
+        default: 'pending',
+        index: true
     },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },

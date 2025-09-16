@@ -5,7 +5,7 @@ const AccountSchema = new mongoose.Schema({
     uid: {
         type: String,
         required: true,
-        unique: true, // Đảm bảo không có username trùng lặp
+        unique: true,
         trim: true
     },
     password: {
@@ -16,26 +16,26 @@ const AccountSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    email: { // Thêm trường email
+    email: {
         type: String,
         trim: true,
         default: ''
     },
     proxy: {
         type: String,
-        default: '' // Không bắt buộc
+        default: ''
     },
     status: {
         type: String,
-        enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING', 'ERROR'],
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING', 'ERROR', 'IN_USE'],
+        // === END: THAY ĐỔI QUAN TRỌNG ===
         default: 'UNCHECKED'
     },
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     dieStreak: {
         type: Number,
         default: 0
     },
-    // === END: THAY ĐỔI QUAN TRỌNG ===
     isDeleted: { type: Boolean, default: false, index: true },
     lastCheckedAt: {
         type: Date,
@@ -43,7 +43,7 @@ const AccountSchema = new mongoose.Schema({
     },
     deletedAt: { type: Date, default: null },
 }, {
-    timestamps: true // Tùy chọn này sẽ tự động quản lý createdAt và updatedAt
+    timestamps: true
 });
 
 module.exports = mongoose.model('Account', AccountSchema);

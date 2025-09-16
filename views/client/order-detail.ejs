@@ -1,8 +1,9 @@
-<%# Calculate initial stats %>
+<%# Calculate initial stats from the main order document %>
 <%
-    const completedItems = order.items.filter(i => i.status === 'completed').length;
-    const failedItems = order.items.filter(i => i.status === 'failed').length;
-    const pendingItems = order.items.length - completedItems - failedItems;
+    const completedItems = order.completedItems || 0;
+    const failedItems = order.failedItems || 0;
+    const totalItems = order.totalItems || 0;
+    const pendingItems = totalItems - completedItems - failedItems;
 %>
 
 <div class="space-y-4">
@@ -51,7 +52,7 @@
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">Tổng Items</p>
-                        <p id="total-count" class="text-2xl font-bold text-white"><%= order.items.length %></p>
+                        <p id="total-count" class="text-2xl font-bold text-white"><%= totalItems %></p>
                     </div>
                 </div>
                 <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4 flex items-center gap-4 transition-all hover:border-green-500/50 hover:bg-gray-900/80">
@@ -90,7 +91,6 @@
     <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
         <div class="p-5 border-b border-white/10">
             <div class="flex justify-between">
-                
                 <div class="w-[400px]">
                     <div class="relative">
                         <input type="text" id="item-search-input" placeholder="Tìm kiếm item..." class="w-full form-input !py-2 !pr-8 text-xs">
@@ -149,14 +149,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     const orderId = '<%= order._id %>';
 
-    // --- ELEMENTS ---
+    // ELEMENTS
     const completedCountEl = document.getElementById('completed-count');
     const failedCountEl = document.getElementById('failed-count');
     const pendingCountEl = document.getElementById('pending-count');
     const totalCount = parseInt(document.getElementById('total-count').textContent, 10) || 0;
     const orderStatusBadge = document.getElementById('order-status-badge');
     
-    // --- FILTERS ---
+    // FILTERS
     const filterContainer = document.getElementById('item-filters');
     const itemRows = document.querySelectorAll('.item-row');
     const searchInput = document.getElementById('item-search-input');
@@ -164,12 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyFilter() {
         const activeFilter = filterContainer.querySelector('.filter-btn.active')?.dataset.filter || 'all';
         const searchTerm = searchInput.value.toLowerCase();
-
         itemRows.forEach(row => {
             const status = row.dataset.status;
             const itemData = row.querySelector('.font-mono').textContent.toLowerCase();
-
-            // Status filter logic
             let statusMatch = false;
             if (activeFilter === 'all') {
                 statusMatch = true;
@@ -178,11 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 statusMatch = (status === activeFilter);
             }
-
-            // Search term logic
             const searchMatch = itemData.includes(searchTerm);
-
-            // Combine
             row.style.display = (statusMatch && searchMatch) ? 'flex' : 'none';
         });
     }
@@ -191,20 +184,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterButtons = filterContainer.querySelectorAll('.filter-btn');
         const activeClasses = ['border-blue-500/80', 'text-white', 'shadow-md', 'shadow-blue-500/10', 'bg-blue-500/10'];
         const inactiveClasses = ['border-white/10', 'bg-white/5', 'text-gray-300', 'hover:bg-white/10'];
-
         filterButtons.forEach(button => {
             button.addEventListener('click', () => {
-                // Find and deactivate the current active button
                 const currentActive = filterContainer.querySelector('.filter-btn.active');
                 if (currentActive) {
                     currentActive.classList.remove('active', ...activeClasses);
                     currentActive.classList.add(...inactiveClasses);
                 }
-
-                // Activate the clicked button
                 button.classList.add('active', ...activeClasses);
                 button.classList.remove(...inactiveClasses);
-                
                 applyFilter();
             });
         });
@@ -214,8 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', applyFilter);
     }
 
-
-    // --- COPY ID ---
+    // COPY ID
     const copyBtn = document.getElementById('copy-order-id-btn');
     const orderIdEl = document.getElementById('order-id-text');
     if (copyBtn && orderIdEl) {
@@ -232,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- SOCKET.IO ---
+    // SOCKET.IO
     const socket = io();
     socket.on('connect', () => console.log('Connected to order detail socket.'));
 
@@ -248,34 +235,38 @@ document.addEventListener('DOMContentLoaded', () => {
             orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
         }
     });
+
+    // === START: THAY ĐỔI QUAN TRỌNG: Cập nhật logic socket ===
     socket.on('order:item_update', (data) => {
         if (data.id !== orderId) return;
 
-        // Update summary counts
+        // Cập nhật các thẻ đếm tổng quan
         if (completedCountEl) completedCountEl.textContent = data.completedItems;
         if (failedCountEl) failedCountEl.textContent = data.failedItems;
         if (pendingCountEl) {
-            pendingCountEl.textContent = totalCount - data.completedItems - data.failedItems;
+            pendingCountEl.textContent = data.totalItems - data.completedItems - data.failedItems;
         }
         
-        // Update individual item card if full item data is sent
+        // Cập nhật trạng thái của từng item nếu có dữ liệu chi tiết
         if (data.item) {
-            const itemCard = document.getElementById(`item-row-${data.item._id}`);
-            if (itemCard) {
-                itemCard.dataset.status = data.item.status;
-                const statusDisplay = itemCard.querySelector('.item-status-display');
+            const itemRow = document.getElementById(`item-row-${data.item._id}`);
+            if (itemRow) {
+                itemRow.dataset.status = data.item.status;
+                const statusDisplay = itemRow.querySelector('.item-status-display');
             
                 let itemStatus = { text: 'Queued', color: 'gray', icon: 'ri-time-line' };
                 if (data.item.status === 'processing') itemStatus = { text: 'Processing', color: 'blue', icon: 'ri-loader-4-line animate-spin' };
                 if (data.item.status === 'completed') itemStatus = { text: 'Completed', color: 'green', icon: 'ri-check-line' };
                 if (data.item.status === 'failed') itemStatus = { text: 'Failed', color: 'red', icon: 'ri-close-line' };
+                
                 statusDisplay.className = `item-status-display flex items-center flex-shrink-0 gap-2 text-xs font-semibold text-${itemStatus.color}-400`;
                 statusDisplay.innerHTML = `<i class="${itemStatus.icon}"></i><span>${itemStatus.text}</span>`;
                 
-                // Re-apply current filter and search
+                // Áp dụng lại bộ lọc để ẩn/hiện item nếu cần
                 applyFilter();
             }
         }
     });
+    // === END: THAY ĐỔI QUAN TRỌNG ===
 });
 </script>

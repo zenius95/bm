@@ -1,13 +1,16 @@
 // utils/itemProcessorManager.js
 const EventEmitter = require('events');
-const mongoose = require('mongoose');
 const settingsService = require('./settingsService');
 const Order = require('../models/Order');
+const Item = require('../models/Item');
+const Account = require('../models/Account');
 const Log = require('../models/Log');
-const fetch = require('node-fetch');
-const Worker = require('../models/Worker');
 const User = require('../models/User'); 
 const { logActivity } = require('./activityLogService');
+
+// --- Hằng số cấu hình ---
+const ITEMS_PER_ACCOUNT_SESSION = 4; // Mỗi account sẽ xử lý 4 item mỗi lần
+const DELAY_BETWEEN_TASKS = 500; // ms, delay nhẹ giữa các item
 
 class ItemProcessorManager extends EventEmitter {
     constructor() {
@@ -16,13 +19,12 @@ class ItemProcessorManager extends EventEmitter {
         this.timer = null;
         this.config = {};
         this.status = 'STOPPED';
-        this.isFetching = false;
-        this.workerIndex = 0;
+        this.activeWorkers = 0; // Số luồng đang hoạt động
     }
 
     initialize(io) {
         this.io = io;
-        console.log('🔄 Initializing Item Processor Manager...');
+        console.log('🔄 Initializing Item Processor Manager (Autonomous Mode)...');
         this.config = settingsService.get('itemProcessor');
         this.start();
     }
@@ -34,9 +36,8 @@ class ItemProcessorManager extends EventEmitter {
         await settingsService.update('itemProcessor', this.config);
         console.log(`[ItemProcessor] Config updated: ${JSON.stringify(this.config)}`);
 
-        const intervalChanged = this.config.pollingInterval !== oldConfig.pollingInterval;
-
-        if (intervalChanged) {
+        // Khởi động lại nếu cấu hình concurrency thay đổi để áp dụng số luồng mới
+        if (this.config.concurrency !== oldConfig.concurrency) {
             this.restart();
         } else {
             this.emitStatus();
@@ -46,11 +47,11 @@ class ItemProcessorManager extends EventEmitter {
     start() {
         if (this.timer) clearInterval(this.timer);
         const intervalMs = this.config.pollingInterval * 1000;
-        console.log(`[ItemProcessor] Service started. Polling every ${this.config.pollingInterval} seconds.`);
+        console.log(`[ItemProcessor] Service started. Polling every ${this.config.pollingInterval}s.`);
         this.status = 'RUNNING';
         
-        this.timer = setInterval(() => this.findAndDispatchItems(), intervalMs);
-        this.findAndDispatchItems();
+        this.timer = setInterval(() => this.spawnWorkers(), intervalMs);
+        this.spawnWorkers();
         this.emitStatus();
     }
 
@@ -70,168 +71,170 @@ class ItemProcessorManager extends EventEmitter {
         setTimeout(() => this.start(), 200);
     }
 
-    async findAndDispatchItems() {
-        if (this.isFetching) return;
-        this.isFetching = true;
-        this.emitStatus();
+    /**
+     * "Sinh" ra các worker (luồng xử lý) mới nếu còn chỗ trống.
+     */
+    spawnWorkers() {
+        if (this.status !== 'RUNNING') return;
 
-        try {
-            const onlineWorkers = await Worker.find({ status: 'online', isEnabled: true });
-
-            if (onlineWorkers.length === 0) {
-                if(this.io) this.io.emit('itemProcessor:log', '⚠️ Không có worker nào online để xử lý.');
-                return;
-            }
-
-            const ordersWithQueuedItems = await Order.find({
-                status: { $in: ['pending', 'processing'] },
-                'items.status': 'queued'
-            }).limit(this.config.concurrency * onlineWorkers.length).sort({ createdAt: 1 });
-
-            if (ordersWithQueuedItems.length === 0) return;
-
-            for (const order of ordersWithQueuedItems) {
-                 if (order.status === 'pending') {
-                    await Order.findByIdAndUpdate(order._id, { status: 'processing' });
-                    if(this.io) this.io.emit('order:update', { id: order._id.toString(), status: 'processing' });
-                    await this.writeLog(order._id, 'INFO', `Order status updated to 'processing'.`);
-                }
-
-                const itemsToProcess = order.items.filter(item => item.status === 'queued');
-
-                for (const item of itemsToProcess) {
-                    const worker = onlineWorkers[this.workerIndex % onlineWorkers.length];
-                    this.workerIndex++;
-                    await this.dispatchItemToWorker(worker, order._id, item);
-                }
-            }
-        } catch (error) {
-            console.error('[ItemProcessor] Error finding and dispatching items:', error);
-        } finally {
-            this.isFetching = false;
-            this.emitStatus();
+        const maxConcurrency = this.config.concurrency || 10;
+        
+        while (this.activeWorkers < maxConcurrency) {
+            this.activeWorkers++;
+            this.runWorkerSession().catch(err => {
+                console.error('[ItemProcessor] A worker session failed critically:', err);
+                this.addLogToUI(`<span class="text-red-400">Worker session error: ${err.message}</span>`);
+            }).finally(() => {
+                this.activeWorkers--;
+                // Thử spawn ngay một worker khác để lấp chỗ trống
+                this.spawnWorkers();
+            });
         }
+        this.emitStatus();
     }
-
-    async dispatchItemToWorker(worker, orderId, item) {
-        const { url, apiKey } = worker;
-        if (!apiKey) {
-            console.error(`Worker ${worker.name} is missing an API Key. Skipping.`);
-            await this.writeLog(orderId, 'ERROR', `Worker ${worker.name} is missing an API Key.`);
+    
+    /**
+     * Logic chính cho một phiên làm việc của worker.
+     */
+    async runWorkerSession() {
+        // 1. Tìm và "khóa" một account
+        const account = await this.acquireAccount();
+        if (!account) {
+            this.addLogToUI('Không tìm thấy account nào khả dụng để xử lý.');
             return;
         }
 
+        this.addLogToUI(`Worker bắt đầu phiên làm việc với account <strong class="text-green-400">${account.uid}</strong>.`);
+
         try {
-            const updatedOrder = await Order.findOneAndUpdate(
-                { "_id": orderId, "items._id": item._id, "items.status": "queued" },
-                { "$set": { "items.$.status": "processing" } },
-                { new: true }
-            );
-            
-            if(!updatedOrder) return;
+            // Giả lập quá trình đăng nhập
+            await this.simulateLogin(account);
 
-            if(this.io) {
-                const logMessage = `Đơn hàng ...${orderId.toString().slice(-6)}: Gửi item ...${item.shortId} tới worker <strong class="text-blue-400">${worker.name}</strong>`;
-                this.io.emit('itemProcessor:log', logMessage);
-            }
-            
-            const response = await fetch(`${url}/worker-api/process-item`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey 
-                },
-                body: JSON.stringify({
-                    orderId: orderId.toString(),
-                    itemId: item._id.toString(),
-                    itemData: item.data
-                }),
-                timeout: 10000
-            });
-            
-            if (!response.ok || response.status !== 202) {
-                throw new Error(`Worker returned status ${response.status}`);
+            // 2. Lấy một batch item để xử lý
+            const items = await this.acquireItems(ITEMS_PER_ACCOUNT_SESSION);
+            if (items.length === 0) {
+                this.addLogToUI('Không có item nào đang chờ xử lý.');
+                return; // Kết thúc phiên nếu không có việc
             }
 
-        } catch (error) {
-            console.error(`Failed to dispatch item ${item._id} to ${worker.name}: ${error.message}`);
-             await Order.updateOne(
-                { "_id": orderId, "items._id": item._id },
-                { "$set": { "items.$.status": "queued" } }
-            );
-            await this.writeLog(orderId, 'ERROR', `Failed to dispatch item ${item._id} to worker ${worker.name}. Re-queueing.`);
+            this.addLogToUI(`Account <strong class="text-green-400">${account.uid}</strong> đã nhận <strong class="text-yellow-400">${items.length}</strong> item để xử lý.`);
+
+            // 3. Xử lý lần lượt từng item
+            for (const item of items) {
+                await this.processSingleItem(item, account);
+                await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_TASKS));
+            }
+        } finally {
+            // 4. Luôn phải giải phóng account sau khi kết thúc phiên
+            await this.releaseAccount(account);
+            this.addLogToUI(`Account <strong class="text-green-400">${account.uid}</strong> đã được giải phóng.`);
         }
     }
     
-    async processSingleItem(orderId, itemId, itemData) {
+    async acquireAccount() {
+        // Tìm một account LIVE, chưa được gán, và được check gần đây nhất,
+        // sau đó cập nhật ngay trạng thái thành IN_USE để "khóa" nó lại.
+        return Account.findOneAndUpdate(
+            { status: 'LIVE', isDeleted: false },
+            { $set: { status: 'IN_USE' } },
+            { new: true, sort: { lastCheckedAt: -1 } }
+        );
+    }
+
+    async releaseAccount(account) {
+        return Account.findByIdAndUpdate(account._id, { $set: { status: 'LIVE' } });
+    }
+    
+    async acquireItems(limit) {
+         const items = await Item.find({ status: 'queued' })
+            .sort({ createdAt: 1 })
+            .limit(limit)
+            .lean();
+        
+        if (items.length > 0) {
+            const itemIds = items.map(i => i._id);
+            // Cập nhật trạng thái của các item đã lấy thành 'processing'
+            await Item.updateMany({ _id: { $in: itemIds } }, { $set: { status: 'processing' } });
+        }
+        return items;
+    }
+
+    async simulateLogin(account) {
+        // Giả lập thời gian đăng nhập
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+        console.log(`[Worker] Simulated login for account ${account.uid}`);
+    }
+
+    async processSingleItem(item, account) {
         try {
-            if(this.io) this.io.emit('itemProcessor:log', `> Worker đang xử lý item ${itemId.slice(-6)}`);
-            await this.writeLog(orderId, 'INFO', `Worker started processing item ${itemId}. Data: "${itemData}"`);
+            this.addLogToUI(`> Account <strong class="text-green-400">${account.uid}</strong> đang xử lý item ...${item.shortId}`);
+            await this.writeLog(item.orderId, 'INFO', `Account ${account.uid} started processing item ${item.shortId}. Data: "${item.data}"`);
             
+            // Giả lập thời gian xử lý
             await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
 
-            if (itemData.trim() === 'lỗi') {
+            if (item.data.trim().toLowerCase() === 'lỗi') {
                 throw new Error("Giả lập lỗi xử lý item.");
             }
-    
-            const updatedOrder = await Order.findOneAndUpdate(
-                { "_id": orderId, "items._id": itemId },
-                { "$set": { "items.$.status": "completed" } },
-                { new: true } 
-            ).lean();
+            
+            // Cập nhật item thành 'completed'
+            const updatedItem = await Item.findByIdAndUpdate(item._id, { 
+                status: 'completed',
+                processedBy: this.config.workerId, // Gán workerId nếu có
+                processedWith: account._id
+            }, { new: true });
 
-            await this.writeLog(orderId, 'INFO', `Item ${itemId} completed successfully.`);
-            if(this.io) this.io.emit('itemProcessor:log', `✔ Hoàn thành item ${itemId.slice(-6)}`);
+            await this.writeLog(item.orderId, 'INFO', `Item ${item.shortId} completed successfully.`);
+            this.addLogToUI(`✔ Hoàn thành item ...${item.shortId}`);
     
-            const completedItem = updatedOrder.items.find(i => i._id.toString() === itemId);
-            this.updateAndEmitItemCounts(updatedOrder, completedItem);
-            await this.checkOrderCompletion(updatedOrder);
+            await this.updateOrderProgress(item.orderId, 'completed');
 
         } catch(error) {
-            console.error(`[Worker] Error processing item ${itemId}:`, error);
+            console.error(`[Worker] Error processing item ${item.shortId}:`, error);
 
-            const updatedOrderAfterFail = await Order.findOneAndUpdate(
-                { "_id": orderId, "items._id": itemId },
-                { "$set": { "items.$.status": "failed" } },
-                { new: true }
-            ).lean();
+            const updatedItem = await Item.findByIdAndUpdate(item._id, { 
+                status: 'failed',
+                processedBy: this.config.workerId,
+                processedWith: account._id
+            }, { new: true });
 
-            await this.writeLog(orderId, 'ERROR', `Item ${itemId} failed. Error: ${error.message}`);
+            await this.writeLog(item.orderId, 'ERROR', `Item ${item.shortId} failed. Error: ${error.message}`);
+            this.addLogToUI(`<span class="text-red-400">✘ Thất bại item ...${item.shortId}</span>`);
             
-            if (updatedOrderAfterFail) {
-                const failedItem = updatedOrderAfterFail.items.find(i => i._id.toString() === itemId);
-                await this.refundUserForItem(updatedOrderAfterFail, itemId, error.message);
-                this.updateAndEmitItemCounts(updatedOrderAfterFail, failedItem);
-                await this.checkOrderCompletion(updatedOrderAfterFail);
-            }
+            await this.updateOrderProgress(item.orderId, 'failed');
+            await this.refundUserForItem(item.orderId, error.message);
         }
     }
     
-    updateAndEmitItemCounts(order, updatedItem = null) {
+    async updateOrderProgress(orderId, lastItemStatus) {
+        const updateField = lastItemStatus === 'completed' ? 'completedItems' : 'failedItems';
+        
+        const order = await Order.findByIdAndUpdate(orderId, 
+            { $inc: { [updateField]: 1 } },
+            { new: true }
+        ).lean();
+
         if (!order) return;
-
-        const completedItems = order.items.filter(item => item.status === 'completed').length;
-        const failedItems = order.items.filter(item => item.status === 'failed').length;
-
-        const payload = {
+        
+        // Gửi update tiến độ qua socket
+        this.io.emit('order:item_update', {
             id: order._id.toString(),
-            completedItems,
-            failedItems,
-        };
-
-        if (updatedItem) {
-            payload.item = {
-                _id: updatedItem._id.toString(),
-                status: updatedItem.status,
-                data: updatedItem.data
-            };
+            completedItems: order.completedItems,
+            failedItems: order.failedItems,
+            totalItems: order.totalItems
+        });
+        
+        // Kiểm tra xem đơn hàng đã hoàn thành chưa
+        if ((order.completedItems + order.failedItems) >= order.totalItems) {
+            await this.checkOrderCompletion(order);
         }
-
-        this.io.emit('order:item_update', payload);
     }
 
-    async refundUserForItem(order, itemId, reason) {
+    async refundUserForItem(orderId, reason) {
         try {
+            const order = await Order.findById(orderId).lean();
+            if (!order || !order.user) return;
+
             const refundAmount = order.pricePerItem;
             if (refundAmount <= 0) return;
 
@@ -242,18 +245,17 @@ class ItemProcessorManager extends EventEmitter {
             ).lean();
 
             if (!updatedUser) {
-                await this.writeLog(order._id, 'ERROR', `Refund failed for item ${itemId}. User ${order.user} not found.`);
+                await this.writeLog(orderId, 'ERROR', `Refund failed. User ${order.user} not found.`);
                 return;
             }
             
             const originalBalance = updatedUser.balance - refundAmount;
             const logDetails = `Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user '${updatedUser.username}' do item trong đơn hàng #${order.shortId} thất bại. Lý do: ${reason}.`;
 
-            await this.writeLog(order._id, 'INFO', `Refunded ${refundAmount} to user ${updatedUser.username}.`);
+            await this.writeLog(orderId, 'INFO', `Refunded ${refundAmount} to user ${updatedUser.username}.`);
             await logActivity(updatedUser._id, 'ORDER_REFUND', {
                 details: logDetails,
-                context: 'Admin',
-                // --- THÊM DỮ LIỆU CÓ CẤU TRÚC ---
+                context: 'System',
                 metadata: {
                     balanceBefore: originalBalance,
                     balanceAfter: updatedUser.balance,
@@ -261,59 +263,55 @@ class ItemProcessorManager extends EventEmitter {
                 }
             });
 
-            console.log(`[Refund] ${logDetails}`);
-            if(this.io) this.io.emit('itemProcessor:log', `💰 Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong>${updatedUser.username}</strong> (đơn hàng ...${order.shortId})`);
-
+            this.addLogToUI(`💰 Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong class="text-white">${updatedUser.username}</strong> (đơn hàng ...${order.shortId})`);
         } catch (e) {
-            console.error(`[Refund] CRITICAL ERROR during refund for order ${order._id}:`, e);
-            await this.writeLog(order._id, 'ERROR', `CRITICAL: Refund failed for item ${itemId}. Error: ${e.message}`);
+            console.error(`[Refund] CRITICAL ERROR during refund for order ${orderId}:`, e);
+            await this.writeLog(orderId, 'ERROR', `CRITICAL: Refund failed. Error: ${e.message}`);
         }
     }
     
     async checkOrderCompletion(order) {
-        if (!order || order.status === 'completed') return;
+        if (!order) return;
         
-        const pendingItems = order.items.filter(item => ['queued', 'processing'].includes(item.status));
+        const finalStatus = 'completed'; // Đơn hàng luôn là completed khi không còn item chờ
         
-        if (pendingItems.length === 0) {
-            const finalStatus = 'completed';
-            
-            await Order.findByIdAndUpdate(order._id, { status: finalStatus });
-            if(this.io) this.io.emit('order:update', { id: order._id.toString(), status: finalStatus });
-            
-            const [ totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount ] = await Promise.all([
-                 Order.countDocuments({ isDeleted: false }),
-                 Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false }),
-                 Order.countDocuments({ status: 'completed', isDeleted: false }),
-                 Order.countDocuments({ status: 'failed', isDeleted: false })
-            ]);
-            this.io.emit('dashboard:stats:update', { 
-                orderStats: {
-                    total: totalOrderCount,
-                    processing: processingOrderCount,
-                    completed: completedOrderCount,
-                    failed: failedOrderCount
-                }
-            });
+        await Order.findByIdAndUpdate(order._id, { status: finalStatus });
+        this.io.emit('order:update', { id: order._id.toString(), status: finalStatus });
+        
+        // Cập nhật lại thống kê trên Dashboard
+        const [ totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount ] = await Promise.all([
+             Order.countDocuments({ isDeleted: false }),
+             Order.countDocuments({ status: 'processing', isDeleted: false }),
+             Order.countDocuments({ status: 'completed', isDeleted: false }),
+             Order.countDocuments({ status: 'failed', isDeleted: false })
+        ]);
+        this.io.emit('dashboard:stats:update', { 
+            orderStats: { total: totalOrderCount, processing: processingOrderCount, completed: completedOrderCount, failed: failedOrderCount }
+        });
 
-            const logMessage = `🎉 Order ${order.shortId} đã HOÀN THÀNH (status: ${finalStatus})!`;
-            if(this.io) this.io.emit('itemProcessor:log', logMessage);
-            await this.writeLog(order._id, 'INFO', `Order has been fully processed with final status: ${finalStatus}.`);
-        }
+        const logMessage = `🎉 Đơn hàng ${order.shortId} đã HOÀN THÀNH!`;
+        this.addLogToUI(logMessage);
+        await this.writeLog(order._id, 'INFO', `Order has been fully processed with final status: ${finalStatus}.`);
     }
 
     getStatus() {
         return {
             status: this.status,
             config: this.config,
-            activeTasks: 0,
-            queuedTasks: 0,
+            activeTasks: this.activeWorkers,
+            queuedTasks: 0, // Sẽ cần logic mới để đếm item chờ nếu cần
         };
     }
 
     emitStatus() {
         if (this.io) {
             this.io.emit('itemProcessor:statusUpdate', this.getStatus());
+        }
+    }
+
+    addLogToUI(message) {
+        if (this.io) {
+            this.io.emit('itemProcessor:log', message);
         }
     }
 

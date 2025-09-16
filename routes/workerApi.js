@@ -6,22 +6,31 @@ const itemProcessorManager = require('../utils/itemProcessorManager');
 const Order = require('../models/Order');
 const Account = require('../models/Account');
 const Log = require('../models/Log');
+const Item = require('../models/Item'); // Thêm Item model
 
 // API để worker báo cáo trạng thái
 router.get('/status', async (req, res) => {
     try {
         const cpuPromise = new Promise(resolve => os.cpuUsage(resolve));
-        const pendingOrders = Order.countDocuments({ status: 'pending', isDeleted: false });
-        const processingItems = Order.aggregate([
-            { $match: { status: 'processing', isDeleted: false } },
-            { $project: { processingItems: { $size: { $filter: { input: '$items', as: 'item', cond: { $eq: ['$$item.status', 'processing'] } } } } } },
-            { $group: { _id: null, total: { $sum: '$processingItems' } } }
-        ]);
+        
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        // Các thống kê này giờ sẽ được tính toán một cách hiệu quả hơn
+        // hoặc không còn cần thiết trên từng worker vì logic đã tập trung
+        const queuedItems = Item.countDocuments({ status: 'queued' });
+        const processingItems = Account.countDocuments({ status: 'IN_USE' }); // Số item đang xử lý = số account đang dùng
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+
         const liveAccounts = Account.countDocuments({ status: 'LIVE', isDeleted: false });
         const totalAccounts = Account.countDocuments({ isDeleted: false });
 
-        const [ cpuPercent, pendingOrderCount, processingItemsResult, liveAccountCount, totalAccountCount ] = await Promise.all([
-            cpuPromise, pendingOrders, processingItems, liveAccounts, totalAccounts
+        const [ 
+            cpuPercent, 
+            queuedItemCount, 
+            processingItemCount, 
+            liveAccountCount, 
+            totalAccountCount 
+        ] = await Promise.all([
+            cpuPromise, queuedItems, processingItems, liveAccounts, totalAccounts
         ]);
         
         const itemProcessorStats = itemProcessorManager.getStatus();
@@ -30,9 +39,11 @@ router.get('/status', async (req, res) => {
             freeMem: os.freemem().toFixed(0),
             totalMem: os.totalmem().toFixed(0)
         };
+
+        // Dữ liệu global stats giờ được đơn giản hóa
         const globalStats = {
-            pendingOrders: pendingOrderCount,
-            processingItems: processingItemsResult.length > 0 ? processingItemsResult[0].total : 0,
+            pendingOrders: queuedItemCount, // Coi item đang chờ là đơn chờ xử lý
+            processingItems: processingItemCount,
             liveAccounts: liveAccountCount,
             totalAccounts: totalAccountCount
         };
@@ -47,28 +58,15 @@ router.get('/status', async (req, res) => {
     }
 });
 
-// API để worker tiếp nhận và xử lý một item
-router.post('/process-item', async (req, res) => {
-    try {
-        const { orderId, itemId, itemData } = req.body;
-        if (!orderId || !itemId || !itemData) {
-            return res.status(400).json({ success: false, message: 'Thiếu thông tin item.' });
-        }
+// === START: THAY ĐỔI QUAN TRỌNG ===
+// Endpoint /process-item không còn cần thiết và đã được xóa bỏ
+// router.post('/process-item', async (req, res) => { ... });
+// === END: THAY ĐỔI QUAN TRỌNG ===
 
-        res.status(202).json({ success: true, message: 'Đã nhận item, bắt đầu xử lý.' });
-        itemProcessorManager.processSingleItem(orderId, itemId, itemData);
-
-    } catch (error) {
-        console.error('[API /process-item] Error:', error);
-        if (!res.headersSent) {
-            res.status(500).json({ success: false, message: 'Lỗi server khi tiếp nhận item.' });
-        }
-    }
-});
-
-// API để lấy logs
+// API để lấy logs vẫn giữ nguyên
 router.get('/logs', async (req, res) => {
     try {
+        // Lấy log liên quan đến xử lý item thay vì log chung
         const logs = await Log.find().sort({ timestamp: -1 }).limit(50).lean();
         res.json({ success: true, logs });
     } catch (error) {
