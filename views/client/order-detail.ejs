@@ -5,7 +5,7 @@
     const pendingItems = order.items.length - completedItems - failedItems;
 %>
 
-<div class="space-y-8">
+<div class="space-y-4">
     <div>
         <a href="/orders" class="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors duration-200 mb-2">
             <i class="ri-arrow-left-line mr-2"></i>
@@ -45,38 +45,76 @@
                 </div>
             </div>
             <div class="md:col-span-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4">
-                    <i class="ri-stack-line text-xl text-blue-400 mb-2"></i>
-                    <p class="text-xs text-gray-400">Tổng Items</p>
-                    <p id="total-count" class="text-2xl font-bold text-white"><%= order.items.length %></p>
+                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4 flex items-center gap-4 transition-all hover:border-blue-500/50 hover:bg-gray-900/80">
+                    <div class="w-12 h-12 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center flex-shrink-0">
+                        <i class="ri-stack-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Tổng Items</p>
+                        <p id="total-count" class="text-2xl font-bold text-white"><%= order.items.length %></p>
+                    </div>
                 </div>
-                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4">
-                    <i class="ri-checkbox-circle-line text-xl text-green-400 mb-2"></i>
-                    <p class="text-xs text-gray-400">Thành công</p>
-                    <p id="completed-count" class="text-2xl font-bold text-green-400"><%= completedItems %></p>
+                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4 flex items-center gap-4 transition-all hover:border-green-500/50 hover:bg-gray-900/80">
+                    <div class="w-12 h-12 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center flex-shrink-0">
+                        <i class="ri-checkbox-circle-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Thành công</p>
+                        <p id="completed-count" class="text-2xl font-bold text-green-400"><%= completedItems %></p>
+                    </div>
                 </div>
-                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4">
-                    <i class="ri-close-circle-line text-xl text-red-400 mb-2"></i>
-                    <p class="text-xs text-gray-400">Thất bại</p>
-                    <p id="failed-count" class="text-2xl font-bold text-red-400"><%= failedItems %></p>
+                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4 flex items-center gap-4 transition-all hover:border-red-500/50 hover:bg-gray-900/80">
+                    <div class="w-12 h-12 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center flex-shrink-0">
+                        <i class="ri-close-circle-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Thất bại</p>
+                        <p id="failed-count" class="text-2xl font-bold text-red-400"><%= failedItems %></p>
+                    </div>
                 </div>
-                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4">
-                    <i class="ri-time-line text-xl text-gray-400 mb-2"></i>
-                    <p class="text-xs text-gray-400">Đang chờ</p>
-                    <p id="pending-count" class="text-2xl font-bold text-gray-400"><%= pendingItems %></p>
+                <div class="bg-gray-900/50 border border-white/10 rounded-xl p-4 flex items-center gap-4 transition-all hover:border-gray-500/50 hover:bg-gray-900/80">
+                    <div class="w-12 h-12 rounded-full bg-gray-500/10 text-gray-400 flex items-center justify-center flex-shrink-0">
+                        <i class="ri-time-line text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Đang chờ</p>
+                        <p id="pending-count" class="text-2xl font-bold text-gray-400"><%= pendingItems %></p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <h3 class="text-lg font-semibold text-white">Danh Sách Items</h3>
+
     <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-        <div class="p-5 border-b border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <h3 class="text-lg font-semibold text-white">Danh Sách Items</h3>
-            <div id="item-filters" class="flex items-center gap-2 text-sm bg-gray-900/50 p-1 rounded-full border border-white/10">
-                <button data-filter="all" class="filter-btn active bg-blue-600">Tất cả</button>
-                <button data-filter="completed" class="filter-btn text-green-400 hover:bg-green-500/10">Thành công</button>
-                <button data-filter="failed" class="filter-btn text-red-400 hover:bg-red-500/10">Thất bại</button>
-                <button data-filter="pending" class="filter-btn text-gray-400 hover:bg-gray-500/10">Đang chờ</button>
+        <div class="p-5 border-b border-white/10">
+            <div class="flex justify-between">
+                
+                <div class="w-[400px]">
+                    <div class="relative">
+                        <input type="text" id="item-search-input" placeholder="Tìm kiếm item..." class="w-full form-input !py-2 !pr-8 text-xs">
+                        <i class="ri-search-line absolute top-1/2 right-3 -translate-y-1/2 text-gray-500"></i>
+                    </div>
+                </div>
+                <div id="item-filters" class="flex flex-wrap items-center gap-1">
+                    <button data-filter="all" class="filter-btn flex items-center gap-2 px-2 py-1 text-xs sm:text-sm font-medium rounded-full border transition-all duration-200 border-blue-500/80 text-white shadow-md shadow-blue-500/10 bg-blue-500/10 active">
+                        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                        <span>Tất cả</span>
+                    </button>
+                    <button data-filter="completed" class="filter-btn flex items-center gap-2 px-2 py-1 text-xs sm:text-sm font-medium rounded-full border transition-all duration-200 border-white/10 bg-white/5 text-gray-300 hover:bg-white/10">
+                        <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                        <span>Thành công</span>
+                    </button>
+                    <button data-filter="failed" class="filter-btn flex items-center gap-2 px-2 py-1 text-xs sm:text-sm font-medium rounded-full border transition-all duration-200 border-white/10 bg-white/5 text-gray-300 hover:bg-white/10">
+                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                        <span>Thất bại</span>
+                    </button>
+                    <button data-filter="pending" class="filter-btn flex items-center gap-2 px-2 py-1 text-xs sm:text-sm font-medium rounded-full border transition-all duration-200 border-white/10 bg-white/5 text-gray-300 hover:bg-white/10">
+                        <span class="w-3 h-3 rounded-full bg-gray-500"></span>
+                        <span>Đang chờ</span>
+                    </button>
+                </div>
             </div>
         </div>
         <div id="item-list-container" class="divide-y divide-white/10 max-h-[50vh] overflow-y-auto">
@@ -106,15 +144,6 @@
     </div>
 </div>
 
-<style>
-    .filter-btn {
-        @apply px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-300;
-    }
-    .filter-btn.active {
-        @apply text-white;
-    }
-</style>
-
 <script src="/socket.io/socket.io.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -130,32 +159,61 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FILTERS ---
     const filterContainer = document.getElementById('item-filters');
     const itemRows = document.querySelectorAll('.item-row');
+    const searchInput = document.getElementById('item-search-input');
 
-    function applyFilter(activeFilter) {
+    function applyFilter() {
+        const activeFilter = filterContainer.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+        const searchTerm = searchInput.value.toLowerCase();
+
         itemRows.forEach(row => {
             const status = row.dataset.status;
-            let show = false;
+            const itemData = row.querySelector('.font-mono').textContent.toLowerCase();
+
+            // Status filter logic
+            let statusMatch = false;
             if (activeFilter === 'all') {
-                show = true;
+                statusMatch = true;
             } else if (activeFilter === 'pending') {
-                show = (status === 'queued' || status === 'processing');
+                statusMatch = (status === 'queued' || status === 'processing');
             } else {
-                show = (status === activeFilter);
+                statusMatch = (status === activeFilter);
             }
-            row.style.display = show ? 'flex' : 'none';
+
+            // Search term logic
+            const searchMatch = itemData.includes(searchTerm);
+
+            // Combine
+            row.style.display = (statusMatch && searchMatch) ? 'flex' : 'none';
         });
     }
 
     if (filterContainer) {
         const filterButtons = filterContainer.querySelectorAll('.filter-btn');
+        const activeClasses = ['border-blue-500/80', 'text-white', 'shadow-md', 'shadow-blue-500/10', 'bg-blue-500/10'];
+        const inactiveClasses = ['border-white/10', 'bg-white/5', 'text-gray-300', 'hover:bg-white/10'];
+
         filterButtons.forEach(button => {
             button.addEventListener('click', () => {
-                filterContainer.querySelector('.filter-btn.active')?.classList.remove('active', 'bg-blue-600');
-                button.classList.add('active', 'bg-blue-600');
-                applyFilter(button.dataset.filter);
+                // Find and deactivate the current active button
+                const currentActive = filterContainer.querySelector('.filter-btn.active');
+                if (currentActive) {
+                    currentActive.classList.remove('active', ...activeClasses);
+                    currentActive.classList.add(...inactiveClasses);
+                }
+
+                // Activate the clicked button
+                button.classList.add('active', ...activeClasses);
+                button.classList.remove(...inactiveClasses);
+                
+                applyFilter();
             });
         });
     }
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilter);
+    }
+
 
     // --- COPY ID ---
     const copyBtn = document.getElementById('copy-order-id-btn');
@@ -190,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
             orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
         }
     });
-
     socket.on('order:item_update', (data) => {
         if (data.id !== orderId) return;
 
@@ -207,17 +264,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemCard) {
                 itemCard.dataset.status = data.item.status;
                 const statusDisplay = itemCard.querySelector('.item-status-display');
-                
+            
                 let itemStatus = { text: 'Queued', color: 'gray', icon: 'ri-time-line' };
                 if (data.item.status === 'processing') itemStatus = { text: 'Processing', color: 'blue', icon: 'ri-loader-4-line animate-spin' };
                 if (data.item.status === 'completed') itemStatus = { text: 'Completed', color: 'green', icon: 'ri-check-line' };
                 if (data.item.status === 'failed') itemStatus = { text: 'Failed', color: 'red', icon: 'ri-close-line' };
-                
                 statusDisplay.className = `item-status-display flex items-center flex-shrink-0 gap-2 text-xs font-semibold text-${itemStatus.color}-400`;
                 statusDisplay.innerHTML = `<i class="${itemStatus.icon}"></i><span>${itemStatus.text}</span>`;
                 
-                const activeFilter = filterContainer.querySelector('.filter-btn.active')?.dataset.filter || 'all';
-                applyFilter(activeFilter);
+                // Re-apply current filter and search
+                applyFilter();
             }
         }
     });
