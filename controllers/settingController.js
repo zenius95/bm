@@ -4,6 +4,9 @@ const itemProcessorManager = require('../utils/itemProcessorManager');
 const settingsService = require('../utils/settingsService');
 const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
+// === START: THÊM DỊCH VỤ MỚI ===
+const autoDepositManager = require('../utils/autoDepositManager');
+// === END: THÊM DỊCH VỤ MỚI ===
 
 const settingController = {};
 
@@ -19,10 +22,11 @@ settingController.getSettingsPage = async (req, res) => {
     try {
         res.render('admin/settings', {
             settings: settingsService.getAll(),
-            initialState: JSON.stringify({
+            initialState: { // Chuyển sang object để dễ quản lý
                 autoCheck: autoCheckManager.getStatus(),
-                itemProcessor: itemProcessorManager.getStatus() 
-            }),
+                itemProcessor: itemProcessorManager.getStatus(),
+                autoDeposit: autoDepositManager.getStatus() // Thêm trạng thái của autoDeposit
+            },
             title: 'System Settings',
             page: 'settings'
         });
@@ -79,6 +83,29 @@ settingController.updateDepositConfig = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// === START: HÀM MỚI CHO TỰ ĐỘNG NẠP TIỀN ===
+settingController.updateAutoDepositConfig = async (req, res) => {
+    try {
+        const { isEnabled, intervalMinutes, apiKey, prefix } = req.body;
+        const configToUpdate = {};
+        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
+        const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
+        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
+        if(apiKey !== undefined) configToUpdate.apiKey = apiKey;
+        if(prefix !== undefined) configToUpdate.prefix = prefix;
+
+        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+        
+        await autoDepositManager.updateConfig(configToUpdate);
+        await logSettingsChange(req, "Cấu hình Tự động Nạp tiền");
+        res.json({ success: true, message: 'Cập nhật cài đặt Tự động Nạp tiền thành công.', data: autoDepositManager.getStatus() });
+    } catch (error) {
+        console.error("Error updating auto deposit config:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+// === END: HÀM MỚI ===
 
 settingController.updateAutoCheckConfig = async (req, res) => {
     try {

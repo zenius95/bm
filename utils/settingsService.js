@@ -11,13 +11,19 @@ const DEFAULT_SETTINGS = {
     order: {
         pricePerItem: 100 // Giá mặc định là 100
     },
-    // === START: THÊM CÀI ĐẶT NẠP TIỀN ===
     deposit: {
         bankName: "TCB",
         accountName: "NGUYEN VAN A",
         accountNumber: "19036903216011"
     },
-    // === END: THÊM CÀI ĐẶT NẠP TIỀN ===
+    // === START: THÊM CÀI ĐẶT MỚI ===
+    autoDeposit: {
+        isEnabled: false,
+        intervalMinutes: 1,
+        apiKey: '',
+        prefix: 'NAPTIEN'
+    },
+    // === END: THÊM CÀI ĐẶT MỚI ===
     autoCheck: {
         isEnabled: false,
         intervalMinutes: 30,
@@ -47,9 +53,10 @@ class SettingsService extends EventEmitter {
                 ...DEFAULT_SETTINGS,
                 ...fileData,
                 order: { ...DEFAULT_SETTINGS.order, ...(fileData.order || {}) },
-                // === START: MERGE CÀI ĐẶT NẠP TIỀN ===
                 deposit: { ...DEFAULT_SETTINGS.deposit, ...(fileData.deposit || {}) },
-                // === END: MERGE CÀI ĐẶT NẠP TIỀN ===
+                // === START: MERGE CÀI ĐẶT MỚI ===
+                autoDeposit: { ...DEFAULT_SETTINGS.autoDeposit, ...(fileData.autoDeposit || {}) },
+                // === END: MERGE CÀI ĐẶT MỚI ===
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) }
             };

@@ -49,7 +49,6 @@ router.post('/workers/:id/toggle', workerController.toggleWorker);
 router.get('/activity-logs', activityLogController.handleGetAll);
 router.post('/activity-logs/hard-delete', activityLogController.handleHardDelete);
 router.get('/transactions', activityLogController.getTransactionLogs);
-// --- ROUTE MỚI ĐỂ XÓA GIAO DỊCH ---
 router.post('/transactions/hard-delete', activityLogController.handleHardDelete);
 
 
@@ -61,5 +60,8 @@ router.post('/settings/deposit/config', settingController.updateDepositConfig);
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
+// === START: THÊM ROUTE MỚI ===
+router.post('/settings/auto-deposit/config', settingController.updateAutoDepositConfig);
+// === END: THÊM ROUTE MỚI ===
 
 module.exports = router;

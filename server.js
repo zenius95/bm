@@ -24,6 +24,9 @@ const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
 const settingsService = require('./utils/settingsService');
 const workerMonitor = require('./utils/workerMonitor');
+// === START: THÊM DỊCH VỤ MỚI ===
+const autoDepositManager = require('./utils/autoDepositManager');
+// === END: THÊM DỊCH VỤ MỚI ===
 
 const app = express();
 const server = http.createServer(app);
@@ -73,10 +76,8 @@ app.use(async (req, res, next) => {
 app.get('/login', authController.getLoginPage);
 app.post('/login', authController.login);
 app.get('/logout', authController.logout);
-// === START: THÊM ROUTE ĐĂNG KÝ ===
 app.get('/register', authController.getRegisterPage);
 app.post('/register', authController.register);
-// === END: THÊM ROUTE ĐĂNG KÝ ===
 
 app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
 
@@ -125,6 +126,9 @@ async function startServer() {
         autoCheckManager.initialize(io);
         itemProcessorManager.initialize(io);
         workerMonitor.initialize(io);
+        // === START: KHỞI TẠO DỊCH VỤ MỚI ===
+        autoDepositManager.initialize(io);
+        // === END: KHỞI TẠO DỊCH VỤ MỚI ===
     });
 }
 

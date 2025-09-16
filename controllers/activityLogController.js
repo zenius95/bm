@@ -12,6 +12,9 @@ const ACTION_LABELS = {
     'PROFILE_UPDATE': { label: 'Cập nhật Hồ sơ', color: 'bg-blue-500/20 text-blue-400' },
     'CLIENT_CREATE_ORDER': { label: 'Tạo Đơn hàng', color: 'bg-cyan-500/20 text-cyan-400' },
     'CLIENT_DEPOSIT': { label: 'Nạp tiền', color: 'bg-emerald-500/20 text-emerald-400' },
+    // === START: THÊM HÀNH ĐỘNG MỚI ===
+    'CLIENT_DEPOSIT_AUTO': { label: 'Nạp tiền Tự động', color: 'bg-teal-500/20 text-teal-400' },
+    // === END: THÊM HÀNH ĐỘNG MỚI ===
     'ORDER_REFUND': { label: 'Hoàn tiền Đơn hàng', color: 'bg-orange-500/20 text-orange-400' },
 
     // Admin Actions: Users
@@ -110,7 +113,8 @@ activityLogController.getTransactionLogs = async (req, res) => {
             'ORDER_REFUND', 
             'CLIENT_DEPOSIT',
             'CLIENT_CREATE_ORDER',
-            'ADMIN_CREATE_ORDER'
+            'ADMIN_CREATE_ORDER',
+            'CLIENT_DEPOSIT_AUTO' // === THÊM HÀNH ĐỘNG MỚI VÀO DANH SÁCH GIAO DỊCH
         ];
         let query = { action: { $in: transactionActions } }; 
 

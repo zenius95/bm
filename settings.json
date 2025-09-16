@@ -8,6 +8,12 @@
         "accountName": "NGUYỄN TIẾN HƯNG",
         "accountNumber": "96386910035"
     },
+    "autoDeposit": {
+        "isEnabled": true,
+        "intervalMinutes": 1,
+        "apiKey": "1BF493CB-ED54-264B-3C5D-C5DF48AD3BD7",
+        "prefix": "NAPTIEN"
+    },
     "autoCheck": {
         "isEnabled": false,
         "intervalMinutes": 30,
