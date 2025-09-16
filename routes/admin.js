@@ -48,7 +48,10 @@ router.post('/workers/:id/toggle', workerController.toggleWorker);
 // --- Activity Log & Transaction Routes ---
 router.get('/activity-logs', activityLogController.handleGetAll);
 router.post('/activity-logs/hard-delete', activityLogController.handleHardDelete);
-router.get('/transactions', activityLogController.getTransactionLogs); // <-- ROUTE MỚI
+router.get('/transactions', activityLogController.getTransactionLogs);
+// --- ROUTE MỚI ĐỂ XÓA GIAO DỊCH ---
+router.post('/transactions/hard-delete', activityLogController.handleHardDelete);
+
 
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);

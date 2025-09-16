@@ -12,45 +12,59 @@
         <div class="px-6 py-4 border-b border-white/10">
             <h3 class="text-lg font-semibold text-white">Tạo Đơn Hàng Mới</h3>
         </div>
-        <div class="p-6">
+        <div 
+ class="p-6">
             <form id="create-order-form">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="md:col-span-2">
                         <label for="itemsData" class="block text-sm font-medium text-gray-300 mb-2">Nhập danh sách items (mỗi item một dòng)</label>
-                        <textarea class="w-full bg-gray-900/50 border border-white/20 rounded-lg p-3 text-gray-200 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" id="itemsData" name="itemsData" rows="8" placeholder="Item 1...&#10;Item 2...&#10;Item 3..."></textarea>
+         
+                         <textarea class="w-full bg-gray-900/50 border border-white/20 rounded-lg p-3 text-gray-200 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" id="itemsData" name="itemsData" rows="8" placeholder="Item 1...&#10;Item 2...&#10;Item 3..."></textarea>
                     </div>
                     <div>
-                        <div class="space-y-4">
+                        <div 
+ class="space-y-4">
                             <div>
                                 <label for="userSelect" class="block text-sm font-medium text-gray-300 mb-2">Chọn User đặt hàng</label>
-                                <select id="userSelect" name="userId" class="form-select">
+                               
+                                 <select id="userSelect" name="userId" class="form-select">
                                     <option value="">-- Mặc định (Admin) --</option>
                                     <% users.forEach(user => { %>
-                                        <option value="<%= user._id %>" data-balance="<%= user.balance %>"><%= user.username %></option>
-                                    <% }); %>
+               
+                                         <option value="<%= user._id %>" data-balance="<%= user.balance %>"><%= user.username %></option>
+                                    <% });
+ %>
                                 </select>
                                 <p class="text-xs text-gray-400 mt-1">Nếu không chọn, đơn hàng sẽ được gán cho bạn.</p>
-                            </div>
+                        
+                         </div>
                             <div class="p-4 bg-gray-900/50 rounded-lg border border-white/10 space-y-2">
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Số dư hiện tại:</span>
+                           
+                             <span class="text-gray-400">Số dư hiện tại:</span>
                                     <span id="user-balance" class="font-semibold text-white">N/A</span>
                                 </div>
-                                <div class="flex justify-between text-sm">
+                
+                                 <div class="flex justify-between text-sm">
                                     <span class="text-gray-400">Số items:</span>
                                     <span id="item-count" class="font-semibold text-white">0</span>
-                                </div>
+    
+                                     </div>
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Đơn giá:</span>
+                                    <span 
+ class="text-gray-400">Đơn giá:</span>
                                     <span class="font-semibold text-white"><%= currentPricePerItem.toLocaleString('vi-VN') %>đ</span>
                                 </div>
-                                <div class="border-t border-white/10 my-2"></div>
+                           
+                             <div class="border-t border-white/10 my-2"></div>
                                 <div class="flex justify-between text-base">
                                     <span class="font-bold text-white">Tổng chi phí:</span>
-                                    <span id="total-cost" class="font-bold text-yellow-400">0đ</span>
+                 
+                                     <span id="total-cost" class="font-bold text-yellow-400">0đ</span>
                                 </div>
                             </div>
-                        </div>
+                  
+                       </div>
                     </div>
                 </div>
                 <div class="mt-6">
@@ -59,7 +73,8 @@
                         <span>Tạo Đơn Hàng</span>
                     </button>
                 </div>
-            </form>
+         
+               </form>
         </div>
     </div>
     <% } %>
@@ -68,22 +83,29 @@
         <form method="GET" action="/admin/orders" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <% if (inTrash) { %> <input type="hidden" name="inTrash" value="true"> <% } %>
             <select name="status" class="form-select">
-                <option value="">-- Lọc theo trạng thái --</option>
-                <option value="pending" <%= currentQuery.status === 'pending' ? 'selected' : '' %>>Pending</option>
-                <option value="processing" <%= currentQuery.status === 'processing' ? 'selected' : '' %>>Processing</option>
-                <option value="completed" <%= currentQuery.status === 'completed' ? 'selected' : '' %>>Completed</option>
-                <option value="failed" <%= currentQuery.status === 'failed' ? 'selected' : '' %>>Failed</option>
+               
+                 <option value="">-- Lọc theo trạng thái --</option>
+                <option value="pending" <%= currentQuery.status === 'pending' ?
+ 'selected' : '' %>>Pending</option>
+                <option value="processing" <%= currentQuery.status === 'processing' ?
+ 'selected' : '' %>>Processing</option>
+                <option value="completed" <%= currentQuery.status === 'completed' ?
+ 'selected' : '' %>>Completed</option>
+                <option value="failed" <%= currentQuery.status === 'failed' ?
+ 'selected' : '' %>>Failed</option>
             </select>
             <div class="flex items-center gap-2">
                  <button type="submit" class="w-full md:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Lọc</button>
                  <a href="/admin/orders<%= inTrash ? '?inTrash=true' : '' %>" class="w-full md:w-auto text-center px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-gray-300 transition whitespace-nowrap">Reset</a>
-            </div>
+   
+                     </div>
         </form>
         
         <div>
             <% if (inTrash) { %>
                 <a href="/admin/orders" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
-                <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
+                <button 
+ id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
                 <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
             <% } else { %>
                 <a href="/admin/orders?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
@@ -93,7 +115,8 @@
     </div>
     
     <% if (pagination.totalPages > 1) { %>
-        <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+        <div 
+ id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
             Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
  <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
         </div>
@@ -107,63 +130,85 @@
         <% if (orders && orders.length > 0) { %>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-300">
-                    <thead class="text-xs text-gray-400 uppercase bg-white/5">
+                    <thead 
+ class="text-xs text-gray-400 uppercase bg-white/5">
                         <tr>
                             <th scope="col" class="p-4" style="width: 50px;">
                                 <input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
                             </th>
                             <th scope="col" class="px-6 py-3">Order ID</th>
                             <th scope="col" class="px-6 py-3">User</th>
-                            <th scope="col" class="px-6 py-3">Trạng Thái</th>
+        
+                             <th scope="col" class="px-6 py-3">Trạng Thái</th>
                             <th scope="col" class="px-6 py-3 text-center">Items (Tổng/OK/Lỗi)</th>
                             <th scope="col" class="px-6 py-3">Tổng Tiền</th>
-                            <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Ngày Tạo' %></th>
+           
+                             <th scope="col" class="px-6 py-3"><%= inTrash ?
+ 'Ngày Xóa' : 'Ngày Tạo' %></th>
                         </tr>
                     </thead>
                     <tbody>
                         <% orders.forEach(order => { %>
-                             <% 
+   
+                           <% 
                                 let statusClass = 'bg-gray-700 text-gray-300';
-                                if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                                if (order.status === 'processing') statusClass 
+ = 'bg-yellow-500/20 text-yellow-400';
                                 if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
                                 if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
-                             %>
+                    
+                     %>
                             <tr id="order-row-<%= order._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                 <td class="p-4">
-                                     <input type="checkbox" value="<%= order._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
+                      
+                                 <input type="checkbox" value="<%= order._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2">
                                 </td>
                                 <td class="px-6 py-4 font-mono font-medium text-white">
-                                   <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
+   
+                                     <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline"><%= order._id %></a>
                                 </td>
-                                <td class="px-6 py-4 font-semibold text-white">
-                                    <%= order.user ? order.user.username : 'N/A' %>
+                             
+                                 <td class="px-6 py-4 font-semibold text-white">
+                                    <%= order.user ?
+ order.user.username : 'N/A' %>
                                 </td>
                                  <td class="px-6 py-4">
-                                    <span id="status-<%= order._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full <%= inTrash ? 'bg-gray-700 text-gray-300' : statusClass %>">
-                                        <%= inTrash ? 'DELETED' : order.status %>
+                              
+                                       <span id="status-<%= order._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full <%= inTrash ? 'bg-gray-700 text-gray-300' : statusClass %>">
+                                        <%= inTrash ?
+ 'DELETED' : order.status %>
                                     </span>
                                  </td>
-                                <td class="px-6 py-4 text-center">
+                            
+                                 <td class="px-6 py-4 text-center">
                                     <span class="font-bold text-white"><%= order.items.length %></span> /
                                     <span class="text-green-400 item-completed-count"><%= order.completedItems %></span> /
-                                    <span class="text-red-400 item-failed-count"><%= order.failedItems %></span>
+           
+                                     <span class="text-red-400 item-failed-count"><%= order.failedItems %></span>
                                 </td>
                                 <td class="px-6 py-4 font-mono text-yellow-400">
-                                    <%= order.totalCost.toLocaleString('vi-VN') %>đ
+   
+                                     <%= order.totalCost.toLocaleString('vi-VN') %>đ
                                 </td>
-                                <td class="px-6 py-4 text-gray-400">
+                                <td 
+ class="px-6 py-4 text-gray-400">
                                     <%= new Date(inTrash && order.deletedAt ? order.deletedAt : order.createdAt).toLocaleString('vi-VN') %>
                                 </td>
-                            </tr>
-                        <% }); %>
+                     
+                       </tr>
+                        <% });
+ %>
                        </tbody>
                 </table>
             </div>
         <% } else { %>
             <div class="text-center py-16 px-6">
                 <i class="ri-file-search-line text-6xl text-gray-700"></i>
-                 <h4 class="mt-4 text-xl font-semibold text-white">Không có đơn hàng nào</h4>
-                <p class="mt-2 text-gray-400"><%= inTrash ? 'Thùng rác trống.' : 'Hãy dùng form phía trên để tạo đơn hàng đầu tiên hoặc thay đổi bộ lọc.' %></p>
+   
+                               <h4 class="mt-4 text-xl font-semibold text-white">Không có đơn hàng nào</h4>
+                <p class="mt-2 text-gray-400"><%= inTrash ?
+ 'Thùng rác trống.' : 'Hãy dùng form phía trên để tạo đơn hàng đầu tiên hoặc thay đổi bộ lọc.'
+ %></p>
             </div>
         <% } %>
     </div>
@@ -194,31 +239,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemsData = document.getElementById('itemsData');
         const userSelect = document.getElementById('userSelect');
         const userBalanceEl = document.getElementById('user-balance');
-        const itemCountEl = document.getElementById('item-count');
+      
+         const itemCountEl = document.getElementById('item-count');
         const totalCostEl = document.getElementById('total-cost');
         const currentPrice = <%= currentPricePerItem %>;
-        const adminBalance = <%= user.balance %>;
+ const adminBalance = <%= user.balance %>;
 
         const updateCost = () => {
             const lines = itemsData.value.trim().split('\n').filter(line => line.trim() !== '');
-            const count = lines.length;
+ const count = lines.length;
             const total = count * currentPrice;
             
             itemCountEl.textContent = count;
             totalCostEl.textContent = total.toLocaleString('vi-VN') + 'đ';
-
-            const selectedOption = userSelect.options[userSelect.selectedIndex];
+ const selectedOption = userSelect.options[userSelect.selectedIndex];
             const userBalance = selectedOption.value ? parseInt(selectedOption.dataset.balance, 10) : adminBalance;
             userBalanceEl.textContent = userBalance.toLocaleString('vi-VN') + 'đ';
-
-            if (total > userBalance) {
+ if (total > userBalance) {
                 totalCostEl.classList.remove('text-yellow-400');
-                totalCostEl.classList.add('text-red-400');
+ totalCostEl.classList.add('text-red-400');
                 userBalanceEl.classList.remove('text-white');
                 userBalanceEl.classList.add('text-red-400');
             } else {
                 totalCostEl.classList.add('text-yellow-400');
-                totalCostEl.classList.remove('text-red-400');
+ totalCostEl.classList.remove('text-red-400');
                 userBalanceEl.classList.add('text-white');
                 userBalanceEl.classList.remove('text-red-400');
             }
@@ -227,69 +271,76 @@ document.addEventListener('DOMContentLoaded', () => {
         itemsData.addEventListener('input', updateCost);
         userSelect.addEventListener('change', updateCost);
         updateCost();
-
-        createOrderForm.addEventListener('submit', async (e) => {
+ createOrderForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             createOrderBtn.disabled = true;
             createOrderBtn.innerHTML = `<i class="ri-loader-4-line animate-spin -ml-1 mr-2"></i> Đang tạo...`;
             try {
                 const response = await fetch('/admin/orders/create', {
-                    method: 'POST',
+                
+                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         itemsData: itemsData.value,
-                        userId: userSelect.value 
+                        
+                         userId: userSelect.value 
                     })
                 });
                 const result = await response.json();
                 if (response.ok) {
                     showToast(result.message, 'Thành công!', 'success');
-                    createOrderForm.reset();
+ 
+                                       // --- THAY ĐỔI: TẢI LẠI TRANG SAU 1.5 GIÂY ---
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     showToast(result.message, 'Có lỗi xảy ra!', 'error');
                 }
             } catch (error) {
-                showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
-            } finally {
+       
+                     showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
+ } finally {
                 createOrderBtn.disabled = false;
-                createOrderBtn.innerHTML = `<i class="ri-add-line -ml-1 mr-2"></i> <span>Tạo Đơn Hàng</span>`;
+ createOrderBtn.innerHTML = `<i class="ri-add-line -ml-1 mr-2"></i> <span>Tạo Đơn Hàng</span>`;
             }
         });
-    }
+ }
 
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
      const itemCheckboxes = document.querySelectorAll('.item-checkbox');
     const softDeleteSelectedBtn = document.getElementById('softDeleteSelectedBtn');
     const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
-    const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
+ const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
     const selectAllBanner = document.getElementById('select-all-banner');
      const clearSelectionBanner = document.getElementById('clear-selection-banner');
     const selectAllMatchingItemsLink = document.getElementById('select-all-matching-items');
     const clearSelectionLink = document.getElementById('clear-selection');
-    const itemsOnPageCountSpan = document.getElementById('items-on-page-count');
+ const itemsOnPageCountSpan = document.getElementById('items-on-page-count');
     let isSelectAllAcrossPages = false;
      function updateBanners() {
         if (!selectAllBanner) return;
-     const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
-     if (isSelectAllAcrossPages) {
+ const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
+ if (isSelectAllAcrossPages) {
             selectAllBanner.classList.add('hidden');
             clearSelectionBanner.classList.remove('hidden');
-     } else if (allCheckedOnPage) {
+ } else if (allCheckedOnPage) {
             itemsOnPageCountSpan.textContent = itemCheckboxes.length;
             selectAllBanner.classList.remove('hidden');
-     clearSelectionBanner.classList.add('hidden');
+ clearSelectionBanner.classList.add('hidden');
         } else {
             selectAllBanner.classList.add('hidden');
             clearSelectionBanner.classList.add('hidden');
-     }
+ }
     }
     
     function toggleActionButtons() {
-        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
+        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) ||
+ isSelectAllAcrossPages;
         if (softDeleteSelectedBtn) softDeleteSelectedBtn.disabled = !anyChecked;
         if (restoreSelectedBtn) restoreSelectedBtn.disabled = !anyChecked;
         if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
-     }
+ }
 
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', (e) => {
@@ -298,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleActionButtons();
             updateBanners();
         });
-     }
+ }
 
     itemCheckboxes.forEach(cb => {
         cb.addEventListener('change', () => {
@@ -308,14 +359,14 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBanners();
         });
     });
-     if (selectAllMatchingItemsLink) {
+ if (selectAllMatchingItemsLink) {
         selectAllMatchingItemsLink.addEventListener('click', (e) => {
             e.preventDefault();
             isSelectAllAcrossPages = true;
             toggleActionButtons();
             updateBanners();
         });
-     }
+ }
 
     if(clearSelectionLink) {
         clearSelectionLink.addEventListener('click', (e) => {
@@ -325,52 +376,56 @@ document.addEventListener('DOMContentLoaded', () => {
             itemCheckboxes.forEach(cb => cb.checked = false);
             toggleActionButtons();
             updateBanners();
-         });
+  
+               });
     }
 
     async function handleAction(url, confirmMessage, confirmType = 'warning') {
         let payload = {};
-     const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+ const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
 
         if (isSelectAllAcrossPages) {
             payload = { selectAll: true, filters: <%- JSON.stringify(currentQuery) %> };
-     } else {
+ } else {
             if (selectedIdsOnPage.length === 0) {
                 showToast('Vui lòng chọn ít nhất một mục.', 'Cảnh báo!', 'warning');
-     return;
+ return;
             };
             payload = { ids: selectedIdsOnPage };
         }
-        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : selectedIdsOnPage.length;
+        const totalCount = isSelectAllAcrossPages ?
+ <%= pagination.totalItems %> : selectedIdsOnPage.length;
 
         const confirmed = await showConfirm(confirmMessage(totalCount), confirmType);
-     if (confirmed) {
+ if (confirmed) {
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                   
                      body: JSON.stringify(payload)
                 });
-                 const result = await response.json();
+ const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
-     if (payload.selectAll) {
+ if (payload.selectAll) {
                         setTimeout(() => window.location.reload(), 1000);
-     } else {
+ } else {
                         payload.ids.forEach(id => {
                             const row = document.getElementById(`order-row-${id}`);
                             if (row) row.remove();
+           
                          });
                         if (selectAllCheckbox) selectAllCheckbox.checked = false;
-                        toggleActionButtons();
+ toggleActionButtons();
      updateBanners();
                     }
                 } else {
                     showToast(result.message, 'Lỗi!', 'error');
-     }
+ }
             } catch (error) {
                 showToast('Lỗi kết nối server.', 'Lỗi!', 'error');
-     }
+ }
         }
     }
     
@@ -378,21 +433,21 @@ document.addEventListener('DOMContentLoaded', () => {
         softDeleteSelectedBtn.addEventListener('click', () => {
             handleAction('/admin/orders/soft-delete', (count) => `Bạn có chắc muốn chuyển ${count} đơn hàng vào thùng rác?`);
         });
-     }
+ }
     if (restoreSelectedBtn) {
         restoreSelectedBtn.addEventListener('click', () => {
             handleAction('/admin/orders/restore', (count) => `Bạn có chắc muốn khôi phục ${count} đơn hàng?`, 'info');
         });
-     }
+ }
     if (hardDeleteSelectedBtn) {
         hardDeleteSelectedBtn.addEventListener('click', () => {
             handleAction('/admin/orders/hard-delete', (count) => `HÀNH ĐỘNG NGUY HIỂM!\nBạn có chắc muốn XÓA VĨNH VIỄN ${count} đơn hàng? Dữ liệu sẽ không thể phục hồi.`, 'danger');
         });
-     }
+ }
 
     const socket = io();
     socket.on('connect', () => console.log('Connected to server for real-time order updates.'));
-     socket.on('order:update', (data) => {
+ socket.on('order:update', (data) => {
         const { id, status } = data;
         const statusBadge = document.getElementById(`status-${id}`);
         if (!statusBadge) return;
@@ -401,12 +456,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
         if (status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
         if (status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
-        
+     
+       
        statusBadge.textContent = status;
         statusBadge.className = `px-2.5 py-1 text-xs font-semibold rounded-full ${statusClass}`;
     });
-    
-    socket.on('order:item_update', (data) => {
+ socket.on('order:item_update', (data) => {
         const { id, completedItems, failedItems } = data;
         const row = document.getElementById(`order-row-${id}`);
         if (!row) return;
@@ -417,12 +472,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (completedEl) completedEl.textContent = completedItems;
         if (failedEl) failedEl.textContent = failedItems;
     });
-    
-    socket.on('orders:trash:update', (data) => {
+ socket.on('orders:trash:update', (data) => {
         const trashCountSpan = document.getElementById('trash-count');
         if (trashCountSpan) {
             trashCountSpan.textContent = data.newTrashCount;
         }
     });
-});
+ });
 </script>

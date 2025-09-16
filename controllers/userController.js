@@ -84,9 +84,15 @@ userController.handleUpdate = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Số dư không thể là số âm.' });
             }
             await logActivity(adminUserId, 'ADMIN_ADJUST_BALANCE', { 
-                details: `Admin '${adminUsername}' đã ${adjustmentAmount > 0 ? 'cộng' : 'trừ'} ${Math.abs(adjustmentAmount).toLocaleString('vi-VN')}đ cho '${user.username}'. Số dư: ${originalBalance.toLocaleString('vi-VN')}đ -> ${user.balance.toLocaleString('vi-VN')}đ.`,
+                details: `Admin '${adminUsername}' đã ${adjustmentAmount > 0 ? 'cộng' : 'trừ'} ${Math.abs(adjustmentAmount).toLocaleString('vi-VN')}đ cho '${user.username}'.`,
                 ipAddress, 
-                context: 'Admin' 
+                context: 'Admin',
+                // --- THÊM DỮ LIỆU CÓ CẤU TRÚC ---
+                metadata: {
+                    balanceBefore: originalBalance,
+                    balanceAfter: user.balance,
+                    change: adjustmentAmount
+                }
             });
         }
         

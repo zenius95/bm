@@ -7,8 +7,15 @@
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
         <form method="GET" action="/admin/activity-logs" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <input type="text" name="searchUser" class="form-input" placeholder="Tìm theo Username..." value="<%= currentQuery.searchUser || '' %>">
-            <input type="text" name="searchAction" class="form-input" placeholder="Tìm trong chi tiết log..." value="<%= currentQuery.searchAction || '' %>">
+            <input type="text" name="searchDetails" class="form-input" placeholder="Tìm trong chi tiết..." value="<%= currentQuery.searchDetails || '' %>">
             
+            <select name="searchAction" class="form-select">
+                <option value="">-- Lọc theo hành động --</option>
+                <% Object.entries(actionLabels).sort(([, a], [, b]) => a.label.localeCompare(b.label)).forEach(([key, { label }]) => { %>
+                    <option value="<%= key %>" <%= currentQuery.searchAction === key ? 'selected' : '' %>><%= label %></option>
+                <% }); %>
+            </select>
+
             <select name="searchContext" class="form-select">
                 <option value="">-- Lọc theo ngữ cảnh --</option>
                 <option value="Admin" <%= currentQuery.searchContext === 'Admin' ? 'selected' : '' %>>Admin</option>
@@ -26,37 +33,47 @@
             </button>
         </div>
     </div>
+
+    <% if (pagination.totalPages > 1) { %>
+        <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+        </div>
+        <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+        </div>
+    <% } %>
+
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-gray-300">
                 <thead class="text-xs text-gray-400 uppercase bg-white/5">
                      <tr>
-                        <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
+                         <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Thời gian</th>
                         <th scope="col" class="px-6 py-3">Người dùng</th>
                          <th scope="col" class="px-6 py-3">Hành động</th>
                         <th scope="col" class="px-6 py-3">Chi tiết</th>
                         <th scope="col" class="px-6 py-3">Ngữ cảnh</th>
                          <th scope="col" class="px-6 py-3">Địa chỉ IP</th>
-                    </tr>
+                     </tr>
                 </thead>
                 <tbody>
                     <% if (logs && logs.length > 0) { %>
                          <% logs.forEach(log => { %>
-                            <tr id="log-row-<%= log._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                             <tr id="log-row-<%= log._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                 <td class="p-4"><input type="checkbox" value="<%= log._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
-                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
+                                 <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
                                 <td class="px-6 py-4 font-medium text-white"><%= log.user ? log.user.username : 'N/A' %></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <% const actionInfo = actionLabels[log.action] || { label: log.action, color: 'bg-gray-700 text-gray-300' }; %>
                                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= actionInfo.color %>">
                                         <%= actionInfo.label %>
-                                     </span>
+                                   </span>
                                 </td>
                                 <td class="px-6 py-4 text-gray-300"><%= log.details %></td>
                                  <td class="px-6 py-4">
                                     <span class="font-semibold <%= log.context === 'Admin' ? 'text-purple-400' : 'text-cyan-400' %>">
-                                         <%= log.context %>
+                                      <%= log.context %>
                                     </span>
                                 </td>
                                  <td class="px-6 py-4 text-gray-400 font-mono"><%= log.ipAddress %></td>
@@ -81,7 +98,7 @@
         <ul class="inline-flex items-center -space-x-px">
             <% for(let i = 1; i <= pagination.totalPages; i++) { 
                 const query = new URLSearchParams(currentQuery);
-                query.set('page', i);
+ query.set('page', i);
             %>
                 <li>
                     <a href="?<%= query.toString() %>" class="px-3 py-2 leading-tight transition-colors duration-200 <%= i === pagination.currentPage ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white' %> <%= i === 1 ? 'rounded-l-lg' : '' %> <%= i === pagination.totalPages ? 'rounded-r-lg' : '' %>"><%= i %></a>
@@ -97,59 +114,119 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
     const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
+    const selectAllBanner = document.getElementById('select-all-banner');
+    const clearSelectionBanner = document.getElementById('clear-selection-banner');
+    const selectAllMatchingItemsLink = document.getElementById('select-all-matching-items');
+    const clearSelectionLink = document.getElementById('clear-selection');
+    const itemsOnPageCountSpan = document.getElementById('items-on-page-count');
+    let isSelectAllAcrossPages = false;
+
+    function updateBanners() {
+        if (!selectAllBanner) return;
+        const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
+        if (isSelectAllAcrossPages) {
+            selectAllBanner.classList.add('hidden');
+            clearSelectionBanner.classList.remove('hidden');
+        } else if (allCheckedOnPage) {
+            itemsOnPageCountSpan.textContent = itemCheckboxes.length;
+            selectAllBanner.classList.remove('hidden');
+            clearSelectionBanner.classList.add('hidden');
+        } else {
+            selectAllBanner.classList.add('hidden');
+            clearSelectionBanner.classList.add('hidden');
+        }
+    }
 
     function toggleActionButtons() {
-        const anyChecked = [...itemCheckboxes].some(cb => cb.checked);
+        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
         if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
     }
 
-    if(selectAllCheckbox) {
-         selectAllCheckbox.addEventListener('change', (e) => {
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            isSelectAllAcrossPages = false;
             itemCheckboxes.forEach(cb => cb.checked = e.target.checked);
             toggleActionButtons();
+            updateBanners();
         });
     }
 
     itemCheckboxes.forEach(cb => {
         cb.addEventListener('change', () => {
-            if (selectAllCheckbox) {
-                selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
-            }
+            isSelectAllAcrossPages = false;
+            if(selectAllCheckbox) selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
             toggleActionButtons();
+            updateBanners();
         });
     });
-    if (hardDeleteSelectedBtn) {
-        hardDeleteSelectedBtn.addEventListener('click', async () => {
-            const selectedIds = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
-            if (selectedIds.length === 0) {
-                return showToast('Vui lòng chọn ít nhất một log để xóa.', 'Cảnh báo', 'warning');
-            }
 
-             const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN ${selectedIds.length} mục log? Hành động này không thể hoàn tác.`, 'danger');
-            
-            if (confirmed) {
-                try {
-                    const response = await fetch('/admin/activity-logs/hard-delete', {
-                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: selectedIds })
-                    });
-                     const result = await response.json();
-                    if (result.success) {
-                        showToast(result.message, 'Thành công', 'success');
-                        selectedIds.forEach(id => {
+    if (selectAllMatchingItemsLink) {
+        selectAllMatchingItemsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSelectAllAcrossPages = true;
+            toggleActionButtons();
+            updateBanners();
+        });
+    }
+
+    if(clearSelectionLink) {
+        clearSelectionLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSelectAllAcrossPages = false;
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+            itemCheckboxes.forEach(cb => cb.checked = false);
+            toggleActionButtons();
+            updateBanners();
+        });
+    }
+
+    async function handleBulkDelete() {
+        let payload = {};
+        const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
+
+        if (isSelectAllAcrossPages) {
+            payload = { selectAll: true, filters: <%- JSON.stringify(currentQuery) %> };
+        } else {
+            if (selectedIdsOnPage.length === 0) {
+                return showToast('Vui lòng chọn ít nhất một mục.', 'Cảnh báo!', 'warning');
+            };
+            payload = { ids: selectedIdsOnPage };
+        }
+        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : selectedIdsOnPage.length;
+
+        const confirmed = await showConfirm(`Bạn có chắc muốn XÓA VĨNH VIỄN ${totalCount} mục log? Hành động này không thể hoàn tác.`, 'danger');
+        if (confirmed) {
+            try {
+                const response = await fetch('/admin/activity-logs/hard-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                    if (payload.selectAll) {
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        payload.ids.forEach(id => {
                             const row = document.getElementById(`log-row-${id}`);
                             if (row) row.remove();
                         });
+                        if (selectAllCheckbox) selectAllCheckbox.checked = false;
                         toggleActionButtons();
-                    } else {
-                        showToast(result.message, 'Lỗi', 'error');
+                        updateBanners();
                     }
-                } catch (error) {
-                    showToast('Lỗi kết nối server.', 'Lỗi mạng', 'error');
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
                 }
+            } catch (error) {
+                showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
             }
-        });
+        }
+    }
+    
+    if (hardDeleteSelectedBtn) {
+        hardDeleteSelectedBtn.addEventListener('click', handleBulkDelete);
     }
     toggleActionButtons();
 });

@@ -104,16 +104,23 @@ clientController.postCreateOrder = async (req, res) => {
             return res.redirect('/create-order?error=' + encodeURIComponent('Số dư không đủ.'));
         }
 
+        const balanceBefore = user.balance; // Ghi lại số dư trước khi trừ
         user.balance -= totalCost;
         await user.save();
 
         const newOrder = new Order({ user: userId, items, totalCost, pricePerItem });
         await newOrder.save();
         
+        // --- CẬP NHẬT LOGIC GHI LOG ---
         await logActivity(userId, 'CLIENT_CREATE_ORDER', {
-            details: `Người dùng '${user.username}' đã tạo đơn hàng #${newOrder._id.toString().slice(-6)} với ${items.length} items.`,
+            details: `Tạo đơn hàng #${newOrder._id.toString().slice(-6)} với ${items.length} items.`,
             ipAddress: req.ip || req.connection.remoteAddress,
-            context: 'Client'
+            context: 'Client',
+            metadata: {
+                balanceBefore: balanceBefore,
+                balanceAfter: user.balance,
+                change: -totalCost // Ghi lại sự thay đổi là một số âm
+            }
         });
 
         const [ totalOrderCount, processingOrderCount ] = await Promise.all([

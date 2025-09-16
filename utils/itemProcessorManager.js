@@ -247,12 +247,18 @@ class ItemProcessorManager extends EventEmitter {
             }
             
             const originalBalance = updatedUser.balance - refundAmount;
-            const logDetails = `Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user '${updatedUser.username}' do item trong đơn hàng #${order._id.toString().slice(-6)} thất bại. Lý do: ${reason}. Số dư thay đổi: ${originalBalance.toLocaleString('vi-VN')}đ -> ${updatedUser.balance.toLocaleString('vi-VN')}đ.`;
+            const logDetails = `Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user '${updatedUser.username}' do item trong đơn hàng #${order._id.toString().slice(-6)} thất bại. Lý do: ${reason}.`;
 
             await this.writeLog(order._id, 'INFO', `Refunded ${refundAmount} to user ${updatedUser.username}.`);
             await logActivity(updatedUser._id, 'ORDER_REFUND', {
                 details: logDetails,
-                context: 'Admin'
+                context: 'Admin',
+                // --- THÊM DỮ LIỆU CÓ CẤU TRÚC ---
+                metadata: {
+                    balanceBefore: originalBalance,
+                    balanceAfter: updatedUser.balance,
+                    change: refundAmount
+                }
             });
 
             console.log(`[Refund] ${logDetails}`);

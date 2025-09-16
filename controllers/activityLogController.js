@@ -10,7 +10,7 @@ const ACTION_LABELS = {
     'USER_LOGOUT': { label: 'Đăng xuất', color: 'bg-gray-500/20 text-gray-300' },
     'USER_REGISTER': { label: 'Đăng ký', color: 'bg-sky-500/20 text-sky-400' },
     'PROFILE_UPDATE': { label: 'Cập nhật Hồ sơ', color: 'bg-blue-500/20 text-blue-400' },
-    'CLIENT_CREATE_ORDER': { label: 'Tạo Đơn hàng (Client)', color: 'bg-cyan-500/20 text-cyan-400' },
+    'CLIENT_CREATE_ORDER': { label: 'Tạo Đơn hàng', color: 'bg-cyan-500/20 text-cyan-400' },
     'CLIENT_DEPOSIT': { label: 'Nạp tiền', color: 'bg-emerald-500/20 text-emerald-400' },
     'ORDER_REFUND': { label: 'Hoàn tiền Đơn hàng', color: 'bg-orange-500/20 text-orange-400' },
 
@@ -21,7 +21,7 @@ const ACTION_LABELS = {
     'ADMIN_DELETE_USER': { label: 'Xóa User', color: 'bg-red-500/20 text-red-400' },
     
     // Admin Actions: Orders
-    'ADMIN_CREATE_ORDER': { label: 'Tạo Đơn hàng (Admin)', color: 'bg-cyan-500/20 text-cyan-400' },
+    'ADMIN_CREATE_ORDER': { label: 'Tạo Đơn hàng', color: 'bg-cyan-500/20 text-cyan-400' },
     'ADMIN_SOFT_DELETE_ORDERS': { label: 'Xóa mềm Đơn hàng', color: 'bg-yellow-500/20 text-yellow-400' },
     'ADMIN_RESTORE_ORDERS': { label: 'Khôi phục Đơn hàng', color: 'bg-lime-500/20 text-lime-400' },
     'ADMIN_HARD_DELETE_ORDERS': { label: 'Xóa vĩnh viễn Đơn hàng', color: 'bg-red-500/20 text-red-400' },
@@ -52,7 +52,7 @@ const activityLogController = createCrudController(activityLogService, 'activity
 
 activityLogController.handleGetAll = async (req, res) => {
     try {
-        const { page = 1, limit = 20, searchUser, searchAction, searchContext } = req.query;
+        const { page = 1, limit = 20, searchUser, searchDetails, searchContext, searchAction } = req.query;
         let query = {}; 
 
         if (searchUser) {
@@ -61,12 +61,16 @@ activityLogController.handleGetAll = async (req, res) => {
             query.user = { $in: userIds };
         }
 
-        if (searchAction) {
-            query.details = { $regex: searchAction, $options: 'i' };
+        if (searchDetails) {
+            query.details = { $regex: searchDetails, $options: 'i' };
         }
         
         if (searchContext) {
             query.context = searchContext;
+        }
+
+        if (searchAction) {
+            query.action = searchAction;
         }
 
         const totalItems = await ActivityLog.countDocuments(query);
@@ -98,17 +102,26 @@ activityLogController.handleGetAll = async (req, res) => {
     }
 };
 
-// === START: THÊM HÀM LẤY LỊCH SỬ GIAO DỊCH ===
 activityLogController.getTransactionLogs = async (req, res) => {
     try {
-        const { page = 1, limit = 20, searchUser } = req.query;
-        const transactionActions = ['ADMIN_ADJUST_BALANCE', 'ORDER_REFUND', 'CLIENT_DEPOSIT'];
+        const { page = 1, limit = 20, searchUser, searchAction } = req.query;
+        const transactionActions = [
+            'ADMIN_ADJUST_BALANCE', 
+            'ORDER_REFUND', 
+            'CLIENT_DEPOSIT',
+            'CLIENT_CREATE_ORDER',
+            'ADMIN_CREATE_ORDER'
+        ];
         let query = { action: { $in: transactionActions } }; 
 
         if (searchUser) {
             const users = await require('../models/User').find({ username: { $regex: searchUser, $options: 'i' } }).select('_id');
             const userIds = users.map(u => u._id);
             query.user = { $in: userIds };
+        }
+
+        if (searchAction) {
+            query.action = searchAction;
         }
 
         const totalItems = await ActivityLog.countDocuments(query);
@@ -126,19 +139,22 @@ activityLogController.getTransactionLogs = async (req, res) => {
             limit: parseInt(limit),
         };
 
+        const relevantActionLabels = Object.fromEntries(
+            Object.entries(ACTION_LABELS).filter(([key]) => transactionActions.includes(key))
+        );
+
         res.render('admin/transactions', { 
             logs, 
             pagination, 
             currentQuery: req.query,
             title: 'Lịch sử giao dịch',
             page: 'transactions',
-            actionLabels: ACTION_LABELS
+            actionLabels: relevantActionLabels
         });
     } catch (error) {
         console.error(`Lỗi khi lấy lịch sử giao dịch:`, error);
         res.status(500).send(`Không thể tải lịch sử giao dịch.`);
     }
 };
-// === END: THÊM HÀM LẤY LỊCH SỬ GIAO DỊCH ===
 
 module.exports = activityLogController;

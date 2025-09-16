@@ -26,9 +26,14 @@ const ActivityLogSchema = new mongoose.Schema({
         type: String,
         enum: ['Admin', 'Client'],
         default: 'Client'
+    },
+    // --- THÊM TRƯỜNG MỚI ---
+    metadata: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
     }
 }, {
-    timestamps: true // Tự động thêm createdAt và updatedAt
+    timestamps: true
 });
 
 module.exports = mongoose.model('ActivityLog', ActivityLogSchema);

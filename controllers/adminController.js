@@ -100,16 +100,23 @@ adminOrderController.handleCreate = async (req, res) => {
             return res.status(400).json({ success: false, message: `Số dư của user ${targetUser.username} không đủ. Cần ${totalCost.toLocaleString('vi-VN')}đ, hiện có ${targetUser.balance.toLocaleString('vi-VN')}đ.` });
         }
 
+        const balanceBefore = targetUser.balance; // Ghi lại số dư trước khi trừ
         targetUser.balance -= totalCost;
         await targetUser.save();
 
         const newOrder = { user: targetUser._id, items, totalCost, pricePerItem };
         const createdOrder = await orderService.create(newOrder);
 
-        await logActivity(adminUserId, 'ADMIN_CREATE_ORDER', {
-            details: `Admin '${req.session.user.username}' đã tạo đơn hàng #${createdOrder._id.toString().slice(-6)} cho user '${targetUser.username}' với ${items.length} items, tổng chi phí ${totalCost.toLocaleString('vi-VN')}đ.`,
+        // --- CẬP NHẬT LOGIC GHI LOG ---
+        await logActivity(targetUser._id, 'ADMIN_CREATE_ORDER', {
+            details: `Tạo đơn hàng #${createdOrder._id.toString().slice(-6)} bởi Admin '${req.session.user.username}' với ${items.length} items.`,
             ipAddress: req.ip || req.connection.remoteAddress,
-            context: 'Admin'
+            context: 'Admin',
+            metadata: {
+                balanceBefore: balanceBefore,
+                balanceAfter: targetUser.balance,
+                change: -totalCost // Ghi lại sự thay đổi là một số âm
+            }
         });
 
         const [ totalOrderCount, processingOrderCount ] = await Promise.all([
