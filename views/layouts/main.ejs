@@ -13,7 +13,7 @@
     
         
         <div class="flex-1 flex flex-col">
-            <% if(!currentPath.startsWith('/admin') && page !== 'profile') { %>
+            <% if(!currentPath.startsWith('/admin')) { %>
                 <main class="flex-grow p-6 sm:p-8">
                     <div class="max-w-7xl mx-auto">
                         <%- body %>

@@ -73,19 +73,17 @@ app.use(async (req, res, next) => {
 app.get('/login', authController.getLoginPage);
 app.post('/login', authController.login);
 app.get('/logout', authController.logout);
+// === START: THÊM ROUTE ĐĂNG KÝ ===
+app.get('/register', authController.getRegisterPage);
+app.post('/register', authController.register);
+// === END: THÊM ROUTE ĐĂNG KÝ ===
 
-// === START: SỬA LỖI THỨ TỰ ROUTE ===
-// Route cho worker API (dùng API Key) phải được đặt trước các route dùng session.
 app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
 
 // --- Các route cần session ---
-// Route cho admin (cần session và quyền admin)
 app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
-// Route cho client (cần session)
 app.use('/', authController.isAuthenticated, clientRoutes);
-// Route cho API chung (cần session)
 app.use('/api', authController.isAuthenticated, orderRoutes);
-// === END ===
 
 
 async function startServer() {

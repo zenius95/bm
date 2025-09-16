@@ -6,15 +6,13 @@ const accountController = require('../controllers/accountController');
 const settingController = require('../controllers/settingController');
 const workerController = require('../controllers/workerController');
 const userController = require('../controllers/userController');
-const activityLogController = require('../controllers/activityLogController'); // Thêm dòng này
+const activityLogController = require('../controllers/activityLogController');
 
 
 router.use(accountController.parseQueryMiddleware);
 router.use(adminController.parseQueryMiddleware);
 router.use(userController.parseQueryMiddleware);
 
-// === SỬA LỖI Ở ĐÂY ===
-// Dashboard route should be /dashboard
 router.get('/dashboard', adminController.getDashboard);
 
 // --- Account Routes ---
@@ -54,9 +52,10 @@ router.post('/activity-logs/hard-delete', activityLogController.handleHardDelete
 // --- Settings Routes ---
 router.get('/settings', settingController.getSettingsPage);
 router.post('/settings/api-key/update', settingController.updateMasterApiKey);
-// === START: THAY ĐỔI QUAN TRỌNG ===
 router.post('/settings/order/config', settingController.updateOrderConfig);
-// === END: THAY ĐỔI QUAN TRỌNG ===
+// === START: THÊM ROUTE NẠP TIỀN ===
+router.post('/settings/deposit/config', settingController.updateDepositConfig);
+// === END: THÊM ROUTE NẠP TIỀN ===
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);

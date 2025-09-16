@@ -6,7 +6,6 @@ const { logActivity } = require('../utils/activityLogService');
 
 const clientController = {};
 
-// Hiển thị trang dashboard chính của client
 clientController.getDashboard = (req, res) => {
     const stats = {
         orders: 0, 
@@ -20,7 +19,6 @@ clientController.getDashboard = (req, res) => {
     });
 };
 
-// Hiển thị trang chỉnh sửa thông tin
 clientController.getProfilePage = (req, res) => {
     res.render('client/profile', {
         page: 'profile',
@@ -30,7 +28,6 @@ clientController.getProfilePage = (req, res) => {
     });
 };
 
-// Xử lý cập nhật thông tin
 clientController.updateProfile = async (req, res) => {
     try {
         const { email, password, passwordConfirm } = req.body;
@@ -41,14 +38,14 @@ clientController.updateProfile = async (req, res) => {
             return res.redirect('/profile?error=' + encodeURIComponent('Không tìm thấy người dùng.'));
         }
 
-        let hasChanges = false;
+        let changes = [];
         if (email && email.toLowerCase() !== user.email) {
             const existingEmail = await User.findOne({ email: email.toLowerCase() });
             if (existingEmail) {
                 return res.redirect('/profile?error=' + encodeURIComponent('Email này đã được sử dụng.'));
             }
             user.email = email;
-            hasChanges = true;
+            changes.push('email');
         }
 
         if (password) {
@@ -56,15 +53,14 @@ clientController.updateProfile = async (req, res) => {
                 return res.redirect('/profile?error=' + encodeURIComponent('Mật khẩu xác nhận không khớp.'));
             }
             user.password = password;
-            hasChanges = true;
+            changes.push('mật khẩu');
         }
 
-        if (hasChanges) {
+        if (changes.length > 0) {
             await user.save();
-            const ipAddress = req.ip || req.connection.remoteAddress;
             await logActivity(userId, 'PROFILE_UPDATE', {
-                details: `Người dùng '${user.username}' đã tự cập nhật thông tin.`,
-                ipAddress,
+                details: `Người dùng '${user.username}' đã tự cập nhật ${changes.join(' và ')}.`,
+                ipAddress: req.ip || req.connection.remoteAddress,
                 context: 'Client'
             });
             return res.redirect('/profile?success=' + encodeURIComponent('Cập nhật thông tin thành công!'));
@@ -77,9 +73,6 @@ clientController.updateProfile = async (req, res) => {
     }
 };
 
-// === START: THÊM CÁC HÀM MỚI ===
-
-// Hiển thị trang tạo đơn hàng
 clientController.getCreateOrderPage = (req, res) => {
     res.render('client/create-order', {
         page: 'create-order',
@@ -89,7 +82,6 @@ clientController.getCreateOrderPage = (req, res) => {
     });
 };
 
-// Xử lý tạo đơn hàng
 clientController.postCreateOrder = async (req, res) => {
     try {
         const { itemsData } = req.body;
@@ -118,7 +110,12 @@ clientController.postCreateOrder = async (req, res) => {
         const newOrder = new Order({ user: userId, items, totalCost, pricePerItem });
         await newOrder.save();
         
-        // Gửi sự kiện cập nhật dashboard
+        await logActivity(userId, 'CLIENT_CREATE_ORDER', {
+            details: `Người dùng '${user.username}' đã tạo đơn hàng #${newOrder._id.toString().slice(-6)} với ${items.length} items.`,
+            ipAddress: req.ip || req.connection.remoteAddress,
+            context: 'Client'
+        });
+
         const [ totalOrderCount, processingOrderCount ] = await Promise.all([
              Order.countDocuments({ isDeleted: false }),
              Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false })
@@ -134,13 +131,10 @@ clientController.postCreateOrder = async (req, res) => {
     }
 };
 
-// Hiển thị danh sách đơn hàng
 clientController.getOrderListPage = async (req, res) => {
     const pageNum = parseInt(req.query.page, 10) || 1;
     const limit = 20;
-
     const query = { user: req.session.user.id, isDeleted: false };
-    
     const totalItems = await Order.countDocuments(query);
     const orders = await Order.find(query)
         .sort({ createdAt: -1 })
@@ -165,12 +159,11 @@ clientController.getOrderListPage = async (req, res) => {
     });
 };
 
-// Hiển thị chi tiết một đơn hàng
 clientController.getOrderDetailPage = async (req, res) => {
     try {
         const order = await Order.findOne({
             _id: req.params.id,
-            user: req.session.user.id // Đảm bảo client chỉ xem được đơn hàng của mình
+            user: req.session.user.id
         }).lean();
 
         if (!order) {
@@ -188,18 +181,15 @@ clientController.getOrderDetailPage = async (req, res) => {
     }
 };
 
-// Hiển thị trang nạp tiền
-
 clientController.getDepositPage = (req, res) => {
-    // Tạo nội dung chuyển khoản duy nhất cho người dùng
     const transferContent = `NAPTIEN ${req.session.user.username.toUpperCase()}`;
+    const depositInfo = settingsService.get('deposit');
     res.render('client/deposit', {
         page: 'deposit',
         title: 'Nạp tiền vào tài khoản',
-        transferContent
+        transferContent,
+        depositInfo
     });
 };
-
-// === END ===
 
 module.exports = clientController;

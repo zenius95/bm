@@ -5,7 +5,46 @@ const { logActivity } = require('../utils/activityLogService');
 const authController = {};
 
 authController.getLoginPage = (req, res) => {
-    res.render('client/login', { layout: false, error: req.query.error });
+    res.render('client/login', { layout: false, error: req.query.error, success: req.query.success });
+};
+
+authController.getRegisterPage = (req, res) => {
+    res.render('client/register', { layout: false, error: req.query.error });
+};
+
+authController.register = async (req, res) => {
+    try {
+        const { username, email, password, passwordConfirm } = req.body;
+
+        if (!username || !email || !password || !passwordConfirm) {
+            return res.redirect('/register?error=' + encodeURIComponent('Vui lòng điền đầy đủ thông tin.'));
+        }
+        if (password !== passwordConfirm) {
+            return res.redirect('/register?error=' + encodeURIComponent('Mật khẩu xác nhận không khớp.'));
+        }
+
+        const existingUser = await User.findOne({ 
+            $or: [{ username: username.toLowerCase() }, { email: email.toLowerCase() }] 
+        });
+        if (existingUser) {
+            return res.redirect('/register?error=' + encodeURIComponent('Username hoặc Email đã tồn tại.'));
+        }
+
+        const newUser = new User({ username, email, password });
+        await newUser.save();
+        
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        await logActivity(newUser._id, 'USER_REGISTER', {
+            details: `Tài khoản mới '${newUser.username}' đã được đăng ký.`,
+            ipAddress,
+            context: 'Client'
+        });
+
+        res.redirect('/login?success=' + encodeURIComponent('Đăng ký thành công! Vui lòng đăng nhập.'));
+    } catch (error) {
+        console.error("Register error:", error);
+        res.redirect('/register?error=' + encodeURIComponent('Lỗi server, không thể đăng ký.'));
+    }
 };
 
 authController.login = async (req, res) => {
@@ -17,11 +56,7 @@ authController.login = async (req, res) => {
             return res.redirect('/login?error=' + encodeURIComponent('Sai tên đăng nhập hoặc mật khẩu.'));
         }
         
-        req.session.user = {
-            id: user._id,
-            username: user.username,
-            role: user.role
-        };
+        req.session.user = { id: user._id, username: user.username, role: user.role };
         
         const ipAddress = req.ip || req.connection.remoteAddress;
         await logActivity(user._id, 'USER_LOGIN', {
@@ -30,11 +65,7 @@ authController.login = async (req, res) => {
             context: user.role === 'admin' ? 'Admin' : 'Client'
         });
         
-        if (user.role === 'admin') {
-            res.redirect('/admin/dashboard');
-        } else {
-            res.redirect('/dashboard');
-        }
+        res.redirect(user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     } catch (error) {
         console.error("Login error:", error);
         res.redirect('/login?error=' + encodeURIComponent('Lỗi server.'));

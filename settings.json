@@ -3,6 +3,11 @@
     "order": {
         "pricePerItem": 1000000
     },
+    "deposit": {
+        "bankName": "BIDV",
+        "accountName": "NGUYỄN TIẾN HƯNG",
+        "accountNumber": "96386910035"
+    },
     "autoCheck": {
         "isEnabled": false,
         "intervalMinutes": 30,

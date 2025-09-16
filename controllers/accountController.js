@@ -3,18 +3,17 @@ const Account = require('../models/Account');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const { runCheckLive } = require('../utils/checkLiveService');
-const settingsService = require('../utils/settingsService'); // THÊM DÒNG NÀY
+const settingsService = require('../utils/settingsService');
+const { logActivity } = require('../utils/activityLogService');
 
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy']
 });
 
-// === SỬA Ở ĐÂY ===
 const accountController = createCrudController(accountService, 'accounts', {
     single: 'account',
     plural: 'accounts'
 });
-
 
 accountController.addMultiple = async (req, res) => {
     const { accountsData } = req.body;
@@ -23,58 +22,46 @@ accountController.addMultiple = async (req, res) => {
     }
     const lines = accountsData.trim().split('\n').filter(line => line.trim() !== '');
     const newAccounts = [];
-    const errors = [];
+    let addedCount = 0;
 
-    lines.forEach((line, index) => {
+    lines.forEach(line => {
         const parts = line.trim().split('|');
-        if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) {
-            errors.push(`Dòng ${index + 1}: Sai định dạng. Yêu cầu uid|password|2fa.`);
-            return;
+        if (parts.length >= 3) {
+            newAccounts.push({ uid: parts[0], password: parts[1], twofa: parts[2], proxy: parts[3] || '' });
         }
-        newAccounts.push({
-            uid: parts[0],
-            password: parts[1],
-            twofa: parts[2],
-            proxy: parts[3] || ''
-        });
     });
     
-    if (errors.length > 0 && newAccounts.length === 0) {
-        return res.status(400).json({ success: false, message: errors.join('\n') });
-    }
-
     if (newAccounts.length > 0) {
         try {
             const result = await Account.insertMany(newAccounts, { ordered: false });
-            return res.json({ success: true, message: `Đã thêm thành công ${result.length} account.` });
+            addedCount = result.length;
         } catch (error) {
-            let errorMessage;
             if (error.code === 11000 && error.insertedIds) {
-                const insertedCount = error.insertedIds.length; 
-                errorMessage = `Đã thêm ${insertedCount} account. Một số account khác bị lỗi trùng lặp UID và đã được bỏ qua.`;
-            } else {
-                errorMessage = `Lỗi server: ${error.message}`;
+                addedCount = error.insertedIds.length;
             }
-             return res.status(500).json({ success: false, message: errorMessage });
         }
     }
     
-    return res.status(400).json({ success: false, message: errors.join('\n') });
+    if (addedCount > 0) {
+        await logActivity(req.session.user.id, 'ADMIN_ADD_ACCOUNTS', {
+            details: `Admin '${req.session.user.username}' đã thêm ${addedCount} tài khoản mới.`,
+            ipAddress: req.ip || req.connection.remoteAddress,
+            context: 'Admin'
+        });
+        return res.json({ success: true, message: `Đã thêm thành công ${addedCount} account. Các account trùng lặp đã được bỏ qua.` });
+    }
+    
+    return res.status(400).json({ success: false, message: 'Không có account nào hợp lệ để thêm.' });
 };
 
-
-// === START: THAY ĐỔI QUAN TRỌNG ===
-// Sửa lại hàm checkSelected để truyền config vào service
 accountController.checkSelected = async (req, res) => {
     const { ids, selectAll, filters } = req.body;
     const io = req.io;
     
     try {
         let accountIdsToCheck = [];
-
         if (selectAll) {
-            const queryOptions = { ...filters, sortBy: 'createdAt', sortOrder: 'asc' };
-            accountIdsToCheck = await accountService.findAllIds(queryOptions);
+            accountIdsToCheck = await accountService.findAllIds(filters);
         } else {
             accountIdsToCheck = ids;
         }
@@ -83,13 +70,15 @@ accountController.checkSelected = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Không có account nào được chọn.' });
         }
     
-        // Phản hồi ngay cho client biết là đã nhận lệnh
+        await logActivity(req.session.user.id, 'ADMIN_MANUAL_CHECKLIVE', {
+            details: `Admin '${req.session.user.username}' đã bắt đầu check live cho ${accountIdsToCheck.length} tài khoản.`,
+            ipAddress: req.ip || req.connection.remoteAddress,
+            context: 'Admin'
+        });
+
         res.json({ success: true, message: `Đã bắt đầu tiến trình check live cho ${accountIdsToCheck.length} accounts.` });
 
-        // Lấy cấu hình check-live từ settings
         const checkLiveConfig = settingsService.get('autoCheck');
-
-        // Chạy tiến trình check live ở background với config đã lấy
         runCheckLive(accountIdsToCheck, io, {
             concurrency: checkLiveConfig.concurrency,
             delay: checkLiveConfig.delay,
@@ -103,6 +92,43 @@ accountController.checkSelected = async (req, res) => {
         }
     }
 };
-// === END: THAY ĐỔI QUAN TRỌNG ===
+
+// Ghi đè các hàm xóa để thêm log
+const originalSoftDelete = accountController.handleSoftDelete;
+accountController.handleSoftDelete = async (req, res, next) => {
+    const { ids, selectAll } = req.body;
+    const count = selectAll ? 'tất cả' : ids.length;
+    await originalSoftDelete(req, res, next);
+    await logActivity(req.session.user.id, 'ADMIN_SOFT_DELETE_ACCOUNTS', {
+        details: `Admin '${req.session.user.username}' đã chuyển ${count} tài khoản vào thùng rác.`,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        context: 'Admin'
+    });
+};
+
+const originalRestore = accountController.handleRestore;
+accountController.handleRestore = async (req, res, next) => {
+    const { ids, selectAll } = req.body;
+    const count = selectAll ? 'tất cả' : ids.length;
+    await originalRestore(req, res, next);
+    await logActivity(req.session.user.id, 'ADMIN_RESTORE_ACCOUNTS', {
+        details: `Admin '${req.session.user.username}' đã khôi phục ${count} tài khoản.`,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        context: 'Admin'
+    });
+};
+
+const originalHardDelete = accountController.handleHardDelete;
+accountController.handleHardDelete = async (req, res, next) => {
+    const { ids, selectAll } = req.body;
+    const count = selectAll ? 'tất cả' : ids.length;
+    await originalHardDelete(req, res, next);
+    await logActivity(req.session.user.id, 'ADMIN_HARD_DELETE_ACCOUNTS', {
+        details: `Admin '${req.session.user.username}' đã xóa vĩnh viễn ${count} tài khoản.`,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        context: 'Admin'
+    });
+};
+
 
 module.exports = accountController;

@@ -2,23 +2,15 @@
 const User = require('../models/User');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
-const { logActivity } = require('../utils/activityLogService'); // === THÊM DÒNG NÀY ===
+const { logActivity } = require('../utils/activityLogService');
 
-// 1. Khởi tạo Service cho User
-const userService = new CrudService(User, {
-    searchableFields: ['username', 'email']
-});
+const userService = new CrudService(User, { searchableFields: ['username', 'email'] });
+const userController = createCrudController(userService, 'users', { single: 'user', plural: 'users' });
 
-// 2. Tạo Controller từ Factory
-const userController = createCrudController(userService, 'users', {
-    single: 'user',
-    plural: 'users'
-});
-
-// 3. Ghi đè lại các hàm cần xử lý đặc biệt
 userController.handleCreate = async (req, res) => {
     try {
         const { username, email, password, role, balance } = req.body;
+        // ... (validation logic)
         if (!username || !password || !email) {
              return res.status(400).json({ success: false, message: "Username, Email và Password là bắt buộc." });
         }
@@ -31,21 +23,12 @@ userController.handleCreate = async (req, res) => {
             return res.status(400).json({ success: false, message: "Email đã tồn tại." });
         }
 
-        const newUser = new User({
-            username,
-            email,
-            password,
-            role,
-            balance: balance || 0
-        });
-
+        const newUser = new User({ username, email, password, role, balance: balance || 0 });
         await newUser.save();
         
-        // Ghi log tạo user mới
-        const ipAddress = req.ip || req.connection.remoteAddress;
         await logActivity(req.session.user.id, 'ADMIN_CREATE_USER', {
             details: `Admin '${req.session.user.username}' đã tạo người dùng mới: '${newUser.username}'.`,
-            ipAddress,
+            ipAddress: req.ip || req.connection.remoteAddress,
             context: 'Admin'
         });
 
@@ -68,41 +51,51 @@ userController.handleUpdate = async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy user.' });
         }
+        
+        let logDetails = [];
 
-        const originalBalance = user.balance;
-        let newBalance = originalBalance;
-        const adjustmentAmount = parseInt(balanceAdjustment, 10);
-
-        if (!isNaN(adjustmentAmount) && adjustmentAmount !== 0) {
-            newBalance += adjustmentAmount;
-            if (newBalance < 0) {
-                return res.status(400).json({ success: false, message: 'Số dư không thể là số âm.' });
-            }
-            user.balance = newBalance;
-            
-            const actionType = adjustmentAmount > 0 ? 'Cộng tiền' : 'Trừ tiền';
-            const details = `Admin '${adminUsername}' đã ${actionType.toLowerCase()} ${Math.abs(adjustmentAmount).toLocaleString('vi-VN')}đ cho người dùng '${user.username}'. Số dư thay đổi từ ${originalBalance.toLocaleString('vi-VN')}đ thành ${newBalance.toLocaleString('vi-VN')}đ.`;
-            await logActivity(adminUserId, 'ADMIN_ADJUST_BALANCE', { 
-                details, 
-                ipAddress, 
-                context: 'Admin' 
-            });
-        }
-
+        // ... (update logic for username, email, role, password)
         if (username.toLowerCase() !== user.username) {
             const existingUser = await User.findOne({ username: username.toLowerCase() });
             if (existingUser) return res.status(400).json({ success: false, message: "Username đã tồn tại." });
+            logDetails.push(`username từ '${user.username}' thành '${username}'`);
             user.username = username;
         }
         if (email.toLowerCase() !== user.email) {
             const existingEmail = await User.findOne({ email: email.toLowerCase() });
             if (existingEmail) return res.status(400).json({ success: false, message: "Email đã tồn tại." });
+            logDetails.push(`email`);
             user.email = email;
         }
-        user.role = role;
-
+        if(role !== user.role) {
+            logDetails.push(`role từ '${user.role}' thành '${role}'`);
+            user.role = role;
+        }
         if (password) {
+            logDetails.push(`mật khẩu`);
             user.password = password;
+        }
+
+        const adjustmentAmount = parseInt(balanceAdjustment, 10);
+        if (!isNaN(adjustmentAmount) && adjustmentAmount !== 0) {
+            const originalBalance = user.balance;
+            user.balance += adjustmentAmount;
+            if (user.balance < 0) {
+                return res.status(400).json({ success: false, message: 'Số dư không thể là số âm.' });
+            }
+            await logActivity(adminUserId, 'ADMIN_ADJUST_BALANCE', { 
+                details: `Admin '${adminUsername}' đã ${adjustmentAmount > 0 ? 'cộng' : 'trừ'} ${Math.abs(adjustmentAmount).toLocaleString('vi-VN')}đ cho '${user.username}'. Số dư: ${originalBalance.toLocaleString('vi-VN')}đ -> ${user.balance.toLocaleString('vi-VN')}đ.`,
+                ipAddress, 
+                context: 'Admin' 
+            });
+        }
+        
+        if (logDetails.length > 0) {
+             await logActivity(adminUserId, 'ADMIN_UPDATE_USER', { 
+                details: `Admin '${adminUsername}' đã cập nhật ${logDetails.join(', ')} của user '${user.username}'.`,
+                ipAddress, 
+                context: 'Admin' 
+            });
         }
 
         await user.save();
@@ -110,6 +103,35 @@ userController.handleUpdate = async (req, res) => {
     } catch (error) {
         console.error(`Error updating user ${req.params.id}:`, error);
         return res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật user.' });
+    }
+};
+
+// Override handleHardDelete to add logging
+const originalHardDelete = userController.handleHardDelete;
+userController.handleHardDelete = async (req, res, next) => {
+    try {
+        const { ids, selectAll, filters } = req.body;
+        let usersToDelete = [];
+        if (selectAll) {
+             const userIds = await userService.findAllIds(filters);
+             usersToDelete = await User.find({ _id: { $in: userIds } }).lean();
+        } else if (ids && ids.length > 0) {
+            usersToDelete = await User.find({ _id: { $in: ids } }).lean();
+        }
+
+        await originalHardDelete(req, res, next);
+        
+        const deletedUsernames = usersToDelete.map(u => u.username).join(', ');
+        if(deletedUsernames){
+            await logActivity(req.session.user.id, 'ADMIN_DELETE_USER', {
+                details: `Admin '${req.session.user.username}' đã xóa vĩnh viễn user: ${deletedUsernames}.`,
+                ipAddress: req.ip || req.connection.remoteAddress,
+                context: 'Admin'
+            });
+        }
+    } catch(e){
+        console.error(e)
+        // Let original handler send response
     }
 };
 

@@ -174,68 +174,72 @@ class ItemProcessorManager extends EventEmitter {
                 throw new Error("Giả lập lỗi xử lý item.");
             }
     
-            // === START: TỐI ƯU HÓA ===
             const updatedOrder = await Order.findOneAndUpdate(
                 { "_id": orderId, "items._id": itemId },
                 { "$set": { "items.$.status": "completed" } },
-                { new: true } // Trả về document đã được cập nhật
+                { new: true } 
             ).lean();
-            // === END: TỐI ƯU HÓA ===
 
             await this.writeLog(orderId, 'INFO', `Item ${itemId} completed successfully.`);
             if(this.io) this.io.emit('itemProcessor:log', `✔ Hoàn thành item ${itemId.slice(-6)}`);
     
-            this.updateAndEmitItemCounts(updatedOrder);
+            const completedItem = updatedOrder.items.find(i => i._id.toString() === itemId);
+            this.updateAndEmitItemCounts(updatedOrder, completedItem);
             await this.checkOrderCompletion(updatedOrder);
 
         } catch(error) {
             console.error(`[Worker] Error processing item ${itemId}:`, error);
 
-            // === START: TỐI ƯU HÓA ===
             const updatedOrderAfterFail = await Order.findOneAndUpdate(
                 { "_id": orderId, "items._id": itemId },
                 { "$set": { "items.$.status": "failed" } },
-                { new: true } // Trả về document đã được cập nhật
+                { new: true }
             ).lean();
-            // === END: TỐI ƯU HÓA ===
 
             await this.writeLog(orderId, 'ERROR', `Item ${itemId} failed. Error: ${error.message}`);
             
             if (updatedOrderAfterFail) {
+                const failedItem = updatedOrderAfterFail.items.find(i => i._id.toString() === itemId);
                 await this.refundUserForItem(updatedOrderAfterFail, itemId, error.message);
-                this.updateAndEmitItemCounts(updatedOrderAfterFail);
+                this.updateAndEmitItemCounts(updatedOrderAfterFail, failedItem);
                 await this.checkOrderCompletion(updatedOrderAfterFail);
             }
         }
     }
     
-    // === START: TỐI ƯU HÓA (Hàm không cần async và không cần query DB) ===
-    updateAndEmitItemCounts(order) {
+    updateAndEmitItemCounts(order, updatedItem = null) {
         if (!order) return;
 
         const completedItems = order.items.filter(item => item.status === 'completed').length;
         const failedItems = order.items.filter(item => item.status === 'failed').length;
 
-        this.io.emit('order:item_update', {
+        const payload = {
             id: order._id.toString(),
             completedItems,
-            failedItems
-        });
+            failedItems,
+        };
+
+        if (updatedItem) {
+            payload.item = {
+                _id: updatedItem._id.toString(),
+                status: updatedItem.status,
+                data: updatedItem.data
+            };
+        }
+
+        this.io.emit('order:item_update', payload);
     }
-    // === END: TỐI ƯU HÓA ===
 
     async refundUserForItem(order, itemId, reason) {
         try {
             const refundAmount = order.pricePerItem;
             if (refundAmount <= 0) return;
 
-            // === START: TỐI ƯU HÓA (Sử dụng toán tử $inc để cập nhật an toàn) ===
             const updatedUser = await User.findByIdAndUpdate(
                 order.user,
                 { $inc: { balance: refundAmount } },
-                { new: true } // Trả về user đã được cập nhật
+                { new: true }
             ).lean();
-            // === END: TỐI ƯU HÓA ===
 
             if (!updatedUser) {
                 await this.writeLog(order._id, 'ERROR', `Refund failed for item ${itemId}. User ${order.user} not found.`);
@@ -260,7 +264,6 @@ class ItemProcessorManager extends EventEmitter {
         }
     }
     
-    // === START: TỐI ƯU HÓA (Nhận vào object 'order' thay vì 'orderId') ===
     async checkOrderCompletion(order) {
         if (!order || order.status === 'completed') return;
         
@@ -292,7 +295,6 @@ class ItemProcessorManager extends EventEmitter {
             await this.writeLog(order._id, 'INFO', `Order has been fully processed with final status: ${finalStatus}.`);
         }
     }
-    // === END: TỐI ƯU HÓA ===
 
     getStatus() {
         return {

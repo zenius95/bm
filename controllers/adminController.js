@@ -103,34 +103,22 @@ adminOrderController.handleCreate = async (req, res) => {
         targetUser.balance -= totalCost;
         await targetUser.save();
 
-        const newOrder = {
-            user: targetUser._id,
-            items,
-            totalCost,
-            pricePerItem
-        };
+        const newOrder = { user: targetUser._id, items, totalCost, pricePerItem };
         const createdOrder = await orderService.create(newOrder);
 
-        const ipAddress = req.ip || req.connection.remoteAddress;
         await logActivity(adminUserId, 'ADMIN_CREATE_ORDER', {
             details: `Admin '${req.session.user.username}' đã tạo đơn hàng #${createdOrder._id.toString().slice(-6)} cho user '${targetUser.username}' với ${items.length} items, tổng chi phí ${totalCost.toLocaleString('vi-VN')}đ.`,
-            ipAddress,
+            ipAddress: req.ip || req.connection.remoteAddress,
             context: 'Admin'
         });
 
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Gửi sự kiện cập nhật dashboard ngay lập tức
         const [ totalOrderCount, processingOrderCount ] = await Promise.all([
              Order.countDocuments({ isDeleted: false }),
              Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false })
         ]);
         req.io.emit('dashboard:stats:update', { 
-            orderStats: {
-                total: totalOrderCount,
-                processing: processingOrderCount
-            }
+            orderStats: { total: totalOrderCount, processing: processingOrderCount }
         });
-        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         return res.json({ success: true, message: `Đã tạo thành công đơn hàng và trừ ${totalCost.toLocaleString('vi-VN')}đ từ tài khoản ${targetUser.username}.` });
 
@@ -140,6 +128,42 @@ adminOrderController.handleCreate = async (req, res) => {
     }
 };
 
+// Ghi đè các hàm xóa để thêm log
+const originalSoftDelete = adminOrderController.handleSoftDelete;
+adminOrderController.handleSoftDelete = async (req, res, next) => {
+    const { ids, selectAll } = req.body;
+    const count = selectAll ? 'tất cả' : ids.length;
+    await originalSoftDelete(req, res, next);
+    await logActivity(req.session.user.id, 'ADMIN_SOFT_DELETE_ORDERS', {
+        details: `Admin '${req.session.user.username}' đã chuyển ${count} đơn hàng vào thùng rác.`,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        context: 'Admin'
+    });
+};
+
+const originalRestore = adminOrderController.handleRestore;
+adminOrderController.handleRestore = async (req, res, next) => {
+    const { ids, selectAll } = req.body;
+    const count = selectAll ? 'tất cả' : ids.length;
+    await originalRestore(req, res, next);
+    await logActivity(req.session.user.id, 'ADMIN_RESTORE_ORDERS', {
+        details: `Admin '${req.session.user.username}' đã khôi phục ${count} đơn hàng.`,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        context: 'Admin'
+    });
+};
+
+const originalHardDelete = adminOrderController.handleHardDelete;
+adminOrderController.handleHardDelete = async (req, res, next) => {
+    const { ids, selectAll } = req.body;
+    const count = selectAll ? 'tất cả' : ids.length;
+    await originalHardDelete(req, res, next);
+    await logActivity(req.session.user.id, 'ADMIN_HARD_DELETE_ORDERS', {
+        details: `Admin '${req.session.user.username}' đã xóa vĩnh viễn ${count} đơn hàng.`,
+        ipAddress: req.ip || req.connection.remoteAddress,
+        context: 'Admin'
+    });
+};
 
 adminOrderController.getDashboard = async (req, res) => {
     try {

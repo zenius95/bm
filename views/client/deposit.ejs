@@ -8,26 +8,20 @@
 
     <div class="bg-gray-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 overflow-hidden">
         <div class="grid grid-cols-1 md:grid-cols-2">
-            <!-- Cột Trái: Mã QR -->
             <div class="p-8 bg-white/5 flex flex-col items-center justify-center text-center">
                 <h3 class="text-lg font-semibold text-white">Bước 1: Quét mã QR</h3>
                 <p class="text-sm text-gray-400 mt-1 mb-6">Sử dụng App ngân hàng để quét mã.</p>
                 <div class="bg-white p-4 rounded-xl shadow-lg">
                     <% 
                         const qrInfo = encodeURIComponent(transferContent);
-                        const qrAccountName = encodeURIComponent("NGUYEN VAN A");
-                        // Link QR Code động, không cần demo số tiền
-                        const qrCodeUrl = `https://img.vietqr.io/image/970407-19036903216011-print.png?addInfo=${qrInfo}&accountName=${qrAccountName}`;
+                        const qrAccountName = encodeURIComponent(depositInfo.accountName);
+                        
+                        const qrCodeUrl = `https://api.vietqr.io/${depositInfo.bankName}/${depositInfo.accountNumber}/0/${qrInfo}/vietqr_net_2.jpg?accountName=${qrAccountName}`;
                     %>
-                    <img src="<%= qrCodeUrl %>" alt="QR Code thanh toán" class="w-52 h-52">
-                </div>
-                <div class="mt-4 flex items-center gap-2">
-                    <img src="https://api.vietqr.io/img/TCB.3d202128.svg" class="w-8 h-8 rounded-full" alt="Techcombank Logo">
-                    <span class="font-semibold text-white">Techcombank</span>
+                    <img src="<%= qrCodeUrl %>" alt="QR Code thanh toán" class="w-72">
                 </div>
             </div>
 
-            <!-- Cột Phải: Thông tin chuyển khoản thủ công -->
             <div class="p-8">
                 <h3 class="text-lg font-semibold text-white">Bước 2: Kiểm tra thông tin</h3>
                 <p class="text-sm text-gray-400 mt-1 mb-6">Hoặc chuyển khoản thủ công với thông tin dưới đây.</p>
@@ -36,14 +30,21 @@
                     <div class="flex justify-between items-center border border-white/10 rounded-lg p-3">
                         <span class="text-sm text-gray-400">Số tài khoản</span>
                         <div class="flex items-center gap-2">
-                            <strong id="info-acc-number" class="text-white font-mono">19036903216011</strong>
+                            <strong id="info-acc-number" class="text-white font-mono"><%= depositInfo.accountNumber %></strong>
                             <button class="btn-copy" data-target="info-acc-number" title="Copy"><i class="ri-file-copy-line"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center border border-white/10 rounded-lg p-3">
+                        <span class="text-sm text-gray-400">Ngân hàng</span>
+                        <div class="flex items-center gap-2">
+                            <strong id="info-bank-name" class="text-white font-mono"><%= depositInfo.bankName %></strong>
+                            <button class="btn-copy" data-target="info-bank-name" title="Copy"><i class="ri-file-copy-line"></i></button>
                         </div>
                     </div>
                     <div class="flex justify-between items-center border border-white/10 rounded-lg p-3">
                         <span class="text-sm text-gray-400">Chủ tài khoản</span>
                         <div class="flex items-center gap-2">
-                            <strong id="info-acc-name" class="text-white">NGUYEN VAN A</strong>
+                            <strong id="info-acc-name" class="text-white"><%= depositInfo.accountName %></strong>
                             <button class="btn-copy" data-target="info-acc-name" title="Copy"><i class="ri-file-copy-line"></i></button>
                         </div>
                     </div>
@@ -82,7 +83,6 @@
             const targetElement = document.getElementById(targetId);
             if (targetElement) {
                 const textToCopy = targetElement.textContent.trim();
-                // Sử dụng document.execCommand để tương thích tốt hơn trong iframe
                 const tempInput = document.createElement('textarea');
                 tempInput.value = textToCopy;
                 document.body.appendChild(tempInput);

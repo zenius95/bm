@@ -8,11 +8,16 @@ const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 
 const DEFAULT_SETTINGS = {
     masterApiKey: '',
-    // === START: THAY ĐỔI QUAN TRỌNG ===
     order: {
         pricePerItem: 100 // Giá mặc định là 100
     },
-    // === END: THAY ĐỔI QUAN TRỌNG ===
+    // === START: THÊM CÀI ĐẶT NẠP TIỀN ===
+    deposit: {
+        bankName: "TCB",
+        accountName: "NGUYEN VAN A",
+        accountNumber: "19036903216011"
+    },
+    // === END: THÊM CÀI ĐẶT NẠP TIỀN ===
     autoCheck: {
         isEnabled: false,
         intervalMinutes: 30,
@@ -41,21 +46,20 @@ class SettingsService extends EventEmitter {
             this._data = {
                 ...DEFAULT_SETTINGS,
                 ...fileData,
-                // === START: THAY ĐỔI QUAN TRỌNG (Đảm bảo object không bị ghi đè) ===
                 order: { ...DEFAULT_SETTINGS.order, ...(fileData.order || {}) },
+                // === START: MERGE CÀI ĐẶT NẠP TIỀN ===
+                deposit: { ...DEFAULT_SETTINGS.deposit, ...(fileData.deposit || {}) },
+                // === END: MERGE CÀI ĐẶT NẠP TIỀN ===
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) }
-                // === END: THAY ĐỔI QUAN TRỌNG ===
             };
             console.log('[SettingsService] Loaded config from settings.json');
 
-            // === START: TỰ ĐỘNG TẠO API KEY NẾU CHƯA CÓ ===
             if (!this._data.masterApiKey) {
                 console.log('[SettingsService] Master API Key not found. Generating a new one...');
                 this._data.masterApiKey = crypto.randomBytes(32).toString('hex');
                 await this._save();
             }
-            // === END: TỰ ĐỘNG TẠO API KEY NẾU CHƯA CÓ ===
 
         } catch (error) {
             if (error.code === 'ENOENT') {

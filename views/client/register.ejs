@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Nhập</title>
+    <title>Đăng Ký Tài Khoản</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -30,8 +30,8 @@
         <!-- Right Side - Form -->
         <div class="w-full md:w-1/2 p-8 sm:p-12 bg-gray-900 flex flex-col justify-center">
             <div>
-                <h2 class="text-3xl font-bold text-white">Chào mừng trở lại!</h2>
-                <p class="mt-2 text-gray-400">Đăng nhập để tiếp tục quản lý công việc của bạn.</p>
+                <h2 class="text-3xl font-bold text-white">Tạo tài khoản mới</h2>
+                <p class="mt-2 text-gray-400">Bắt đầu hành trình của Bro ngay hôm nay.</p>
             </div>
 
             <div class="mt-8">
@@ -41,40 +41,48 @@
                         <span><%= error %></span>
                     </div>
                 <% } %>
-                <% if (typeof success !== 'undefined' && success) { %>
-                    <div class="bg-green-500/10 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg text-sm mb-6 flex items-center gap-3">
-                        <i class="ri-checkbox-circle-line"></i>
-                        <span><%= success %></span>
-                    </div>
-                <% } %>
 
-                <form class="space-y-6" action="/login" method="POST">
+                <form class="space-y-6" action="/register" method="POST">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-400 mb-2">Username</label>
                         <div class="relative">
                             <i class="ri-user-line absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                            <input id="username" name="username" type="text" required placeholder="Nhập username của bạn" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-3 pr-4 pl-12 text-sm text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                            <input id="username" name="username" type="text" required placeholder="Chọn một username độc nhất" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-3 pr-4 pl-12 text-sm text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                        <div class="relative">
+                            <i class="ri-mail-line absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input id="email" name="email" type="email" required placeholder="your.email@example.com" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-3 pr-4 pl-12 text-sm text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                         </div>
                     </div>
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-400 mb-2">Password</label>
                         <div class="relative">
-                             <i class="ri-lock-password-line absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <i class="ri-lock-password-line absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
                             <input id="password" name="password" type="password" required placeholder="••••••••" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-3 pr-4 pl-12 text-sm text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="passwordConfirm" class="block text-sm font-medium text-gray-400 mb-2">Xác nhận Password</label>
+                        <div class="relative">
+                            <i class="ri-lock-password-line absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input id="passwordConfirm" name="passwordConfirm" type="password" required placeholder="••••••••" class="w-full bg-gray-800/50 border border-gray-700 rounded-lg py-3 pr-4 pl-12 text-sm text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                         </div>
                     </div>
                     <div class="pt-4">
                         <button type="submit" class="w-full flex justify-center py-3 px-4 rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/20 transform hover:-translate-y-0.5">
-                            Đăng Nhập
+                            Đăng Ký
                         </button>
                     </div>
                 </form>
                 
                 <div class="text-center text-sm mt-8">
                     <p class="text-gray-400">
-                        Chưa có tài khoản?
-                        <a href="/register" class="font-medium text-blue-400 hover:text-blue-500 hover:underline">
-                            Tạo tài khoản mới
+                        Đã có tài khoản?
+                        <a href="/login" class="font-medium text-blue-400 hover:text-blue-500 hover:underline">
+                            Đăng nhập ngay
                         </a>
                     </p>
                 </div>
