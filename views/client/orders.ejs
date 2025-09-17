@@ -24,7 +24,7 @@
                                     if (order.status === 'failed') statusConfig = { text: 'Failed', icon: 'ri-close-circle-line', color: 'red' };
                                 %>
                                 <span id="status-badge-<%= order._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-<%= statusConfig.color %>-500/20 text-<%= statusConfig.color %>-300"><%= statusConfig.text %></span>
-                                <p class="font-mono text-sm text-white group-hover:text-blue-300 transition-colors">ID: <%= order._id %></p>
+                                <p class="font-mono text-sm text-white group-hover:text-blue-300 transition-colors">ID: #<%= order.shortId %></p>
                             </div>
                             <p class="text-xs text-gray-400 mt-2"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
                         </div>

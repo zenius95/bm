@@ -25,11 +25,24 @@ const itemProcessorManager = require('./utils/itemProcessorManager');
 const settingsService = require('./utils/settingsService');
 const workerMonitor = require('./utils/workerMonitor');
 const autoDepositManager = require('./utils/autoDepositManager');
-const autoProxyCheckManager = require('./utils/autoProxyCheckManager'); // Thêm manager mới
+const autoProxyCheckManager = require('./utils/autoProxyCheckManager');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+
+// === START: THÊM LOGIC SOCKET.IO CONNECTION ===
+io.on('connection', (socket) => {
+
+    // Lắng nghe sự kiện client yêu cầu tham gia room
+    socket.on('join_user_room', (userId) => {
+        if (userId) {
+            socket.join(`user_${userId}`);
+        }
+    });
+
+});
+// === END: THÊM LOGIC SOCKET.IO CONNECTION ===
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '/views'));
@@ -90,6 +103,13 @@ async function startServer() {
     console.log('🚀 Starting server, checking connections...');
     
     await settingsService.initialize();
+
+    // Tắt tất cả các dịch vụ tự động khi khởi động server
+    console.log('🔧 Disabling all auto-services on startup...');
+    await settingsService.update('autoCheck', { isEnabled: false });
+    await settingsService.update('autoProxyCheck', { isEnabled: false });
+    await settingsService.update('autoDeposit', { isEnabled: false });
+    console.log('✅ All auto-services have been disabled.');
     
     await mongoose.connect(config.mongodb.uri)
         .then(() => console.log('✅ MongoDB connection: OK'))
@@ -126,7 +146,7 @@ async function startServer() {
         itemProcessorManager.initialize(io);
         workerMonitor.initialize(io);
         autoDepositManager.initialize(io);
-        autoProxyCheckManager.initialize(io); // Khởi tạo manager mới
+        autoProxyCheckManager.initialize(io);
     });
 }
 

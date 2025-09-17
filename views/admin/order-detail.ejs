@@ -9,50 +9,60 @@
 
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
         <div class="px-6 py-4 flex 
+
  
  justify-between items-center border-b border-white/10">
             <h3 class="text-lg font-semibold text-white">Thông tin chung</h3>
             <% 
                 let statusClass = 'bg-gray-700 text-gray-300';
-                if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
                 if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
-                if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
+if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
             %>
             <span class="px-3 py-1 text-sm font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
         </div>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <p class="text-gray-300"><strong>ID:</strong> <span class="font-mono text-blue-400">#<%= order.shortId %></span></p>
             <p class="text-gray-300"><strong>User đặt hàng:</strong> <span class="font-semibold text-white"><%= order.user ?
- order.user.username : 'N/A' %></span></p>
+order.user.username : 'N/A' %></span></p>
             <p class="text-gray-300"><strong>Ngày tạo:</strong> <span class="text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></span></p>
             <p class="text-gray-300"><strong>Đơn giá ban đầu:</strong> <span class="text-gray-400"><%= order.pricePerItem.toLocaleString('vi-VN') %>đ / item</span></p>
             <p class="text-gray-300"><strong>Tiến độ:</strong> <span class="font-semibold text-white"><%= order.completedItems %> Thành công / <%= order.failedItems %> Thất bại (<%= order.completedItems + order.failedItems %> / <%= order.totalItems %>)</span></p>
         </div>
         
-        <%# --- START: KHU VỰC QUYẾT TOÁN MỚI --- %>
+    
+    <%# --- START: KHU VỰC QUYẾT TOÁN MỚI --- %>
         <% if (order.status === 'completed' || order.status === 'failed') { %>
             <%
                 const initialCost = order.pricePerItem * order.totalItems;
-                const finalCost = order.totalCost;
+const finalCost = order.totalCost;
                 const refundAmount = initialCost - finalCost;
-            %>
+%>
             <div class="p-6 border-t border-white/10">
                 <h4 class="text-base font-semibold text-white mb-3">Quyết toán & Chi phí</h4>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-400">Chi phí tạm tính ban đầu</span>
+                    
+    <span class="text-gray-400">Chi phí tạm tính ban đầu</span>
                         <span class="font-mono text-gray-400"><%= initialCost.toLocaleString('vi-VN') %>đ</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
+                   
+     <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
                         <strong class="font-mono text-yellow-400"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
                     </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
+                        <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ? (finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
+                    </div>
                     <% if (refundAmount > 0) { %>
-                    <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
+           
+         <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
                         <strong class="text-green-400">Đã hoàn lại cho user</strong>
                         <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
                     </div>
-                    <% } %>
+      
+              <% } %>
                 </div>
             </div>
         <% } %>
@@ -63,59 +73,75 @@
   
      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div class="lg:col-span-5">
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full">
+     
+       <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full">
           
                <div class="px-6 py-4 border-b border-white/10">
                     <h3 class="text-lg font-semibold text-white">Danh Sách Items (<%= order.items.length %>)</h3>
                 </div>
    
-                 <div class="overflow-auto max-h-96">
+           
+      <div class="overflow-auto max-h-96">
                     <table class="w-full text-sm text-left 
  text-gray-300">
                         <thead class="text-xs text-gray-400 uppercase bg-white/5 sticky top-0">
                             <tr>
-                               <th class="px-6 py-3">Item Data</th>
+         
+                      <th class="px-6 py-3">Item Data</th>
         
                                  <th class="px-6 py-3 text-center">Trạng Thái</th>
                             </tr>
-                         </thead>
+  
+                       </thead>
                    
                          <tbody class="divide-y divide-white/10">
-                            <% order.items.forEach(item => { %>
+                            <% order.items.forEach(item => 
+{ %>
                                 <tr class="hover:bg-white/5">
                             
-                                     <td class="px-6 py-3"><%= item.data %></td>
+                                     <td 
+class="px-6 py-3"><%= item.data %></td>
                                     <td class="px-6 py-3 text-center">
                                        <% if (item.status === 'completed') { %>
     
-                                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400" title="Completed">
+         
+                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400" title="Completed">
                                                 <i class="ri-check-line"></i>
   
-                                               </span>
+    
+                                           </span>
                                        <% } else if (item.status === 'failed') { %>
-           
+          
+ 
                                              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400" title="Failed">
-                                                <i class="ri-close-line"></i>
+                                             
+   <i class="ri-close-line"></i>
          
                                              </span>
-                                       <% } else if (item.status === 'processing') { %>
+                                       <% } else 
+if (item.status === 'processing') { %>
                   
                                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400" title="Processing">
-                                                <i class="ri-loader-4-line animate-spin"></i>
+                         
+                       <i class="ri-loader-4-line animate-spin"></i>
                
                                              </span>
-                                       <% } else { %>
+               
+                        <% } else { %>
                             
-                                     <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-500/20 text-gray-400" title="Queued">
+                                     <span class="inline-flex items-center justify-center w-6 h-6 rounded-full 
+bg-gray-500/20 text-gray-400" title="Queued">
                                                 <i class="ri-time-line"></i>
                           
-                                           </span>
+                       
+                    </span>
                                        <% } %>
                                     </td>
-     
+   
+  
                                  </tr>
                             <% });
- %>
+%>
                         </tbody>
                     </table>
                 </div>
@@ -124,37 +150,45 @@
 
         <div class="lg:col-span-7">
            
+
               <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full flex flex-col">
                 <div class="px-6 py-4 border-b border-white/10">
                     <h3 class="text-lg font-semibold text-white">Logs</h3>
                 </div>
-                <div class="p-4 flex-grow overflow-y-auto max-h-96 font-mono text-xs space-y-2">
+                <div class="p-4 flex-grow 
+overflow-y-auto max-h-96 font-mono text-xs space-y-2">
         
                     <% if (logs && logs.length > 0) { %>
                         <% logs.forEach(log => { %>
                             <div class="flex items-start">
-                       
+  
+                     
                          <span class="text-gray-500 mr-3"><%= new Date(log.timestamp).toLocaleTimeString('vi-VN') %></span>
                                 <% if (log.level === 'INFO') { %>
-                                    <span class="text-green-400 font-bold mr-2">[INFO]</span>
+           
+                         <span class="text-green-400 font-bold mr-2">[INFO]</span>
           
                                  <% } else { %>
-                                    <span class="text-red-400 font-bold mr-2">[ERROR]</span>
+                         
+           <span class="text-red-400 font-bold mr-2">[ERROR]</span>
                                 
                                  <% } %>
-                                <span class="text-gray-300 flex-1"><%- log.message %></span>
+                   
+             <span class="text-gray-300 flex-1"><%- log.message %></span>
                             </div>
                         <% });
- %>
+%>
                     <% } else { %>
                         <div class="text-center py-10 text-gray-500">
                             <i class="ri-terminal-box-line text-4xl"></i>
                    
+
                          <p class="mt-2">Không có log nào được ghi lại.</p>
                         </div>
                     <% } %>
                 </div>
-            </div>
+      
+      </div>
         </div>
   
        </div>

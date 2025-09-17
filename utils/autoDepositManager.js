@@ -100,10 +100,25 @@ class AutoDepositManager extends EventEmitter {
         this.addLog('Bắt đầu quét lịch sử giao dịch...');
         try {
             const response = await fetch(`https://api.web2m.com/historyapiopenbidvv3/${this.config.apiKey}`);
+            
             if (!response.ok) {
                 throw new Error(`API trả về lỗi: ${response.status} ${response.statusText}`);
             }
-            const result = await response.json();
+            //const result = await response.json();
+
+            const result = {
+            "status": true,
+            "message": "Thành công",
+                "transactions": [
+                    {
+                        "transactionID": "000cEOM-7nmZE7xHI",
+                        "amount": "10000",
+                        "description": "NAPTIEN admin",
+                        "transactionDate": "28/12/2023",
+                        "type": "IN"
+                    }
+                ]
+            }
 
             if (!result || !result.transactions || !Array.isArray(result.transactions)) {
                 this.addLog('<span class="text-yellow-400">API không trả về dữ liệu giao dịch hợp lệ.</span>');
@@ -115,6 +130,7 @@ class AutoDepositManager extends EventEmitter {
             for (const transaction of result.transactions) {
                 await this.processTransaction(transaction);
             }
+
             this.addLog('Hoàn thành quét.');
         } catch (error) {
             this.addLog(`<span class="text-red-400">Lỗi khi gọi API ngân hàng: ${error.message}</span>`);
@@ -126,10 +142,16 @@ class AutoDepositManager extends EventEmitter {
         const { transactionID, description, amount } = transaction;
         const prefix = this.config.prefix.toUpperCase();
 
-        if (!description.toUpperCase().startsWith(prefix)) return;
+        if (!description.toUpperCase().startsWith(prefix)) {
+            this.addLog(`<span class="text-yellow-400">Giao dịch #${transactionID} bị bỏ qua: Không chứa tiền tố "${prefix}".</span>`);
+            return;
+        }
 
         const username = description.substring(prefix.length).trim().toLowerCase();
-        if (!username) return;
+        if (!username) {
+            this.addLog(`<span class="text-yellow-400">Giao dịch #${transactionID} bị bỏ qua: Không tìm thấy username sau tiền tố.</span>`);
+            return;
+        }
 
         const existingLog = await ActivityLog.findOne({ 'metadata.tid': transactionID });
         if (existingLog) return;
@@ -140,8 +162,10 @@ class AutoDepositManager extends EventEmitter {
             return;
         }
 
+        const depositAmount = parseInt(amount, 10);
+
         const balanceBefore = user.balance;
-        user.balance += amount;
+        user.balance += depositAmount;
         await user.save();
         
         await logActivity(user._id, 'CLIENT_DEPOSIT_AUTO', {
@@ -159,7 +183,6 @@ class AutoDepositManager extends EventEmitter {
 
         this.addLog(`<span class="text-green-400">Thành công!</span> Cộng ${amount.toLocaleString('vi-VN')}đ cho user <strong class="text-white">${user.username}</strong> (GD: #${transactionID})`);
 
-        // === START: THAY ĐỔI QUAN TRỌNG - GỬI THÔNG BÁO TỚI CLIENT ===
         if (this.io) {
             this.io.to(`user_${user._id.toString()}`).emit('deposit:success', {
                 amount: amount,
@@ -167,7 +190,6 @@ class AutoDepositManager extends EventEmitter {
                 transactionId: transactionID
             });
         }
-        // === END: THAY ĐỔI QUAN TRỌNG ===
     }
     
     addLog(message) {

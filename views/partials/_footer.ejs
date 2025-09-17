@@ -3,21 +3,24 @@
     </div>
 
     <div id="toast-container" class="fixed top-5 right-5 z-50 w-full max-w-xs space-y-3">
-        </div>
+    </div>
     
-    <%# === START: THAY ĐỔI QUAN TRỌNG - HỆ THỐNG MODAL === %>
+    <%# === START: HỆ THỐNG MODAL XÁC NHẬN === %>
     <div id="custom-modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
     <div id="custom-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-md p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
-        <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20">
+        <div class="bg-gray-900/80 backdrop-blur-xl border 
+border-white/10 rounded-2xl shadow-2xl shadow-black/20">
             <div class="p-6">
                 <div class="flex items-start gap-4">
                     <div id="modal-icon-container" class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
                         <i id="modal-icon" class="ri-lg"></i>
-                    </div>
+           
+         </div>
                     <div>
                         <h3 id="modal-title" class="text-xl font-bold text-white"></h3>
                         <p id="modal-message" class="mt-1 text-gray-300 text-sm"></p>
-                    </div>
+               
+     </div>
                 </div>
             </div>
             <div id="modal-actions" class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3">
@@ -25,8 +28,10 @@
             </div>
         </div>
     </div>
-    <%# === END: THAY ĐỔI QUAN TRỌNG - HỆ THỐNG MODAL === %>
+    <%# === 
+END: HỆ THỐNG MODAL XÁC NHẬN === %>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         /**
          * Hàm hiển thị toast notification hiện đại.
@@ -65,6 +70,7 @@ icons.info}</div>
                         <p class="text-xs mt-1">${message}</p>
                     </div>
        
+
              <button onclick="document.getElementById('${toastId}').remove()" class="ml-4 text-xl leading-none">&times;</button>
                 </div>
             `;
@@ -82,73 +88,77 @@ container.appendChild(toastElement);
             }, duration);
 }
 
-        /* === START: THAY ĐỔI QUAN TRỌNG - LOGIC MODAL === */
+        /* === START: LOGIC MODAL XÁC NHẬN === */
         const modal = {
             backdrop: document.getElementById('custom-modal-backdrop'),
             container: document.getElementById('custom-modal'),
             title: document.getElementById('modal-title'),
             message: document.getElementById('modal-message'),
             actions: document.getElementById('modal-actions'),
-            iconContainer: document.getElementById('modal-icon-container'),
+     
+       iconContainer: document.getElementById('modal-icon-container'),
             icon: document.getElementById('modal-icon'),
             resolvePromise: null
         };
-
-        const modalConfig = {
+const modalConfig = {
             warning: { iconClass: 'ri-error-warning-line', colorClasses: 'bg-yellow-500/10 text-yellow-400' },
             danger: { iconClass: 'ri-delete-bin-line', colorClasses: 'bg-red-500/10 text-red-400' },
             info: { iconClass: 'ri-information-line', colorClasses: 'bg-blue-500/10 text-blue-400' },
         };
-
-        function showModal({ title, message, type = 'info', buttons }) {
+function showModal({ title, message, type = 'info', buttons }) {
             return new Promise((resolve) => {
                 modal.resolvePromise = resolve;
                 
                 modal.title.textContent = title;
                 modal.message.innerHTML = message.replace(/\n/g, '<br>');
 
-                const config = modalConfig[type] || modalConfig.info;
+    
+            const config = modalConfig[type] || modalConfig.info;
                 modal.icon.className = `ri-lg ${config.iconClass}`;
                 modal.iconContainer.className = `w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${config.colorClasses}`;
 
                 modal.actions.innerHTML = '';
                 buttons.forEach(btn => {
-                    const buttonEl = document.createElement('button');
+   
+                 const buttonEl = document.createElement('button');
                     buttonEl.textContent = btn.text;
                     buttonEl.className = btn.class;
                     buttonEl.onclick = () => hideModal(btn.value);
-                    modal.actions.appendChild(buttonEl);
+            
+        modal.actions.appendChild(buttonEl);
                 });
 
                 modal.backdrop.classList.remove('hidden');
-                modal.container.classList.remove('hidden');
+modal.container.classList.remove('hidden');
                 setTimeout(() => {
                     modal.backdrop.classList.remove('opacity-0');
                     modal.container.classList.remove('opacity-0', 'scale-95');
                 }, 10);
-            });
+});
         }
 
         function hideModal(value) {
             modal.backdrop.classList.add('opacity-0');
-            modal.container.classList.add('opacity-0', 'scale-95');
+modal.container.classList.add('opacity-0', 'scale-95');
             setTimeout(() => {
                 modal.backdrop.classList.add('hidden');
                 modal.container.classList.add('hidden');
                 if (modal.resolvePromise) {
                     modal.resolvePromise(value);
                     modal.resolvePromise = null;
-                }
+    
+            }
             }, 300);
-        }
+}
 
         function showConfirm(message, type = 'warning') {
-            const confirmText = type === 'danger' ? 'Xóa Vĩnh Viễn' : 'Xác Nhận';
+            const confirmText = type === 'danger' ?
+'Xóa Vĩnh Viễn' : 'Xác Nhận';
             const confirmClass = type === 'danger' 
-                ? 'px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-sm text-white transition' 
+                ?
+'px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-sm text-white transition' 
                 : 'px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition';
-
-            return showModal({
+return showModal({
                 title: 'Bạn có chắc chắn?',
                 message,
                 type,
@@ -157,8 +167,30 @@ container.appendChild(toastElement);
                     { text: confirmText, value: true, class: confirmClass }
                 ]
             });
-        }
-        /* === END: THAY ĐỔI QUAN TRỌNG - LOGIC MODAL === */
+}
+        /* === END: LOGIC MODAL XÁC NHẬN === */
+
+        <% if (user) { %>
+            const userSocket = io();
+
+            userSocket.on('connect', () => {
+                const userId = '<%= user._id %>';
+                userSocket.emit('join_user_room', userId);
+            });
+
+            userSocket.on('deposit:success', (data) => {
+                const formattedAmount = Number(data.amount).toLocaleString('vi-VN');
+                const message = `Tài khoản của bạn vừa được cộng ${formattedAmount}đ.`;
+                const title = 'Nạp tiền thành công!';
+                showToast(message, title, 'success', 10000); // Hiển thị trong 10 giây
+
+                // Cập nhật số dư trên sidebar nếu có
+                const userMenuBalance = document.querySelector('#user-menu-container .text-yellow-400');
+                if (userMenuBalance) {
+                    userMenuBalance.textContent = Number(data.newBalance).toLocaleString('vi-VN') + 'đ';
+                }
+            });
+        <% } %>
     </script>
 </body>
 </html>
