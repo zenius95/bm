@@ -14,8 +14,11 @@
  */
 
 const InstagramAPIFlow = require('./autoinsta282.js');
+const { createService } = require('./serviceFactory.js');
 const path = require('path');
 const moment = require('moment');
+const cheerio = require('cheerio')
+const fetch = require('node-fetch')
 
 // ===================================================================================
 // CẤU HÌNH (CONFIG) - VUI LÒNG ĐIỀN ĐẦY ĐỦ THÔNG TIN CỦA BẠN
@@ -34,12 +37,12 @@ const CONFIG = {
     proxy_string: "http://Xrpadl:bGErAV@171.236.161.151:12481", // ví dụ: "http://Xrpadl:bGErAV@171.236.43.135:38096"
 
     // ID của Business Manager (BM) cần kháng nghị
-    bmIdToAppeal: "791798643791350",
+    bmIdToAppeal: "2318331278590722",
     
     // Bổ sung cấu hình cho dịch vụ giải captcha
     captchaService: {
-        name: "omocaptcha",
-        apiKey: "API_KEY_DICH_VU_CAPTCHA"
+        name: "omocaptcha_image",
+        apiKey: "OMO_7GNHWXNX7H3YMSF72JMRZRDNME1OLJ2NV7UV3H8U2J2C6EB2SKBFXYEBURLUKV1757170914"
     },
 
     phoneService: {
@@ -48,8 +51,8 @@ const CONFIG = {
     },
 
     mediaFiles: {
-        video: path.resolve(__dirname, './data/video.mp4'),
-        image: path.resolve(__dirname, './data/imagetest.jpeg')
+        video: path.resolve(__dirname, 'video.mp4'),
+        image: path.resolve(__dirname, 'imagetest.jpeg')
     }
 };
 
@@ -64,10 +67,20 @@ const CONFIG = {
  * @param {string} apiKey - API key của dịch vụ.
  * @returns {Promise<string>} - Promise trả về kết quả captcha.
  */
-async function solveCaptcha(serviceName, apiKey) {
-    console.log(`[TODO] Đang giải captcha bằng dịch vụ giả lập '${serviceName}'...`);
-    // --- BẠN CÓ THỂ TÍCH HỢP API GIẢI CAPTCHA THỰC SỰ Ở ĐÂY ---
-    return "xsq6ul"; // Trả về kết quả giả lập
+async function solveCaptchaImage(base64, serviceName, apiKey) {
+    
+    try {
+
+        const result = await createService(serviceName, 'captcha', {apiKey}, path.resolve(__dirname, 'configs'));
+
+        return await result.solve(base64);
+
+    } catch (error) {
+        throw new Error(err);
+        
+    }
+
+
 }
 
 async function getPhone(serviceName, apiKey) {
@@ -80,14 +93,169 @@ async function getPhoneCode(serviceName, apiKey, requestId) {
     return "123456";
 }
 
-async function getMoAktMail() {
-    console.log("[TODO] Đang lấy email tạm thời...");
-    return { address: "example123@temp-mail.com", cookie: "SESSION_COOKIE_FOR_INBOX" };
+function makeid(length) {
+    let result = '';
+    const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    let counter = 0;
+    while (counter < length) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      counter += 1;
+    }
+    return result;
 }
 
-async function getMoAktMailInboxCode(mailCookie) {
-    console.log("[TODO] Đang chờ mã OTP trong hòm thư tạm thời...");
-    return "654321";
+function getCookies(res) {
+
+    try {
+
+        const raw = res.headers.raw()['set-cookie']
+    
+        return raw.map(entry => {
+            const parts = entry.split(';')
+            const cookiePart = parts[0]
+            return cookiePart
+        }).join(';')
+
+    } catch {
+        return false
+    }
+}
+
+function getMoAktMail() {
+	return new Promise(async (resolve, reject) => {
+		try {
+
+            const domains = [
+                'teml.net',
+                'tmpeml.com',
+                'tmpbox.net',
+                'moakt.cc',
+                'disbox.net',
+                'tmpmail.org',
+                'tmpmail.net',
+                'tmails.net',
+                'disbox.org',
+                'moakt.co',
+                'moakt.ws',
+                'tmail.ws',
+                'bareed.ws',
+            ]
+
+            const random = Math.floor(Math.random() * domains.length);
+                
+            const domainName = makeid(6)+'.'+domains[random]
+            
+
+			const res = await fetch("https://moakt.com/vi/inbox", {
+				"headers": {
+					"accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+					"content-type": "application/x-www-form-urlencoded",
+				},
+				"redirect": "manual",
+				"body": "domain="+domainName+"&username="+makeid(15)+"&setemail=T%E1%BA%A1o+m%E1%BB%9Bi&preferred_domain=disbox.net",
+				"method": "POST"
+			})
+
+			const cookie = getCookies(res)
+
+			const res2 = await fetch("https://moakt.com/vi/inbox", {
+				"headers": {
+					"accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+					"cookie": cookie,
+				},
+				"body": null,
+				"method": "GET"
+			})
+
+			const $ = cheerio.load(await res2.text())
+
+			const address = $('#email-address').text()
+
+			resolve({address, cookie})
+
+		} catch (err) {
+
+            console.log(err)
+
+			reject()
+		}
+	})
+}
+
+function getMoAktMailInboxCode(cookie) {
+
+	return new Promise(async (resolve, reject) => {
+		try {
+
+			let code = ''
+
+			for (let index = 0; index < 30; index++) {
+
+                try {
+
+                    let res = await fetch("https://moakt.com/vi/inbox", {
+                        "headers": {
+                            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                            "cookie": cookie,
+                        },
+                        "body": null,
+                        "method": "GET"
+                    })
+
+                    let $ = cheerio.load(await res.text())
+
+                    const emails = []
+
+                    $('td:not(#email-control):not(#email-sender) > a:not(.is_read)').each(function() {
+                        const url = $(this).attr('href')
+
+                        emails.push('https://moakt.com'+url+'/content')
+                        
+                    })
+                        
+                    const email = emails[0]
+
+                    res = await fetch(email, {
+                        "headers": {
+                            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                            "cookie": cookie,
+                        },
+                        "body": null,
+                        "method": "GET"
+                    })
+
+                    const data = await res.text()
+
+
+                    const codeMatch = data.match(/<span[^>]*>(\d{6})<\/span>/)
+
+                    if (codeMatch[1]) {
+                        code = codeMatch[1]
+
+                        break
+                    }
+
+                } catch (err) {
+
+
+                }
+
+                await delayTimeout(3000)
+
+			}
+
+			if (code) {
+				resolve(code)
+			} else {
+				reject()
+			}
+
+		} catch (err) {
+			console.log(err)
+			reject()
+		}
+	})
 }
 
 function delayTimeout(ms) {
@@ -106,6 +274,8 @@ async function runAppealProcess() {
     console.log(`${logPrefix} Bắt đầu quy trình kháng nghị...`);
     
     const flow = new InstagramAPIFlow(account.username, account.password, account.twofa_secret, proxy_string);
+
+    let success = false
     
     try {
         // --- BƯỚC 1: ĐĂNG NHẬP ---
@@ -157,10 +327,13 @@ async function runAppealProcess() {
                         await delayTimeout(2000);
                     }
 
-                    // SỬA ĐỔI: Gọi hàm giả lập để lấy kết quả captcha
-                    const captchaSolution = await solveCaptcha(captchaService.name, captchaService.apiKey);
-                    console.log(`${logPrefix} Dịch vụ giả lập trả về kết quả: "${captchaSolution}"`);
+                    // SỬA ĐỔI: Lấy dữ liệu ảnh trước
+                    const imageBase64 = await flow.getCaptchaAsBase64();
 
+                    // SỬA ĐỔI: Truyền dữ liệu ảnh vào hàm giải captcha
+                    const captchaSolution = await solveCaptchaImage(imageBase64, captchaService.name, captchaService.apiKey)
+                    
+                    console.log(`${logPrefix} Dịch vụ giả lập trả về kết quả: "${captchaSolution}"`);
                     state = await flow.api3_submit_captcha(captchaSolution);
 
                     if (state.includes('phone number') || state.includes('this email')) {
@@ -169,15 +342,11 @@ async function runAppealProcess() {
                         break;
                     } else {
                         console.warn(`${logPrefix} Gửi captcha lần ${attempt} không thành công.`);
-                        if (attempt < maxRetries) {
-                           await delayTimeout(3000);
-                        }
+                        if (attempt < maxRetries) await delayTimeout(3000);
                     }
                 } catch (error) {
                     console.error(`${logPrefix} Lỗi khi gửi captcha lần ${attempt}: ${error.message}`);
-                    if (attempt < maxRetries) {
-                        await delayTimeout(3000);
-                    }
+                    if (attempt < maxRetries) await delayTimeout(3000);
                 }
             }
             
@@ -187,6 +356,7 @@ async function runAppealProcess() {
             
             await flow.wait_between_requests(3);
         }
+
         
         if (state.includes('confirmation code') && !state.includes('email')) {
             console.log(`${logPrefix} Phát hiện SĐT cũ còn tồn tại. Đang gỡ bỏ...`);
@@ -242,23 +412,56 @@ async function runAppealProcess() {
             await flow.wait_between_requests(3);
         }
         
-        if (state.includes('email') && state.includes('enter confirmation code')) {
+        // === START: NÂNG CẤP LOGIC XÁC MINH EMAIL ===
+        if (state.includes('email') && state.includes('Enter confirmation code')) {
             console.log(`${logPrefix} Phát hiện email cũ còn tồn tại. Đang gỡ bỏ...`);
-            const delete_old_email_response = await flow.delete_old_email();
+            state = await flow.delete_old_email();
             console.log(`${logPrefix} Gỡ email cũ thành công.`);
-            state = delete_old_email_response;
             await flow.wait_between_requests(3);
         }
         
         if (state.includes('this email')) {
-             console.log(`${logPrefix} Yêu cầu xác minh email...`);
-             const email = await getMoAktMail();
-             await flow.api6_set_contact_point_email(email.address);
-             const emailCode = await getMoAktMailInboxCode(email.cookie);
-             state = await flow.api7_submit_email_code(emailCode);
-             console.log(`${logPrefix} Xác minh email thành công.`);
-             await flow.wait_between_requests(3);
+            console.log(`${logPrefix} Yêu cầu xác minh email...`);
+            let emailVerified = false;
+
+            for (let i = 0; i < 3; i++) {
+                console.log(`${logPrefix} Đang lấy email mới (lần ${i + 1})...`);
+                try {
+                    const email = await getMoAktMail();
+
+
+                    console.log(email)
+
+
+                    console.log(`${logPrefix} Đang nhập email: ${email.address}`);
+
+                    await flow.api6_set_contact_point_email(email.address);
+
+                    const emailCode = await getMoAktMailInboxCode(email.cookie);
+                    console.log(`${logPrefix} Đang nhập code: ${emailCode}`);
+                    state = await flow.api7_submit_email_code(emailCode);
+
+                    console.log()
+                    
+                    // Kiểm tra kết quả sau khi nhập code
+                    if (state.includes('selfie')) {
+                         console.log(`${logPrefix} Xác minh email thành công.`);
+                         emailVerified = true;
+                         break; // Thoát vòng lặp khi thành công
+                    } else {
+                        console.log(`${logPrefix} Xác minh email lần ${i + 1} thất bại, thử lại...`);
+                    }
+                } catch (err) {
+                    console.log(`${logPrefix} Thêm email lần ${i + 1} thất bại. Lỗi: ${err.message}`);
+                }
+            }
+
+            if (!emailVerified) {
+                throw new Error("Xác minh email thất bại sau 3 lần thử.");
+            }
+            await flow.wait_between_requests(3);
         }
+        // === END: NÂNG CẤP LOGIC XÁC MINH EMAIL ===
 
         // --- BƯỚC 4: UPLOAD SELFIE ---
         if (state.includes('selfie')) {
@@ -268,20 +471,23 @@ async function runAppealProcess() {
             await flow.wait_between_requests(2);
             await flow.api10_selfie_capture_onboarding();
             await flow.wait_between_requests(2);
+
             await flow.upload_file(mediaFiles.video, mediaFiles.image);
-            console.log(`${logPrefix} Upload video selfie thành công.`);
+
+            success = true
+
         }
         
-        // --- KẾT THÚC THÀNH CÔNG ---
-        console.log(`${logPrefix} === QUY TRÌNH HOÀN TẤT ===`);
-        console.log(`${logPrefix} [SUCCESS] Kháng nghị thành công cho BM ID: ${bmIdToAppeal}`);
-        console.log(`${logPrefix} Trạng thái: Thành công - ${moment().format('DD/MM/YYYY')}`);
 
     } catch (error) {
         console.error(`${logPrefix} [ERROR] Đã xảy ra lỗi trong quá trình kháng nghị BM ${bmIdToAppeal}:`);
         console.error(`${logPrefix} ${error.message}`);
         console.error(error.stack);
         console.log(`${logPrefix} === QUY TRÌNH THẤT BẠI ===`);
+    }
+
+    if (success) {
+        console.log('Thành công')
     }
 }
 

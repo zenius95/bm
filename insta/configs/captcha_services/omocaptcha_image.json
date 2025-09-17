@@ -1,0 +1,36 @@
+{
+    "name": "Omocaptcha (Image)",
+    "apiKey": "",
+    "delay": 10000,
+    "createImageTask": {
+        "url": "https://api.omocaptcha.com/v2/createTask",
+        "method": "POST",
+        "body": {
+            "clientKey": "{apiKey}",
+            "task": {
+                "type": "ImageToTextTask",
+                "imageBase64": "{imageBase64}",
+                "module": "module_1"
+            }
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "taskIdPath": "taskId"
+    },
+    "getResult": {
+        "url": "https://api.omocaptcha.com/v2/getTaskResult",
+        "method": "POST",
+        "retry": 10,
+        "body": {
+            "clientKey": "{apiKey}",
+            "taskId": "{taskId}"
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "successStatus": "ready",
+        "statusPath": "status",
+        "resultPath": "solution.text"
+    }
+}
