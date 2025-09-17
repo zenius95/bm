@@ -25,11 +25,39 @@
             <p class="text-gray-300"><strong>User đặt hàng:</strong> <span class="font-semibold text-white"><%= order.user ?
  order.user.username : 'N/A' %></span></p>
             <p class="text-gray-300"><strong>Ngày tạo:</strong> <span class="text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></span></p>
-            <p class="text-gray-300"><strong>Tổng chi phí:</strong> <span class="font-mono font-semibold text-yellow-400"><%= order.totalCost.toLocaleString('vi-VN') %>đ</span></p>
-            <p class="text-gray-300"><strong>Đơn giá tại thời điểm đặt:</strong> <span class="text-gray-400"><%= order.pricePerItem.toLocaleString('vi-VN') %>đ / item</span></p>
-     
-             <p class="text-gray-300"><strong>Tiến độ:</strong> <span class="font-semibold text-white"><%= order.completedItems + order.failedItems %> / <%= order.totalItems %></span></p>
+            <p class="text-gray-300"><strong>Đơn giá ban đầu:</strong> <span class="text-gray-400"><%= order.pricePerItem.toLocaleString('vi-VN') %>đ / item</span></p>
+            <p class="text-gray-300"><strong>Tiến độ:</strong> <span class="font-semibold text-white"><%= order.completedItems %> Thành công / <%= order.failedItems %> Thất bại (<%= order.completedItems + order.failedItems %> / <%= order.totalItems %>)</span></p>
         </div>
+        
+        <%# --- START: KHU VỰC QUYẾT TOÁN MỚI --- %>
+        <% if (order.status === 'completed' || order.status === 'failed') { %>
+            <%
+                const initialCost = order.pricePerItem * order.totalItems;
+                const finalCost = order.totalCost;
+                const refundAmount = initialCost - finalCost;
+            %>
+            <div class="p-6 border-t border-white/10">
+                <h4 class="text-base font-semibold text-white mb-3">Quyết toán & Chi phí</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Chi phí tạm tính ban đầu</span>
+                        <span class="font-mono text-gray-400"><%= initialCost.toLocaleString('vi-VN') %>đ</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
+                        <strong class="font-mono text-yellow-400"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
+                    </div>
+                    <% if (refundAmount > 0) { %>
+                    <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
+                        <strong class="text-green-400">Đã hoàn lại cho user</strong>
+                        <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+        <% } %>
+        <%# --- END: KHU VỰC QUYẾT TOÁN MỚI --- %>
+
     </div>
 
   

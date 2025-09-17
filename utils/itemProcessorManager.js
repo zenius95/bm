@@ -95,7 +95,15 @@ class ItemProcessorManager extends EventEmitter {
         ).lean();
 
         if (!item) {
-            return; // Không có item nào, kết thúc phiên
+            return;
+        }
+
+        const parentOrder = await Order.findById(item.orderId);
+        if (parentOrder && parentOrder.status === 'pending') {
+            parentOrder.status = 'processing';
+            await parentOrder.save();
+            this.io.emit('order:update', { id: parentOrder._id.toString(), status: 'processing' });
+            this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
         }
 
         this.addLogToUI(`Worker đã nhận item <strong class="text-yellow-400">...${item.data.slice(-10)}</strong>. Bắt đầu tìm account...`);
@@ -108,7 +116,7 @@ class ItemProcessorManager extends EventEmitter {
             const account = await this.acquireAccount();
             if (!account) {
                 this.addLogToUI('Tạm thời không có account nào khả dụng. Sẽ thử lại sau.');
-                await this.writeLog(item.orderId, item._id, 'ERROR', 'Không tìm thấy account khả dụng để xử lý.');
+                await this.writeLog(item.orderId, item._id, 'ERROR', `Không tìm thấy account khả dụng để xử lý item: "${item.data}"`);
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 continue;
             }
@@ -118,35 +126,30 @@ class ItemProcessorManager extends EventEmitter {
             try {
                 await this.simulateLogin(item, account);
                 
-                // Giả lập logic xử lý
                 if (item.data.trim().toLowerCase() === 'lỗi') {
-                    throw new Error("Giả lập lỗi xử lý item.");
+                    throw new Error("Giả lập lỗi xử lý do dữ liệu item không hợp lệ.");
                 }
 
-                // XỬ LÝ THÀNH CÔNG
                 await Item.findByIdAndUpdate(item._id, { status: 'completed', processedWith: account._id });
                 this.addLogToUI(`✔ Hoàn thành item ...${item.data.slice(-10)}`);
-                await this.writeLog(item.orderId, item._id, 'INFO', `Xử lý thành công với account ${account.uid}.`);
+                await this.writeLog(item.orderId, item._id, 'INFO', `Xử lý thành công item "${item.data}" với account ${account.uid}.`);
                 await this.updateAccountOnFinish(account, true);
                 await this.updateOrderProgress(item.orderId, 'completed', item);
                 success = true;
 
             } catch (error) {
-                // XỬ LÝ THẤT BẠI
                 this.addLogToUI(`<span class="text-red-400">✘ Account <strong class="text-green-400">${account.uid}</strong> thất bại với item ...${item.data.slice(-10)}.</span>`);
-                await this.writeLog(item.orderId, item._id, 'ERROR', `Xử lý thất bại với account ${account.uid}. Lý do: ${error.message}`);
+                await this.writeLog(item.orderId, item._id, 'ERROR', `Xử lý thất bại item "${item.data}" với account ${account.uid}. Lý do: ${error.message}`);
                 await this.updateAccountOnFinish(account, false);
                 await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ACCOUNTS));
             }
         }
 
-        // Nếu thoát vòng lặp mà không thành công
         if (!success) {
             this.addLogToUI(`<span class="text-red-500 font-bold">Item ...${item.data.slice(-10)} đã thất bại ${MAX_ITEM_RETRIES} lần và bị hủy.</span>`);
             await Item.findByIdAndUpdate(item._id, { status: 'failed' });
-            await this.writeLog(item.orderId, item._id, 'ERROR', `Item đã thất bại sau ${MAX_ITEM_RETRIES} lần thử và bị hủy.`);
+            await this.writeLog(item.orderId, item._id, 'ERROR', `Item "${item.data}" đã thất bại sau ${MAX_ITEM_RETRIES} lần thử và bị hủy.`);
             await this.updateOrderProgress(item.orderId, 'failed', item);
-            await this.refundUserForItem(item, `Item failed after ${MAX_ITEM_RETRIES} retries.`);
         }
     }
 
@@ -178,9 +181,9 @@ class ItemProcessorManager extends EventEmitter {
     }
 
     async simulateLogin(item, account) {
-        await this.writeLog(item.orderId, item._id, 'INFO', `Bắt đầu đăng nhập vào account ${account.uid}...`);
+        await this.writeLog(item.orderId, item._id, 'INFO', `[Item: ${item.data}] Bắt đầu đăng nhập vào account ${account.uid}...`);
         await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-        await this.writeLog(item.orderId, item._id, 'INFO', `Đăng nhập thành công account ${account.uid}.`);
+        await this.writeLog(item.orderId, item._id, 'INFO', `[Item: ${item.data}] Đăng nhập thành công account ${account.uid}.`);
     }
     
     async updateOrderProgress(orderId, lastItemStatus, item) {
@@ -189,7 +192,7 @@ class ItemProcessorManager extends EventEmitter {
         const order = await Order.findByIdAndUpdate(orderId, 
             { $inc: { [updateField]: 1 } },
             { new: true }
-        ).lean();
+        ).populate('user');
 
         if (!order) return;
         
@@ -198,7 +201,7 @@ class ItemProcessorManager extends EventEmitter {
             completedItems: order.completedItems,
             failedItems: order.failedItems,
             totalItems: order.totalItems,
-            item: item // Gửi kèm thông tin item để cập nhật UI chi tiết
+            item: item
         });
         
         if ((order.completedItems + order.failedItems) >= order.totalItems) {
@@ -206,52 +209,40 @@ class ItemProcessorManager extends EventEmitter {
         }
     }
 
-    async refundUserForItem(item, reason) {
-        try {
-            const order = await Order.findById(item.orderId).lean();
-            if (!order || !order.user) return;
+    async checkOrderCompletion(order) {
+        if (!order) return;
 
-            const refundAmount = order.pricePerItem;
-            if (refundAmount <= 0) return;
+        const initialCost = order.pricePerItem * order.totalItems;
+        
+        const finalPricePerItem = settingsService.calculatePricePerItem(order.completedItems);
+        const finalCost = order.completedItems * finalPricePerItem;
+        const refundAmount = initialCost - finalCost;
 
-            const updatedUser = await User.findByIdAndUpdate(
-                order.user,
-                { $inc: { balance: refundAmount } },
-                { new: true }
-            ).lean();
+        order.status = 'completed';
+        order.totalCost = finalCost;
 
-            if (!updatedUser) {
-                await this.writeLog(item.orderId, item._id, 'ERROR', `Refund failed. User ${order.user} not found.`);
-                return;
-            }
+        let user = await User.findById(order.user._id);
+        const balanceBefore = user.balance;
+
+        if (refundAmount > 0) {
+            user.balance += refundAmount;
             
-            const originalBalance = updatedUser.balance - refundAmount;
-            const logDetails = `Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user '${updatedUser.username}' do item trong đơn hàng #${order.shortId} thất bại. Lý do: ${reason}.`;
-
-            await this.writeLog(item.orderId, item._id, 'INFO', `Hoàn ${refundAmount} cho user ${updatedUser.username}.`);
-            await logActivity(updatedUser._id, 'ORDER_REFUND', {
+            const logDetails = `Hoàn tiền chênh lệch ${refundAmount.toLocaleString('vi-VN')}đ cho đơn hàng #${order.shortId} sau khi quyết toán.`;
+            await logActivity(user._id, 'ORDER_REFUND', {
                 details: logDetails,
                 context: 'System',
                 metadata: {
-                    balanceBefore: originalBalance,
-                    balanceAfter: updatedUser.balance,
+                    balanceBefore: balanceBefore,
+                    balanceAfter: user.balance,
                     change: refundAmount
                 }
             });
-
-            this.addLogToUI(`💰 Hoàn tiền ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong class="text-white">${updatedUser.username}</strong> (đơn hàng ...${order.shortId})`);
-        } catch (e) {
-            console.error(`[Refund] CRITICAL ERROR during refund for item ${item._id}:`, e);
-            await this.writeLog(item.orderId, item._id, 'ERROR', `CRITICAL: Refund failed. Error: ${e.message}`);
+            this.addLogToUI(`💰 Hoàn tiền chênh lệch ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong class="text-white">${user.username}</strong> (đơn hàng ...${order.shortId})`);
         }
-    }
-    
-    async checkOrderCompletion(order) {
-        if (!order) return;
-        const finalStatus = 'completed';
+
+        await Promise.all([order.save(), user.save()]);
         
-        await Order.findByIdAndUpdate(order._id, { status: finalStatus });
-        this.io.emit('order:update', { id: order._id.toString(), status: finalStatus });
+        this.io.emit('order:update', { id: order._id.toString(), status: 'completed' });
         
         const [ totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount ] = await Promise.all([
              Order.countDocuments({ isDeleted: false }),

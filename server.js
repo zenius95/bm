@@ -120,7 +120,7 @@ async function startServer() {
     server.listen(config.server.port, () => {
         console.log(`\n🎉 Server started successfully!`);
         console.log(`   - API is running on http://localhost:${config.server.port}`);
-        console.log(`   - Admin Dashboard is available at http://localhost:${config.server.port}/admin/dashboard`);
+        console.log(`   - Admin Dashboard is available at http://localhost:${config.server.port}/admin`);
         
         autoCheckManager.initialize(io);
         itemProcessorManager.initialize(io);

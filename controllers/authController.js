@@ -79,7 +79,7 @@ authController.login = async (req, res) => {
             context: user.role === 'admin' ? 'Admin' : 'Client'
         });
         
-        res.redirect(user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+        res.redirect(user.role === 'admin' ? '/admin' : '/');
     } catch (error) {
         console.error("Login error:", error);
         res.redirect('/login?error=' + encodeURIComponent('Lỗi server.'));
