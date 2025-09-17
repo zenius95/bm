@@ -29,8 +29,8 @@ router.post('/accounts/check-selected', accountController.checkSelected);
 router.get('/proxies', proxyController.handleGetAll);
 router.post('/proxies/create', proxyController.handleCreate);
 router.post('/proxies/update/:id', proxyController.handleUpdate);
-router.post('/proxies/soft-delete', proxyController.handleSoftDelete); // Thêm route mới
-router.post('/proxies/restore', proxyController.handleRestore);     // Thêm route mới
+router.post('/proxies/soft-delete', proxyController.handleSoftDelete);
+router.post('/proxies/restore', proxyController.handleRestore);
 router.post('/proxies/hard-delete', proxyController.handleHardDelete);
 router.post('/proxies/check-selected', proxyController.checkSelected);
 
@@ -73,5 +73,6 @@ router.post('/settings/auto-proxy-check/config', settingController.updateAutoPro
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
 router.post('/settings/auto-deposit/config', settingController.updateAutoDepositConfig);
+router.post('/settings/services/config', settingController.updateServicesConfig);
 
 module.exports = router;

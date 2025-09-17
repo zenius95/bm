@@ -48,7 +48,18 @@ const DEFAULT_SETTINGS = {
         pollingInterval: 5,
         maxSuccess: 4,
         maxError: 5
+    },
+    // <<< START: CẬP NHẬT CẤU TRÚC DỊCH VỤ >>>
+    services: {
+        selectedImageCaptchaService: 'omocaptcha_image.json', // Đổi tên
+        selectedRecaptchaService: '', // Thêm mới
+        selectedPhoneService: '',
+        apiKeys: {
+            captcha: {},
+            phone: {}
+        }
     }
+    // <<< END: CẬP NHẬT CẤU TRÚC DỊCH VỤ >>>
 };
 
 class SettingsService extends EventEmitter {
@@ -69,7 +80,15 @@ class SettingsService extends EventEmitter {
                 autoDeposit: { ...DEFAULT_SETTINGS.autoDeposit, ...(fileData.autoDeposit || {}) },
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
-                itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) }
+                itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) },
+                services: { 
+                    ...DEFAULT_SETTINGS.services, 
+                    ...(fileData.services || {}),
+                    apiKeys: {
+                        ...DEFAULT_SETTINGS.services.apiKeys,
+                        ...(fileData.services?.apiKeys || {})
+                    }
+                }
             };
             console.log('[SettingsService] Loaded config from settings.json');
 

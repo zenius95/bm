@@ -66,5 +66,15 @@
         "pollingInterval": 5,
         "maxSuccess": 4,
         "maxError": 5
+    },
+    "services": {
+        "selectedImageCaptchaService": "omocaptcha_image.json",
+        "selectedRecaptchaService": "",
+        "selectedPhoneService": "",
+        "apiKeys": {
+            "captcha": {},
+            "phone": {}
+        },
+        "selectedCaptchaService": "omocaptcha_image.json"
     }
 }

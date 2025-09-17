@@ -6,8 +6,48 @@ const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
 const autoDepositManager = require('../utils/autoDepositManager');
 const autoProxyCheckManager = require('../utils/autoProxyCheckManager'); // Import manager mới
+const fs = require('fs').promises;
+const path = require('path');
 
 const settingController = {};
+
+/**
+ * Đọc tất cả các file JSON trong một thư mục và trích xuất thông tin cần thiết.
+ * @param {string} dirPath - Đường dẫn đến thư mục chứa file config.
+ * @returns {Promise<Array<{id: string, name: string}>>} - Mảng các object dịch vụ.
+ */
+async function getServicesFromDir(dirPath) {
+    try {
+        const files = await fs.readdir(dirPath);
+        const servicePromises = files
+            .filter(file => file.endsWith('.json'))
+            .map(async (file) => {
+                try {
+                    const filePath = path.join(dirPath, file);
+                    const content = await fs.readFile(filePath, 'utf-8');
+                    const config = JSON.parse(content);
+                    return {
+                        id: file, // Tên file được dùng làm ID
+                        name: config.name || file // Lấy tên từ config, nếu không có thì dùng tên file
+                    };
+                } catch (error) {
+                    console.error(`Lỗi khi đọc file config dịch vụ ${file}:`, error);
+                    return null;
+                }
+            });
+        
+        const services = await Promise.all(servicePromises);
+        return services.filter(Boolean); // Lọc ra các kết quả null (nếu có lỗi)
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.warn(`Thư mục dịch vụ không tồn tại: ${dirPath}`);
+        } else {
+            console.error(`Không thể đọc thư mục dịch vụ ${dirPath}:`, error);
+        }
+        return []; // Trả về mảng rỗng nếu có lỗi
+    }
+}
+
 
 async function logSettingsChange(req, section) {
     await logActivity(req.session.user.id, 'ADMIN_UPDATE_SETTINGS', {
@@ -19,14 +59,29 @@ async function logSettingsChange(req, section) {
 
 settingController.getSettingsPage = async (req, res) => {
     try {
+        const captchaDir = path.join(__dirname, '..', 'insta', 'configs', 'captcha_services');
+        const phoneDir = path.join(__dirname, '..', 'insta', 'configs', 'phone_services');
+        
+        const [allCaptchaServices, availablePhoneServices] = await Promise.all([
+            getServicesFromDir(captchaDir),
+            getServicesFromDir(phoneDir)
+        ]);
+
+        // Phân loại dịch vụ captcha
+        const availableImageCaptchaServices = allCaptchaServices.filter(s => s.id.includes('_image'));
+        const availableRecaptchaServices = allCaptchaServices.filter(s => !s.id.includes('_image'));
+
         res.render('admin/settings', {
             settings: settingsService.getAll(),
             initialState: { 
                 autoCheck: autoCheckManager.getStatus(),
-                autoProxyCheck: autoProxyCheckManager.getStatus(), // Thêm state mới
+                autoProxyCheck: autoProxyCheckManager.getStatus(), 
                 itemProcessor: itemProcessorManager.getStatus(),
                 autoDeposit: autoDepositManager.getStatus() 
             },
+            availableImageCaptchaServices,
+            availableRecaptchaServices,
+            availablePhoneServices,
             title: 'System Settings',
             page: 'settings'
         });
@@ -35,6 +90,49 @@ settingController.getSettingsPage = async (req, res) => {
         res.status(500).send("Could not load settings page.");
     }
 };
+
+settingController.updateServicesConfig = async (req, res) => {
+    try {
+        const { 
+            selectedImageCaptchaService, imageCaptchaApiKey,
+            selectedRecaptchaService, recaptchaApiKey,
+            selectedPhoneService, phoneApiKey 
+        } = req.body;
+        
+        const currentServices = settingsService.get('services');
+
+        const newApiKeys = {
+            captcha: { ...currentServices.apiKeys.captcha },
+            phone: { ...currentServices.apiKeys.phone }
+        };
+
+        if (selectedImageCaptchaService) {
+            newApiKeys.captcha[selectedImageCaptchaService] = imageCaptchaApiKey;
+        }
+        if (selectedRecaptchaService) {
+            newApiKeys.captcha[selectedRecaptchaService] = recaptchaApiKey;
+        }
+
+        if (selectedPhoneService) {
+            newApiKeys.phone[selectedPhoneService] = phoneApiKey;
+        }
+
+        const newConfig = {
+            selectedImageCaptchaService: selectedImageCaptchaService || currentServices.selectedImageCaptchaService,
+            selectedRecaptchaService: selectedRecaptchaService || currentServices.selectedRecaptchaService,
+            selectedPhoneService: selectedPhoneService || currentServices.selectedPhoneService,
+            apiKeys: newApiKeys
+        };
+
+        await settingsService.update('services', newConfig);
+        await logSettingsChange(req, "Cấu hình Dịch vụ bên thứ ba");
+        res.json({ success: true, message: 'Cập nhật lựa chọn dịch vụ và API Key thành công.' });
+    } catch (error) {
+        console.error("Error updating services config:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 
 settingController.updateMasterApiKey = async (req, res) => {
     try {
