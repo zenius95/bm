@@ -7,6 +7,7 @@ const Account = require('../models/Account');
 const Log = require('../models/Log');
 const User = require('../models/User');
 const { logActivity } = require('./activityLogService');
+const { runAppealProcess } = require('../insta/runInsta');
 
 // --- Hằng số cấu hình ---
 const MAX_ITEM_RETRIES = 3;
@@ -120,25 +121,41 @@ class ItemProcessorManager extends EventEmitter {
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 continue;
             }
+            
+            const logCallback = (message) => {
+                const formattedMessage = `[<strong class="text-green-400">${account.uid}</strong> | <strong class="text-yellow-400">${item.data}</strong>] ${message}`;
+                this.addLogToUI(formattedMessage);
+                this.writeLog(item.orderId, item._id, 'INFO', `[${account.uid}|${item.data}] ${message}`);
+            };
 
-            this.addLogToUI(`> Thử xử lý item <strong class="text-yellow-400">...${item.data.slice(-10)}</strong> với account <strong class="text-green-400">${account.uid}</strong> (Lần thử: ${attemptCount})`);
+            this.addLogToUI(`> Thử xử lý item <strong class="text-yellow-400">${item.data}</strong> với account <strong class="text-green-400">${account.uid}</strong> (Lần thử: ${attemptCount})`);
             
             try {
-                await this.simulateLogin(item, account);
+                // <<< THAY ĐỔI Ở ĐÂY >>>
+                const result = await runAppealProcess({
+                    username: account.uid,
+                    password: account.password,
+                    twofa_secret: account.twofa,
+                    proxy_string: account.proxy,
+                    id: account._id.toString()
+                }, item.data, logCallback);
                 
-                if (item.data.trim().toLowerCase() === 'lỗi') {
-                    throw new Error("Giả lập lỗi xử lý do dữ liệu item không hợp lệ.");
+                // Chỉ coi là thành công khi hàm trả về true
+                if (result === true) {
+                    await Item.findByIdAndUpdate(item._id, { status: 'completed', processedWith: account._id });
+                    this.addLogToUI(`✔ Hoàn thành item ...${item.data.slice(-10)}`);
+                    await this.writeLog(item.orderId, item._id, 'INFO', `Xử lý thành công item "${item.data}" với account ${account.uid}.`);
+                    await this.updateAccountOnFinish(account, true);
+                    await this.updateOrderProgress(item.orderId, 'completed', item);
+                    success = true;
+                } else {
+                    // Ném lỗi nếu kết quả không phải true để đi vào khối catch
+                    throw new Error("Quy trình kháng không hoàn tất hoặc không trả về trạng thái thành công.");
                 }
-
-                await Item.findByIdAndUpdate(item._id, { status: 'completed', processedWith: account._id });
-                this.addLogToUI(`✔ Hoàn thành item ...${item.data.slice(-10)}`);
-                await this.writeLog(item.orderId, item._id, 'INFO', `Xử lý thành công item "${item.data}" với account ${account.uid}.`);
-                await this.updateAccountOnFinish(account, true);
-                await this.updateOrderProgress(item.orderId, 'completed', item);
-                success = true;
+                // <<< KẾT THÚC THAY ĐỔI >>>
 
             } catch (error) {
-                this.addLogToUI(`<span class="text-red-400">✘ Account <strong class="text-green-400">${account.uid}</strong> thất bại với item ...${item.data.slice(-10)}.</span>`);
+                this.addLogToUI(`<span class="text-red-400">✘ Account <strong class="text-green-400">${account.uid}</strong> thất bại với item ...${item.data.slice(-10)}. Lý do: ${error.message}</span>`);
                 await this.writeLog(item.orderId, item._id, 'ERROR', `Xử lý thất bại item "${item.data}" với account ${account.uid}. Lý do: ${error.message}`);
                 await this.updateAccountOnFinish(account, false);
                 await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ACCOUNTS));
@@ -180,12 +197,6 @@ class ItemProcessorManager extends EventEmitter {
         return updatedAccount;
     }
 
-    async simulateLogin(item, account) {
-        await this.writeLog(item.orderId, item._id, 'INFO', `[Item: ${item.data}] Bắt đầu đăng nhập vào account ${account.uid}...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-        await this.writeLog(item.orderId, item._id, 'INFO', `[Item: ${item.data}] Đăng nhập thành công account ${account.uid}.`);
-    }
-    
     async updateOrderProgress(orderId, lastItemStatus, item) {
         const updateField = lastItemStatus === 'completed' ? 'completedItems' : 'failedItems';
         
