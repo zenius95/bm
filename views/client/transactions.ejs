@@ -1,0 +1,79 @@
+<%# views/client/transactions.ejs %>
+
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white">Lịch sử giao dịch</h1>
+        <p class="mt-1 text-gray-400">Theo dõi tất cả các hoạt động làm thay đổi số dư tài khoản của Bro.</p>
+    </div>
+
+     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-400 uppercase bg-white/5">
+                     <tr>
+                        <th scope="col" class="px-6 py-3">Thời gian</th>
+                        <th scope="col" class="px-6 py-3">Hành động</th>
+                        <th scope="col" class="px-6 py-3">Chi tiết</th>
+                        <th scope="col" class="px-6 py-3 text-right">Số dư trước</th>
+                        <th scope="col" class="px-6 py-3 text-right">Thay đổi</th>
+                        <th scope="col" class="px-6 py-3 text-right">Số dư sau</th>
+                    </tr>
+                   </thead>
+                <tbody>
+                    <% if (logs && logs.length > 0) { %>
+                         <% logs.forEach(log => { %>
+                           <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                           <%
+                                let before = 'N/A';
+                                let after = 'N/A';
+                                let change = 'N/A';
+                                let changeClass = 'text-gray-400';
+                                if (log.metadata && typeof log.metadata.balanceBefore !== 'undefined' && typeof log.metadata.balanceAfter !== 'undefined') {
+                                    const beforeRaw = log.metadata.balanceBefore;
+                                    const afterRaw = log.metadata.balanceAfter;
+                                    const changeAmountRaw = log.metadata.change || (afterRaw - beforeRaw);
+                                    const changeAmount = Number(changeAmountRaw);
+
+                                    before = Number(beforeRaw).toLocaleString('vi-VN') + 'đ';
+                                    after = Number(afterRaw).toLocaleString('vi-VN') + 'đ';
+
+                                    if (changeAmount > 0) {
+                                        change = `+${changeAmount.toLocaleString('vi-VN')}đ`;
+                                        changeClass = 'text-green-400';
+                                    } else if (changeAmount < 0) {
+                                        change = `${changeAmount.toLocaleString('vi-VN')}đ`;
+                                        changeClass = 'text-red-400';
+                                    } else {
+                                        change = '0đ';
+                                    }
+                                }
+                            %>
+                                <td class="px-6 py-4 text-gray-400 whitespace-nowrap"><%= new Date(log.createdAt).toLocaleString('vi-VN') %></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <% const actionInfo = actionLabels[log.action] || { label: log.action, color: 'bg-gray-700 text-gray-300' }; %>
+                                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= actionInfo.color %>">
+                                        <%= actionInfo.label %>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-300"><%= log.details %></td>
+                                <td class="px-6 py-4 text-gray-400 font-mono text-right"><%= before %></td>
+                                <td class="px-6 py-4 font-mono text-right font-semibold <%= changeClass %>"><%= change %></td>
+                                <td class="px-6 py-4 text-white font-mono text-right font-bold"><%= after %></td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="6" class="text-center py-16 px-6">
+                                <i class="ri-file-search-line text-6xl text-gray-700"></i>
+                                <h4 class="mt-4 text-xl font-semibold text-white">Không tìm thấy giao dịch nào</h4>
+                                <p class="mt-2 text-gray-400">Tài khoản của bạn chưa có hoạt động nào liên quan đến số dư.</p>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+             </table>
+        </div>
+    </div>
+
+    <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
+</div>

@@ -104,10 +104,12 @@
                      <tr>
                         <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Username</th>
+                        <th scope="col" class="px-6 py-3">Mật khẩu</th>
                         <th scope="col" class="px-6 py-3">Proxy</th>
                         <th scope="col" class="px-6 py-3">Trạng Thái</th>
                         <th scope="col" class="px-6 py-3 text-center">Success</th>
                         <th scope="col" class="px-6 py-3 text-center">Error</th>
+                        <th scope="col" class="px-6 py-3 text-center">Check Lỗi</th>
                         <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Lần cuối sử dụng' %></th>
                     </tr>
                 </thead>
@@ -126,6 +128,7 @@
  border-white/10 hover:bg-white/5 transition-colors duration-200">
                             <td class="p-4"><input type="checkbox" value="<%= account._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
                             <td class="px-6 py-4 font-medium text-white"><%= account.uid %></td>
+                            <td class="px-6 py-4 font-medium text-white"><%= account.password %></td>
                      
                              <td id="proxy-cell-<%= account._id %>" class="px-6 py-4 text-gray-400 font-mono"><%= account.proxy || 'N/A' %></td>
                             <td class="px-6 py-4">
@@ -146,6 +149,7 @@
                             </td>
                             <td class="px-6 py-4 text-center font-semibold text-green-400"><%= account.successCount || 0 %></td>
                             <td class="px-6 py-4 text-center font-semibold text-red-400"><%= account.errorCount || 0 %></td>
+                            <td class="px-6 py-4 text-center font-semibold text-red-400"><%= account.dieStreak || 0 %></td>
                             <td id="lastUsed-<%= account._id %>" class="px-6 
  py-4 text-gray-400">
                                 <% if (inTrash && account.deletedAt) { %>

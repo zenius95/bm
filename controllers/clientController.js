@@ -2,11 +2,20 @@
 const User = require('../models/User');
 const Order = require('../models/Order');
 const Item = require('../models/Item');
-const Log = require('../models/Log'); // Thêm Log model
+const ActivityLog = require('../models/ActivityLog');
 const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 
 const clientController = {};
+
+// Định nghĩa nhãn cho các hành động phía client
+const CLIENT_ACTION_LABELS = {
+    'CLIENT_CREATE_ORDER': { label: 'Tạo Đơn hàng', color: 'bg-cyan-500/20 text-cyan-400' },
+    'CLIENT_DEPOSIT': { label: 'Nạp tiền', color: 'bg-emerald-500/20 text-emerald-400' },
+    'CLIENT_DEPOSIT_AUTO': { label: 'Nạp tiền Tự động', color: 'bg-teal-500/20 text-teal-400' },
+    'ORDER_REFUND': { label: 'Hoàn tiền Đơn hàng', color: 'bg-orange-500/20 text-orange-400' },
+    'ADMIN_ADJUST_BALANCE': { label: 'Admin Điều chỉnh', color: 'bg-purple-500/20 text-purple-400' },
+};
 
 clientController.getDashboard = (req, res) => {
     const stats = {
@@ -189,26 +198,11 @@ clientController.getOrderDetailPage = async (req, res) => {
 
         const items = await Item.find({ orderId: order._id }).lean();
         order.items = items;
-
-        const logs = await Log.find({ orderId: order._id }).sort({ timestamp: 1 }).lean();
         
-        // Nhóm logs theo itemId để dễ dàng hiển thị trên giao diện
-        const logsByItem = logs.reduce((acc, log) => {
-            if (log.itemId) {
-                const itemIdStr = log.itemId.toString();
-                if (!acc[itemIdStr]) {
-                    acc[itemIdStr] = [];
-                }
-                acc[itemIdStr].push(log);
-            }
-            return acc;
-        }, {});
-
         res.render('client/order-detail', {
             page: 'orders',
             title: `Chi Tiết Đơn Hàng #${order.shortId}`,
-            order,
-            logsByItem // Gửi dữ liệu logs đã nhóm
+            order
         });
     } catch (error) {
         console.error("Client get order detail error:", error);
@@ -226,5 +220,49 @@ clientController.getDepositPage = (req, res) => {
         depositInfo
     });
 };
+
+clientController.getTransactionListPage = async (req, res) => {
+    const pageNum = parseInt(req.query.page, 10) || 1;
+    const limit = 20;
+
+    const transactionActions = [
+        'CLIENT_CREATE_ORDER',
+        'CLIENT_DEPOSIT',
+        'CLIENT_DEPOSIT_AUTO',
+        'ORDER_REFUND',
+        'ADMIN_ADJUST_BALANCE'
+    ];
+
+    const query = { 
+        user: req.session.user.id, 
+        action: { $in: transactionActions } 
+    };
+
+    try {
+        const totalItems = await ActivityLog.countDocuments(query);
+        const logs = await ActivityLog.find(query)
+            .sort({ createdAt: -1 })
+            .skip((pageNum - 1) * limit)
+            .limit(limit)
+            .lean();
+
+        res.render('client/transactions', {
+            page: 'transactions',
+            title: 'Lịch Sử Giao Dịch',
+            logs,
+            actionLabels: CLIENT_ACTION_LABELS,
+            pagination: {
+                totalItems,
+                currentPage: pageNum,
+                totalPages: Math.ceil(totalItems / limit),
+            },
+            currentQuery: req.query
+        });
+    } catch (error) {
+        console.error("Client get transaction list error:", error);
+        res.status(500).send('Lỗi server khi tải lịch sử giao dịch.');
+    }
+};
+
 
 module.exports = clientController;

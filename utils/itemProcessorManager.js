@@ -230,7 +230,7 @@ class ItemProcessorManager extends EventEmitter {
             const logDetails = `Hoàn tiền chênh lệch ${refundAmount.toLocaleString('vi-VN')}đ cho đơn hàng #${order.shortId} sau khi quyết toán.`;
             await logActivity(user._id, 'ORDER_REFUND', {
                 details: logDetails,
-                context: 'System',
+                context: 'Admin',
                 metadata: {
                     balanceBefore: balanceBefore,
                     balanceAfter: user.balance,
