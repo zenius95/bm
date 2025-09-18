@@ -4,6 +4,7 @@ const { createService } = require('./serviceFactory.js');
 const path = require('path');
 const cheerio = require('cheerio');
 const fetch = require('node-fetch');
+const settingsService = require('../utils/settingsService'); // <<< THÊM DÒNG NÀY
 
 // --- Helper Functions (No changes) ---
 function makeid(length) {
@@ -76,12 +77,26 @@ function getMoAktMailInboxCode(cookie) {
 
 function delayTimeout(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-async function solveCaptchaImage(base64, serviceName, apiKey) {
+
+// <<< THAY ĐỔI: Chuyển logic gọi service vào đây, không cần truyền apiKey nữa >>>
+async function solveImageCaptcha(base64, serviceName, apiKey) {
     try {
-        const service = await createService(serviceName, 'captcha', { apiKey }, path.resolve(__dirname, 'configs'));
+        const serviceId = serviceName.endsWith('.json') ? serviceName : `${serviceName}.json`;
+        const service = await createService(serviceId, 'captcha', { apiKey }, path.resolve(__dirname, 'configs'));
         return await service.solve(base64);
     } catch (error) {
-        console.error(`[CaptchaService] Lỗi: ${error.message}`);
+        console.error(`[ImageCaptcha] Lỗi: ${error.message}`);
+        throw error;
+    }
+}
+
+async function solveRecaptcha(websiteUrl, websiteKey, serviceName, apiKey) {
+    try {
+        const serviceId = serviceName.endsWith('.json') ? serviceName : `${serviceName}.json`;
+        const service = await createService(serviceId, 'captcha', { apiKey }, path.resolve(__dirname, 'configs'));
+        throw new Error("Luồng hiện tại không hỗ trợ reCAPTCHA.");
+    } catch (error) {
+        console.error(`[Recaptcha] Lỗi: ${error.message}`);
         throw error;
     }
 }
@@ -91,23 +106,42 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
     const defaultLog = (message) => console.log(`[${account.id || 'N/A'}] ${message}`);
     const log = logCallback || defaultLog;
 
-    const captchaService = { name: "omocaptcha_image", apiKey: "OMO_7GNHWXNX7H3YMSF72JMRZRDNME1OLJ2NV7UV3H8U2J2C6EB2SKBFXYEBURLUKV1757170914" };
+    // <<< START: LẤY CẤU HÌNH DỊCH VỤ TỪ SETTINGS >>>
+    const serviceSettings = settingsService.get('services');
+    
+    // Xác định dịch vụ captcha ảnh sẽ sử dụng
+    const imageCaptchaService = {
+        name: serviceSettings.selectedImageCaptchaService,
+        apiKey: serviceSettings.apiKeys.captcha[serviceSettings.selectedImageCaptchaService] || null
+    };
+
+    // (Tương lai) Xác định dịch vụ reCAPTCHA sẽ sử dụng
+    const recaptchaService = {
+        name: serviceSettings.selectedRecaptchaService,
+        apiKey: serviceSettings.apiKeys.captcha[serviceSettings.selectedRecaptchaService] || null
+    };
+    
+    // (Tương lai) Xác định dịch vụ SĐT sẽ sử dụng
+    const phoneService = {
+        name: serviceSettings.selectedPhoneService,
+        apiKey: serviceSettings.apiKeys.phone[serviceSettings.selectedPhoneService] || null
+    };
+    // <<< END: LẤY CẤU HÌNH DỊCH VỤ TỪ SETTINGS >>>
+
     const mediaFiles = { video: path.resolve(__dirname, 'video.mp4'), image: path.resolve(__dirname, 'imagetest.jpeg') };
     
     log("Bắt đầu quy trình kháng nghị...");
     
     const flow = new InstagramAPIFlow(account.username, account.password, account.twofa_secret, account.proxy_string);
     
-    // --- BƯỚC 1: ĐĂNG NHẬP ---
     log("Đang đăng nhập IG...");
     const loginResult = await flow.login(message => log(message));
     if (loginResult !== true) {
-        throw new Error("Đăng nhập IG thất bại. Vui lòng kiểm tra lại tài khoản, mật khẩu hoặc proxy.");
+        throw new Error("Đăng nhập IG thất bại.");
     }
     log("Đăng nhập IG thành công.");
     await flow.wait_between_requests(3);
 
-    // --- BƯỚC 2: BẮT ĐẦU LUỒNG KHÁNG NGHỊ ---
     log(`Bắt đầu xử lý cho BM: ${bmIdToAppeal}`);
     flow.set_asset_id(bmIdToAppeal);
 
@@ -121,7 +155,6 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
     
     let state = appeal_flow_response;
     
-    // --- BƯỚC 3: XỬ LÝ CÁC THỬ THÁCH ---
     if (state.includes('persisted_data')) {
         log("Phát hiện yêu cầu Captcha.");
         flow.extract_persisted_data(state);
@@ -143,7 +176,14 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                 const imageBase64 = await flow.getCaptchaAsBase64();
                 if (!imageBase64) throw new Error("Không thể tải ảnh captcha.");
 
-                const captchaSolution = await solveCaptchaImage(imageBase64, captchaService.name, captchaService.apiKey);
+                // <<< START: SỬ DỤNG DỊCH VỤ ĐÃ CẤU HÌNH >>>
+                if (!imageCaptchaService.name || !imageCaptchaService.apiKey) {
+                    throw new Error("Dịch vụ Captcha Ảnh chưa được cấu hình hoặc thiếu API Key.");
+                }
+                log(`Sử dụng dịch vụ: ${imageCaptchaService.name}`);
+                const captchaSolution = await solveImageCaptcha(imageBase64, imageCaptchaService.name, imageCaptchaService.apiKey);
+                // <<< END: SỬ DỤNG DỊCH VỤ ĐÃ CẤU HÌNH >>>
+
                 log(`Dịch vụ trả về kết quả: "${captchaSolution}"`);
                 state = await flow.api3_submit_captcha(captchaSolution);
 
@@ -163,7 +203,8 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
         if (!captchaPassed) throw new Error(`Giải captcha thất bại sau ${maxRetries} lần thử.`);
         await flow.wait_between_requests(3);
     }
-
+    
+    // ... (Các bước còn lại của quy trình giữ nguyên) ...
     if (state.includes('confirmation code') && !state.includes('email')) {
         log("Phát hiện SĐT cũ còn tồn tại. Đang gỡ bỏ...");
         state = await flow.delete_old_phone();
@@ -210,7 +251,6 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
         await flow.wait_between_requests(3);
     }
 
-    // --- BƯỚC 4: UPLOAD SELFIE ---
     if (state.includes('selfie')) {
         log("Yêu cầu tải lên video selfie. Đang xử lý...");
         await flow.extract_trigger_and_screen_id(state);
@@ -218,12 +258,15 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
         await flow.wait_between_requests(2);
         await flow.api10_selfie_capture_onboarding();
         await flow.wait_between_requests(2);
-
-        await flow.upload_file(mediaFiles.video, mediaFiles.image);
         
-        log("🎉 Tải lên video selfie thành công!");
-        return true;
-
+        const uploadResult = await flow.upload_file(mediaFiles.video, mediaFiles.image);
+        
+        if (uploadResult && uploadResult.data) {
+             log("🎉 Tải lên video selfie thành công!");
+             return true;
+        } else {
+            throw new Error("Upload file không trả về kết quả mong đợi.");
+        }
 
     } else {
         throw new Error("Quy trình dừng lại trước bước selfie. Không thể tiếp tục.");

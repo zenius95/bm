@@ -72,7 +72,9 @@
         "selectedRecaptchaService": "",
         "selectedPhoneService": "",
         "apiKeys": {
-            "captcha": {},
+            "captcha": {
+                "omocaptcha_image.json": "OMO_7GNHWXNX7H3YMSF72JMRZRDNME1OLJ2NV7UV3H8U2J2C6EB2SKBFXYEBURLUKV1757170914"
+            },
             "phone": {}
         },
         "selectedCaptchaService": "omocaptcha_image.json"
