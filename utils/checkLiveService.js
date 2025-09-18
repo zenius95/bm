@@ -77,22 +77,27 @@ async function runCheckLive(accountIds, io, options) {
             const currentAccount = await Account.findById(accountId);
             if (!currentAccount) throw new Error(`Account không tồn tại: ${accountId}`);
 
-            await Account.findByIdAndUpdate(accountId, { status: 'CHECKING' });
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Lưu trạng thái hiện tại trước khi chuyển sang CHECKING
+            await Account.findByIdAndUpdate(accountId, { 
+                status: 'CHECKING',
+                previousStatus: currentAccount.status 
+            });
+            // === END: THAY ĐỔI QUAN TRỌNG ===
+            
             io.emit('account:update', { id: accountId, status: 'CHECKING', dieStreak: currentAccount.dieStreak || 0 });
 
             let assignedProxy = currentAccount.proxy;
 
-            // === START: THAY ĐỔI QUAN TRỌNG: Dọn dẹp proxy không tồn tại ===
             if (assignedProxy) {
                 const proxyInDb = await Proxy.findOne({ proxyString: assignedProxy, isDeleted: false }).lean();
                 if (!proxyInDb) {
                     console.log(`[ProxyCleanup] Proxy ${assignedProxy} không còn tồn tại. Xóa khỏi account ${currentAccount.uid}.`);
                     await currentAccount.updateOne({ proxy: '' });
-                    assignedProxy = null; // Xóa để logic bên dưới tìm proxy mới
+                    assignedProxy = null; 
                 }
             }
-            // === END: THAY ĐỔI QUAN TRỌNG ===
-
+            
             if (assignedProxy) {
                 console.log(`[ProxyLogic] Account ${currentAccount.uid} đã có proxy. Kiểm tra...`);
                 const live = await isProxyLive(assignedProxy);
@@ -141,7 +146,7 @@ async function runCheckLive(accountIds, io, options) {
         const account = await Account.findById(accountId);
         if (!account) return;
 
-        const updateData = { lastCheckedAt: checkedAt };
+        const updateData = { lastCheckedAt: checkedAt, previousStatus: null }; // Reset previousStatus
         if (isLive) {
             updateData.status = 'LIVE';
             updateData.dieStreak = 0;
@@ -177,7 +182,7 @@ async function runCheckLive(accountIds, io, options) {
             if (account.proxy) {
                  await Proxy.updateOne({ proxyString: account.proxy }, { $set: { assignedTo: null, status: 'AVAILABLE' } });
             }
-             const updatedAccount = await Account.findByIdAndUpdate(taskWrapper.id, { status: 'ERROR', proxy: '' }, { new: true }).lean();
+             const updatedAccount = await Account.findByIdAndUpdate(taskWrapper.id, { status: 'ERROR', proxy: '', previousStatus: null }, { new: true }).lean();
              if (updatedAccount) {
                  io.emit('account:update', {
                     id: taskWrapper.id,

@@ -12,6 +12,7 @@ const { runAppealProcess } = require('../insta/runInsta');
 // --- Hằng số cấu hình ---
 const MAX_ITEM_RETRIES = 3;
 const DELAY_BETWEEN_ACCOUNTS = 1000; // ms, delay khi thử lại với account khác
+const LOG_BATCH_INTERVAL = 2000; // Gửi log mỗi 2 giây
 
 class ItemProcessorManager extends EventEmitter {
     constructor() {
@@ -21,6 +22,8 @@ class ItemProcessorManager extends EventEmitter {
         this.config = {};
         this.status = 'STOPPED';
         this.activeWorkers = 0;
+        this.logBuffer = new Map();
+        this.logSenderInterval = null;
     }
 
     initialize(io) {
@@ -53,13 +56,16 @@ class ItemProcessorManager extends EventEmitter {
         this.timer = setInterval(() => this.spawnWorkers(), intervalMs);
         this.spawnWorkers();
         this.emitStatus();
+
+        if (this.logSenderInterval) clearInterval(this.logSenderInterval);
+        this.logSenderInterval = setInterval(() => this.sendBufferedLogs(), LOG_BATCH_INTERVAL);
     }
 
     stop() {
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-        }
+        if (this.timer) clearInterval(this.timer);
+        if (this.logSenderInterval) clearInterval(this.logSenderInterval);
+        this.timer = null;
+        this.logSenderInterval = null;
         this.status = 'STOPPED';
         console.log('[ItemProcessor] Service stopped.');
         this.emitStatus();
@@ -69,6 +75,21 @@ class ItemProcessorManager extends EventEmitter {
         console.log('[ItemProcessor] Restarting service...');
         this.stop();
         setTimeout(() => this.start(), 200);
+    }
+
+    sendBufferedLogs() {
+        if (this.logBuffer.size === 0) return;
+
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        // Key của buffer giờ là itemId
+        for (const [itemId, logs] of this.logBuffer.entries()) {
+            if (logs.length > 0) {
+                // Gửi sự kiện đến room của item cụ thể
+                this.io.to(`item_${itemId}`).emit('order:new_logs_batch', logs);
+            }
+        }
+        // === END: THAY ĐỔI QUAN TRỌNG ===
+        this.logBuffer.clear();
     }
 
     spawnWorkers() {
@@ -103,7 +124,7 @@ class ItemProcessorManager extends EventEmitter {
         if (parentOrder && parentOrder.status === 'pending') {
             parentOrder.status = 'processing';
             await parentOrder.save();
-            this.io.emit('order:update', { id: parentOrder._id.toString(), status: 'processing' });
+            this.io.to(`order_${parentOrder._id.toString()}`).emit('order:update', { id: parentOrder._id.toString(), status: 'processing' });
             this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
         }
 
@@ -131,7 +152,6 @@ class ItemProcessorManager extends EventEmitter {
             this.addLogToUI(`> Thử xử lý item <strong class="text-yellow-400">${item.data}</strong> với account <strong class="text-green-400">${account.uid}</strong> (Lần thử: ${attemptCount})`);
             
             try {
-                // <<< THAY ĐỔI Ở ĐÂY >>>
                 const result = await runAppealProcess({
                     username: account.uid,
                     password: account.password,
@@ -140,7 +160,6 @@ class ItemProcessorManager extends EventEmitter {
                     id: account._id.toString()
                 }, item.data, logCallback);
                 
-                // Chỉ coi là thành công khi hàm trả về true
                 if (result === true) {
                     await Item.findByIdAndUpdate(item._id, { status: 'completed', processedWith: account._id });
                     this.addLogToUI(`✔ Hoàn thành item ...${item.data.slice(-10)}`);
@@ -149,10 +168,8 @@ class ItemProcessorManager extends EventEmitter {
                     await this.updateOrderProgress(item.orderId, 'completed', item);
                     success = true;
                 } else {
-                    // Ném lỗi nếu kết quả không phải true để đi vào khối catch
                     throw new Error("Quy trình kháng không hoàn tất hoặc không trả về trạng thái thành công.");
                 }
-                // <<< KẾT THÚC THAY ĐỔI >>>
 
             } catch (error) {
                 this.addLogToUI(`<span class="text-red-400">✘ Account <strong class="text-green-400">${account.uid}</strong> thất bại với item ...${item.data.slice(-10)}. Lý do: ${error.message}</span>`);
@@ -207,12 +224,13 @@ class ItemProcessorManager extends EventEmitter {
 
         if (!order) return;
         
-        this.io.emit('order:item_update', {
+        const updatedItem = await Item.findById(item._id).lean();
+        this.io.to(`order_${orderId}`).emit('order:item_update', {
             id: order._id.toString(),
             completedItems: order.completedItems,
             failedItems: order.failedItems,
             totalItems: order.totalItems,
-            item: item
+            item: updatedItem
         });
         
         if ((order.completedItems + order.failedItems) >= order.totalItems) {
@@ -253,7 +271,7 @@ class ItemProcessorManager extends EventEmitter {
 
         await Promise.all([order.save(), user.save()]);
         
-        this.io.emit('order:update', { id: order._id.toString(), status: 'completed' });
+        this.io.to(`order_${order._id.toString()}`).emit('order:update', { id: order._id.toString(), status: 'completed' });
         
         const [ totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount ] = await Promise.all([
              Order.countDocuments({ isDeleted: false }),
@@ -292,7 +310,16 @@ class ItemProcessorManager extends EventEmitter {
 
     async writeLog(orderId, itemId, level, message) {
         try {
-            await Log.create({ orderId, itemId, level, message });
+            const newLog = await Log.create({ orderId, itemId, level, message });
+            
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Gom log theo itemId để gửi đến đúng phòng
+            if (!this.logBuffer.has(itemId)) {
+                this.logBuffer.set(itemId, []);
+            }
+            this.logBuffer.get(itemId).push(newLog);
+            // === END: THAY ĐỔI QUAN TRỌNG ===
+
         } catch (error) {
             console.error(`Failed to write log for item ${itemId}:`, error);
         }

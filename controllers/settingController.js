@@ -48,14 +48,9 @@ async function getServicesFromDir(dirPath) {
     }
 }
 
-
-async function logSettingsChange(req, section) {
-    await logActivity(req.session.user.id, 'ADMIN_UPDATE_SETTINGS', {
-        details: `Admin '${req.session.user.username}' đã cập nhật cài đặt: ${section}.`,
-        ipAddress: req.ip || req.connection.remoteAddress,
-        context: 'Admin'
-    });
-}
+// === START: THAY ĐỔI QUAN TRỌNG ===
+// Đã xóa hàm logSettingsChange và các lời gọi đến nó
+// === END: THAY ĐỔI QUAN TRỌNG ===
 
 settingController.getSettingsPage = async (req, res) => {
     try {
@@ -125,7 +120,6 @@ settingController.updateServicesConfig = async (req, res) => {
         };
 
         await settingsService.update('services', newConfig);
-        await logSettingsChange(req, "Cấu hình Dịch vụ bên thứ ba");
         res.json({ success: true, message: 'Cập nhật lựa chọn dịch vụ và API Key thành công.' });
     } catch (error) {
         console.error("Error updating services config:", error.message);
@@ -142,7 +136,6 @@ settingController.updateMasterApiKey = async (req, res) => {
         }
         await settingsService.update('masterApiKey', masterApiKey);
         await Worker.updateOne({ isLocal: true }, { $set: { apiKey: masterApiKey } });
-        await logSettingsChange(req, "Master API Key");
         res.json({ success: true, message: 'Đã cập nhật Master API Key thành công.' });
     } catch (error) {
         console.error("Error updating master api key:", error.message);
@@ -170,8 +163,6 @@ settingController.updateOrderConfig = async (req, res) => {
         cleanedTiers.sort((a, b) => a.quantity - b.quantity);
 
         await settingsService.update('order', { pricingTiers: cleanedTiers });
-
-        await logSettingsChange(req, "Cấu hình Đơn hàng");
         res.json({ success: true, message: 'Cập nhật cài đặt bậc giá thành công.' });
     } catch (error) {
         console.error("Error updating order config:", error.message);
@@ -187,7 +178,6 @@ settingController.updateDepositConfig = async (req, res) => {
         }
         const config = { bankName, accountName, accountNumber };
         await settingsService.update('deposit', config);
-        await logSettingsChange(req, "Cấu hình Nạp tiền");
         res.json({ success: true, message: 'Cập nhật thông tin nạp tiền thành công.' });
     } catch (error) {
         console.error("Error updating deposit config:", error.message);
@@ -208,7 +198,6 @@ settingController.updateAutoDepositConfig = async (req, res) => {
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
         await autoDepositManager.updateConfig(configToUpdate);
-        await logSettingsChange(req, "Cấu hình Tự động Nạp tiền");
         res.json({ success: true, message: 'Cập nhật cài đặt Tự động Nạp tiền thành công.', data: autoDepositManager.getStatus() });
     } catch (error) {
         console.error("Error updating auto deposit config:", error.message);
@@ -230,7 +219,6 @@ settingController.updateAutoCheckConfig = async (req, res) => {
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
         await autoCheckManager.updateConfig(configToUpdate);
-        await logSettingsChange(req, "Cấu hình Tự động Check Live");
         res.json({ success: true, message: 'Cập nhật cài đặt Auto Check thành công.', data: autoCheckManager.getStatus() });
     } catch (error) {
         console.error("Error updating auto check config:", error.message);
@@ -252,7 +240,6 @@ settingController.updateAutoProxyCheckConfig = async (req, res) => {
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
         await autoProxyCheckManager.updateConfig(configToUpdate);
-        await logSettingsChange(req, "Cấu hình Tự động Check Proxy");
         res.json({ success: true, message: 'Cập nhật cài đặt Auto Proxy Check thành công.', data: autoProxyCheckManager.getStatus() });
     } catch (error) {
         console.error("Error updating auto proxy check config:", error.message);
@@ -275,7 +262,6 @@ settingController.updateItemProcessorConfig = async (req, res) => {
         if (Object.keys(configToUpdate).length > 0) {
             await itemProcessorManager.updateConfig(configToUpdate);
         }
-        await logSettingsChange(req, "Cấu hình Tiến trình xử lý");
         res.json({ success: true, message: 'Cập nhật cài đặt Item Processor thành công.', data: itemProcessorManager.getStatus() });
     } catch (error) {
         console.error("Error updating item processor config:", error.message);

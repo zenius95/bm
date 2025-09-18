@@ -30,6 +30,11 @@ const AccountSchema = new mongoose.Schema({
         enum: ['UNCHECKED', 'LIVE', 'DIE', 'CHECKING', 'ERROR', 'IN_USE', 'RESTING'],
         default: 'UNCHECKED'
     },
+    previousStatus: {
+        type: String,
+        enum: ['UNCHECKED', 'LIVE', 'DIE', 'ERROR', 'IN_USE', 'RESTING', null],
+        default: null
+    },
     dieStreak: {
         type: Number,
         default: 0
@@ -55,5 +60,13 @@ const AccountSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// === START: TỐI ƯU HÓA HIỆU NĂNG ===
+// Thêm một chỉ mục kết hợp để tăng tốc độ truy vấn tìm kiếm account khả dụng.
+// MongoDB sẽ sử dụng chỉ mục này để tìm kiếm cực nhanh các tài khoản có status='LIVE',
+// isDeleted=false và sắp xếp theo lastUsedAt mà không cần phải quét toàn bộ bảng.
+AccountSchema.index({ status: 1, isDeleted: 1, lastUsedAt: 1 });
+// === END: TỐI ƯU HÓA HIỆU NĂNG ===
+
 
 module.exports = mongoose.model('Account', AccountSchema);

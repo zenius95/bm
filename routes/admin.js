@@ -42,6 +42,11 @@ router.post('/orders/soft-delete', adminController.handleSoftDelete);
 router.post('/orders/restore', adminController.handleRestore);
 router.post('/orders/hard-delete', adminController.handleHardDelete);
 
+// === START: THÊM ROUTE MỚI ===
+// API để lấy logs cho một item cụ thể
+router.get('/items/:itemId/logs', adminController.getItemLogs);
+// === END: THÊM ROUTE MỚI ===
+
 // --- User Management Routes ---
 router.get('/users', userController.handleGetAll);
 router.post('/users/create', userController.handleCreate);

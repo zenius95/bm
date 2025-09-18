@@ -99,6 +99,22 @@ adminOrderController.handleGetById = async (req, res) => {
     }
 };
 
+// === START: THÊM HÀM MỚI ===
+/**
+ * Lấy danh sách logs cho một item cụ thể.
+ */
+adminOrderController.getItemLogs = async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const logs = await Log.find({ itemId: itemId }).sort({ timestamp: 'asc' }).lean();
+        res.json({ success: true, logs });
+    } catch (error) {
+        console.error(`Error getting logs for item ${req.params.itemId}:`, error);
+        res.status(500).json({ success: false, message: 'Lỗi server khi tải logs.' });
+    }
+};
+// === END: THÊM HÀM MỚI ===
+
 adminOrderController.handleCreate = async (req, res) => {
     try {
         const { itemsData, userId } = req.body;

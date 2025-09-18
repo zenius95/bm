@@ -81,8 +81,10 @@ function delayTimeout(ms) { return new Promise(resolve => setTimeout(resolve, ms
 // <<< THAY ĐỔI: Chuyển logic gọi service vào đây, không cần truyền apiKey nữa >>>
 async function solveImageCaptcha(base64, serviceName, apiKey) {
     try {
-        const serviceId = serviceName.endsWith('.json') ? serviceName : `${serviceName}.json`;
-        const service = await createService(serviceId, 'captcha', { apiKey }, path.resolve(__dirname, 'configs'));
+        // === START: SỬA LỖI & DỌN DẸP ===
+        // Bỏ đi logic kiểm tra .json thừa thãi
+        const service = await createService(serviceName, 'captcha', { apiKey }, path.resolve(__dirname, 'configs'));
+        // === END: SỬA LỖI & DỌN DẸP ===
         return await service.solve(base64);
     } catch (error) {
         console.error(`[ImageCaptcha] Lỗi: ${error.message}`);

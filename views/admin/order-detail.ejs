@@ -9,17 +9,15 @@
 
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
         <div class="px-6 py-4 flex 
-
- 
- justify-between items-center border-b border-white/10">
+justify-between items-center border-b border-white/10">
             <h3 class="text-lg font-semibold text-white">Thông tin chung</h3>
             <% 
                 let statusClass = 'bg-gray-700 text-gray-300';
-if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
                 if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
-if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
+                if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
             %>
-            <span class="px-3 py-1 text-sm font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
+            <span id="order-status-badge" class="px-3 py-1 text-sm font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
         </div>
         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <p class="text-gray-300"><strong>ID:</strong> <span class="font-mono text-blue-400">#<%= order.shortId %></span></p>
@@ -27,7 +25,7 @@ if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
 order.user.username : 'N/A' %></span></p>
             <p class="text-gray-300"><strong>Ngày tạo:</strong> <span class="text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></span></p>
             <p class="text-gray-300"><strong>Đơn giá ban đầu:</strong> <span class="text-gray-400"><%= order.pricePerItem.toLocaleString('vi-VN') %>đ / item</span></p>
-            <p class="text-gray-300"><strong>Tiến độ:</strong> <span class="font-semibold text-white"><%= order.completedItems %> Thành công / <%= order.failedItems %> Thất bại (<%= order.completedItems + order.failedItems %> / <%= order.totalItems %>)</span></p>
+            <p class="text-gray-300"><strong>Tiến độ:</strong> <span class="font-semibold text-white"><span id="completed-count"><%= order.completedItems %></span> Thành công / <span id="failed-count"><%= order.failedItems %></span> Thất bại (<span id="processed-count"><%= order.completedItems + order.failedItems %></span> / <span id="total-count"><%= order.totalItems %></span>)</span></p>
         </div>
         
     
@@ -35,34 +33,31 @@ order.user.username : 'N/A' %></span></p>
         <% if (order.status === 'completed' || order.status === 'failed') { %>
             <%
                 const initialCost = order.pricePerItem * order.totalItems;
-const finalCost = order.totalCost;
+                const finalCost = order.totalCost;
                 const refundAmount = initialCost - finalCost;
-%>
+            %>
             <div class="p-6 border-t border-white/10">
                 <h4 class="text-base font-semibold text-white mb-3">Quyết toán & Chi phí</h4>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between items-center">
-                    
     <span class="text-gray-400">Chi phí tạm tính ban đầu</span>
                         <span class="font-mono text-gray-400"><%= initialCost.toLocaleString('vi-VN') %>đ</span>
                     </div>
                     <div class="flex justify-between items-center">
-                   
      <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
                         <strong class="font-mono text-yellow-400"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
                     </div>
                     <div class="flex justify-between items-center text-xs">
-                        <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
-                        <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ? (finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
+                         <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
+                        <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ?
+(finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
                     </div>
                     <% if (refundAmount > 0) { %>
-           
-         <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
-                        <strong class="text-green-400">Đã hoàn lại cho user</strong>
+                    <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
+     <strong class="text-green-400">Đã hoàn lại cho user</strong>
                         <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
                     </div>
-      
-              <% } %>
+                    <% } %>
                 </div>
             </div>
         <% } %>
@@ -70,126 +65,214 @@ const finalCost = order.totalCost;
 
     </div>
 
-  
-     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div class="lg:col-span-5">
-     
-       <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full">
-          
-               <div class="px-6 py-4 border-b border-white/10">
-                    <h3 class="text-lg font-semibold text-white">Danh Sách Items (<%= order.items.length %>)</h3>
-                </div>
-   
-           
-      <div class="overflow-auto max-h-96">
-                    <table class="w-full text-sm text-left 
- text-gray-300">
-                        <thead class="text-xs text-gray-400 uppercase bg-white/5 sticky top-0">
-                            <tr>
-         
-                      <th class="px-6 py-3">Item Data</th>
-        
-                                 <th class="px-6 py-3 text-center">Trạng Thái</th>
-                            </tr>
-  
-                       </thead>
-                   
-                         <tbody class="divide-y divide-white/10">
-                            <% order.items.forEach(item => 
-{ %>
-                                <tr class="hover:bg-white/5">
-                            
-                                     <td 
-class="px-6 py-3"><%= item.data %></td>
-                                    <td class="px-6 py-3 text-center">
-                                       <% if (item.status === 'completed') { %>
-    
-         
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+        <div class="px-6 py-4 border-b border-white/10">
+            <h3 class="text-lg font-semibold text-white">Danh Sách Items (<%= order.items.length %>)</h3>
+        </div>
+        <div class="overflow-auto max-h-[60vh]">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-400 uppercase bg-white/5 sticky top-0 backdrop-blur-sm">
+                    <tr>
+                        <th class="px-6 py-3">Item Data</th>
+                        <th class="px-6 py-3 text-center">Trạng Thái</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/10">
+                    <% order.items.forEach(item => { %>
+                        <tr id="item-row-<%= item._id %>" class="hover:bg-white/10 transition-colors duration-200 cursor-pointer" data-item-id="<%= item._id %>" data-item-data="<%= item.data %>">
+                            <td class="px-6 py-3 font-mono"><%= item.data %></td>
+                            <td class="px-6 py-3 text-center">
+                               <% if (item.status === 'completed') { %>
                                     <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400" title="Completed">
-                                                <i class="ri-check-line"></i>
-  
-    
-                                           </span>
-                                       <% } else if (item.status === 'failed') { %>
-          
- 
-                                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400" title="Failed">
-                                             
-   <i class="ri-close-line"></i>
-         
-                                             </span>
-                                       <% } else 
-if (item.status === 'processing') { %>
-                  
-                                           <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400" title="Processing">
-                         
-                       <i class="ri-loader-4-line animate-spin"></i>
-               
-                                             </span>
-               
-                        <% } else { %>
-                            
+                                        <i class="ri-check-line"></i>
+                                    </span>
+                               <% } else if (item.status === 'failed') { %>
+                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400" title="Failed">
+                                        <i class="ri-close-line"></i>
+                                    </span>
+                               <% } else if (item.status === 'processing') { %>
+                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400" title="Processing">
+                                        <i class="ri-loader-4-line animate-spin"></i>
+                                     </span>
+                                <% } else { %>
                                      <span class="inline-flex items-center justify-center w-6 h-6 rounded-full 
 bg-gray-500/20 text-gray-400" title="Queued">
-                                                <i class="ri-time-line"></i>
-                          
-                       
-                    </span>
-                                       <% } %>
-                                    </td>
-   
-  
-                                 </tr>
-                            <% });
-%>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                         <i class="ri-time-line"></i>
+                                    </span>
+                                <% } %>
+                            </td>
+                         </tr>
+                    <% }); %>
+                </tbody>
+            </table>
         </div>
-
-        <div class="lg:col-span-7">
-           
-
-              <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl h-full flex flex-col">
-                <div class="px-6 py-4 border-b border-white/10">
-                    <h3 class="text-lg font-semibold text-white">Logs</h3>
-                </div>
-                <div class="p-4 flex-grow 
-overflow-y-auto max-h-96 font-mono text-xs space-y-2">
-        
-                    <% if (logs && logs.length > 0) { %>
-                        <% logs.forEach(log => { %>
-                            <div class="flex items-start">
-  
-                     
-                         <span class="text-gray-500 mr-3"><%= new Date(log.timestamp).toLocaleTimeString('vi-VN') %></span>
-                                <% if (log.level === 'INFO') { %>
-           
-                         <span class="text-green-400 font-bold mr-2">[INFO]</span>
-          
-                                 <% } else { %>
-                         
-           <span class="text-red-400 font-bold mr-2">[ERROR]</span>
-                                
-                                 <% } %>
-                   
-             <span class="text-gray-300 flex-1"><%- log.message %></span>
-                            </div>
-                        <% });
-%>
-                    <% } else { %>
-                        <div class="text-center py-10 text-gray-500">
-                            <i class="ri-terminal-box-line text-4xl"></i>
-                   
-
-                         <p class="mt-2">Không có log nào được ghi lại.</p>
-                        </div>
-                    <% } %>
-                </div>
-      
-      </div>
-        </div>
-  
-       </div>
+    </div>
 </div>
+
+<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
+
+<div id="item-log-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-4xl p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
+    <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 flex flex-col" style="height: 80vh;">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center flex-shrink-0">
+            <div>
+                <h3 class="text-xl font-bold text-white">Logs cho Item: <span id="modal-item-data" class="font-mono text-blue-400"></span></h3>
+                <p class="text-sm text-gray-400 mt-1">Các bản ghi được cập nhật theo thời gian thực.</p>
+            </div>
+            <button class="btn-cancel p-2 rounded-md hover:bg-white/10 text-gray-400 transition"><i class="ri-close-line ri-lg"></i></button>
+        </div>
+        <div id="modal-log-content" class="p-4 flex-grow overflow-y-auto font-mono text-xs space-y-2 flex flex-col-reverse">
+            <div class="text-gray-500 text-center m-auto">Đang tải logs...</div>
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const orderId = "<%= order._id %>";
+    const socket = io();
+
+    // Elements
+    const completedCountEl = document.getElementById("completed-count");
+    const failedCountEl = document.getElementById("failed-count");
+    const processedCountEl = document.getElementById("processed-count");
+    const orderStatusBadge = document.getElementById("order-status-badge");
+    
+    // Modal Elements
+    const backdrop = document.getElementById('modal-backdrop');
+    const itemLogModal = document.getElementById('item-log-modal');
+    const modalItemData = document.getElementById('modal-item-data');
+    const modalLogContent = document.getElementById('modal-log-content');
+    let currentItemRoom = null;
+
+    const showModal = () => {
+        backdrop.classList.remove('hidden');
+        itemLogModal.classList.remove('hidden');
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            itemLogModal.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    };
+
+    const hideModal = () => {
+        if (currentItemRoom) {
+            socket.emit('leave_room', currentItemRoom);
+            console.log(`Left room: ${currentItemRoom}`);
+            currentItemRoom = null;
+        }
+        backdrop.classList.add('opacity-0');
+        itemLogModal.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+            backdrop.classList.add('hidden');
+            itemLogModal.classList.add('hidden');
+        }, 300);
+    };
+
+    backdrop.addEventListener('click', hideModal);
+    itemLogModal.querySelector('.btn-cancel').addEventListener('click', hideModal);
+
+    document.querySelectorAll('#item-list-body tr').forEach(row => {
+        row.addEventListener('click', async () => {
+            const itemId = row.dataset.itemId;
+            const itemData = row.dataset.itemData;
+
+            modalItemData.textContent = itemData;
+            modalLogContent.innerHTML = '<div class="text-gray-500 text-center m-auto">Đang tải logs...</div>';
+            showModal();
+
+            // Fetch initial logs
+            try {
+                const response = await fetch(`/admin/items/${itemId}/logs`);
+                const result = await response.json();
+                modalLogContent.innerHTML = '';
+                if (result.success && result.logs.length > 0) {
+                    result.logs.forEach(log => appendLog(log));
+                } else if (!result.success) {
+                    modalLogContent.innerHTML = `<div class="text-red-400 text-center m-auto">Lỗi: ${result.message}</div>`;
+                } else {
+                     modalLogContent.innerHTML = '<div class="text-gray-500 text-center m-auto">Chưa có log nào cho item này.</div>';
+                }
+            } catch (error) {
+                 modalLogContent.innerHTML = `<div class="text-red-400 text-center m-auto">Lỗi kết nối: ${error.message}</div>`;
+            }
+            
+            // Join item-specific room for real-time updates
+            currentItemRoom = `item_${itemId}`;
+            socket.emit('join_room', currentItemRoom);
+            console.log(`Joined room: ${currentItemRoom}`);
+        });
+    });
+
+    function appendLog(log, isBatch = false) {
+        const logEl = document.createElement('div');
+        logEl.className = 'flex items-start';
+        const timestamp = new Date(log.timestamp).toLocaleTimeString('vi-VN');
+        const levelClass = log.level === 'INFO' ? 'text-green-400' : 'text-red-400';
+        
+        logEl.innerHTML = `
+            <span class="text-gray-500 mr-3">${timestamp}</span>
+            <span class="${levelClass} font-bold mr-2">[${log.level}]</span>
+            <span class="text-gray-300 flex-1">${log.message}</span>
+        `;
+
+        if (isBatch) {
+             modalLogContent.prepend(logEl);
+        } else {
+            // Remove initial message if it exists
+            const initialMsg = modalLogContent.querySelector('div:only-child');
+            if (initialMsg && (initialMsg.textContent.includes('Đang tải') || initialMsg.textContent.includes('Chưa có log'))) {
+                modalLogContent.innerHTML = '';
+            }
+            modalLogContent.prepend(logEl);
+        }
+    }
+
+    socket.on('connect', () => {
+        const orderRoom = `order_${orderId}`;
+        console.log('Connected to socket. Joining room:', orderRoom);
+        socket.emit('join_room', orderRoom);
+    });
+
+    socket.on('order:update', (data) => {
+        if (data.id !== orderId) return;
+        let config = { text: 'pending', color: 'gray' };
+        if (data.status === 'processing') config = { text: 'processing', color: 'yellow' };
+        if (data.status === 'completed') config = { text: 'completed', color: 'green' };
+        if (data.status === 'failed') config = { text: 'failed', color: 'red' };
+        orderStatusBadge.textContent = data.status;
+        orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
+    });
+
+    socket.on('order:item_update', (data) => {
+        if (data.id !== orderId) return;
+        
+        completedCountEl.textContent = data.completedItems;
+        failedCountEl.textContent = data.failedItems;
+        processedCountEl.textContent = data.completedItems + data.failedItems;
+
+        if (data.item) {
+            const itemRow = document.getElementById(`item-row-${data.item._id}`);
+            if (itemRow) {
+                const statusCell = itemRow.cells[1];
+                let itemStatus = { color: 'gray', icon: 'ri-time-line', title: 'Queued' };
+                if (data.item.status === 'processing') itemStatus = { color: 'blue', icon: 'ri-loader-4-line animate-spin', title: 'Processing' };
+                if (data.item.status === 'completed') itemStatus = { color: 'green', icon: 'ri-check-line', title: 'Completed' };
+                if (data.item.status === 'failed') itemStatus = { color: 'red', icon: 'ri-close-line', title: 'Failed' };
+
+                statusCell.innerHTML = `
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-${itemStatus.color}-500/20 text-${itemStatus.color}-400" title="${itemStatus.title}">
+                        <i class="${itemStatus.icon}"></i>
+                    </span>
+                `;
+            }
+        }
+    });
+
+    socket.on('order:new_logs_batch', (logs) => {
+        if (!logs || logs.length === 0 || logs[0].orderId !== orderId) return;
+        if (!currentItemRoom || currentItemRoom !== `item_${logs[0].itemId}`) return;
+        
+        logs.forEach(log => appendLog(log, true));
+    });
+});
+</script>

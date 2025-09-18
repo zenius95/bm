@@ -201,7 +201,10 @@ class RecaptchaService extends BaseCaptchaService {
 async function createService(serviceId, serviceType, options = {}, configDir = null) {
     const baseDir = configDir || path.resolve(__dirname, '../configs');
     const serviceDir = serviceType === 'phone' ? 'phone_services' : 'captcha_services';
-    const configPath = path.join(baseDir, serviceDir, `${serviceId}.json`);
+    // === START: SỬA LỖI ===
+    // Không cộng thêm đuôi .json nữa vì serviceId đã có sẵn
+    const configPath = path.join(baseDir, serviceDir, serviceId);
+    // === END: SỬA LỖI ===
 
     if (!fs.existsSync(configPath)) {
         throw new Error(`Không tìm thấy file cấu hình tại: ${configPath}`);

@@ -12,6 +12,9 @@ const expressLayouts = require('express-ejs-layouts');
 
 const User = require('./models/User');
 const Worker = require('./models/Worker');
+const Account = require('./models/Account');
+const Proxy = require('./models/Proxy');
+const Item = require('./models/Item');
 const authController = require('./controllers/authController');
 const apiKeyAuthController = require('./controllers/apiKeyAuthController');
 
@@ -31,18 +34,17 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// === START: THÊM LOGIC SOCKET.IO CONNECTION ===
+// === START: THAY ĐỔI LOGIC SOCKET.IO CONNECTION ===
 io.on('connection', (socket) => {
-
-    // Lắng nghe sự kiện client yêu cầu tham gia room
-    socket.on('join_user_room', (userId) => {
-        if (userId) {
-            socket.join(`user_${userId}`);
+    // Lắng nghe sự kiện client yêu cầu tham gia một room bất kỳ
+    socket.on('join_room', (roomName) => {
+        if (roomName) {
+            socket.join(roomName);
+            // console.log(`Socket ${socket.id} joined room: ${roomName}`); // Dùng để debug nếu cần
         }
     });
-
 });
-// === END: THÊM LOGIC SOCKET.IO CONNECTION ===
+// === END: THAY ĐỔI LOGIC SOCKET.IO CONNECTION ===
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '/views'));
@@ -84,7 +86,6 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// --- Các route không cần session ---
 app.get('/login', authController.getLoginPage);
 app.post('/login', authController.login);
 app.get('/logout', authController.logout);
@@ -93,24 +94,53 @@ app.post('/register', authController.register);
 
 app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
 
-// --- Các route cần session ---
 app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
 app.use('/', authController.isAuthenticated, clientRoutes);
 app.use('/api', authController.isAuthenticated, orderRoutes);
 
+async function cleanupOnStartup() {
+    try {
+        console.log('🧹 Bắt đầu dọn dẹp trạng thái các mục bị kẹt...');
+        const stuckAccounts = await Account.find({ status: 'CHECKING' }).lean();
+        if (stuckAccounts.length > 0) {
+            const bulkOpsAccounts = stuckAccounts.map(acc => ({
+                updateOne: {
+                    filter: { _id: acc._id },
+                    update: { $set: { status: acc.previousStatus || 'UNCHECKED', previousStatus: null } }
+                }
+            }));
+            const accountRes = await Account.bulkWrite(bulkOpsAccounts);
+            console.log(`- Đã khôi phục trạng thái cho ${accountRes.modifiedCount} accounts.`);
+        }
+        const stuckProxies = await Proxy.find({ status: 'CHECKING' }).lean();
+        if (stuckProxies.length > 0) {
+            const bulkOpsProxies = stuckProxies.map(proxy => ({
+                updateOne: {
+                    filter: { _id: proxy._id },
+                    update: { $set: { status: proxy.previousStatus || 'UNCHECKED', previousStatus: null } }
+                }
+            }));
+            const proxyRes = await Proxy.bulkWrite(bulkOpsProxies);
+            console.log(`- Đã khôi phục trạng thái cho ${proxyRes.modifiedCount} proxies.`);
+        }
+        const itemRes = await Item.updateMany(
+            { status: 'processing' },
+            { $set: { status: 'queued' } }
+        );
+        if (itemRes.modifiedCount > 0) {
+            console.log(`- Đã trả ${itemRes.modifiedCount} items về hàng đợi (queued).`);
+        }
+        console.log('✅ Dọn dẹp hoàn tất.');
+    } catch (error) {
+        console.error('❌ Lỗi trong quá trình dọn dẹp khi khởi động:', error);
+    }
+}
 
 async function startServer() {
     console.log('🚀 Starting server, checking connections...');
     
     await settingsService.initialize();
 
-    // Tắt tất cả các dịch vụ tự động khi khởi động server
-    console.log('🔧 Disabling all auto-services on startup...');
-    await settingsService.update('autoCheck', { isEnabled: false });
-    await settingsService.update('autoProxyCheck', { isEnabled: false });
-    await settingsService.update('autoDeposit', { isEnabled: false });
-    console.log('✅ All auto-services have been disabled.');
-    
     await mongoose.connect(config.mongodb.uri)
         .then(() => console.log('✅ MongoDB connection: OK'))
         .catch(err => {
@@ -118,6 +148,14 @@ async function startServer() {
             process.exit(1);
         });
 
+    await cleanupOnStartup();
+
+    console.log('🔧 Disabling all auto-services on startup...');
+    await settingsService.update('autoCheck', { isEnabled: false });
+    await settingsService.update('autoProxyCheck', { isEnabled: false });
+    await settingsService.update('autoDeposit', { isEnabled: false });
+    console.log('✅ All auto-services have been disabled.');
+    
     const adminCount = await User.countDocuments({ role: 'admin' });
     if (adminCount === 0) {
         console.log('No admin user found. Creating default admin...');

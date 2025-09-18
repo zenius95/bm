@@ -14,6 +14,13 @@ const ProxySchema = new mongoose.Schema({
         enum: ['AVAILABLE', 'ASSIGNED', 'DEAD', 'CHECKING', 'UNCHECKED'],
         default: 'UNCHECKED'
     },
+    // === START: THÊM TRƯỜNG MỚI ===
+    previousStatus: {
+        type: String,
+        enum: ['AVAILABLE', 'ASSIGNED', 'DEAD', 'UNCHECKED', null],
+        default: null
+    },
+    // === END: THÊM TRƯỜNG MỚI ===
     assignedTo: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Account',
