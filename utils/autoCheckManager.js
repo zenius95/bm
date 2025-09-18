@@ -6,16 +6,17 @@ const { runCheckLive } = require('../utils/checkLiveService');
 
 const CHECK_INTERVAL = 60 * 1000; // 1 minute
 const RESTING_PERIOD_HOURS = 24;
+const PAUSE_WHEN_NO_ACCOUNTS = 15000; // ms, chờ 15s khi không có account để check
+const PAUSE_BETWEEN_BATCHES = 5000; // ms, chờ 5s giữa các lượt
 
 class AutoCheckManager extends EventEmitter {
     constructor() {
         super();
         this.io = null;
-        this.timer = null;
+        this.loopTimeout = null; // Dùng để kiểm soát vòng lặp thay cho timer
         this.config = {};
         this.status = 'STOPPED';
         this.lastRun = null;
-        this.nextRun = null;
     }
 
     initialize(io) {
@@ -46,41 +47,52 @@ class AutoCheckManager extends EventEmitter {
     }
     
     start() {
-        if (this.timer) {
+        if (this.status === 'RUNNING') {
             console.log('[AutoCheck] Service is already running.');
             return;
         }
-        const intervalMs = this.config.intervalMinutes * 60 * 1000;
-        console.log(`[AutoCheck] Service started. Running every ${this.config.intervalMinutes} minutes.`);
+        console.log(`[AutoCheck] Service started. Running continuously.`);
         this.status = 'RUNNING';
-        this.nextRun = new Date(Date.now() + intervalMs);
-
-        this.timer = setInterval(() => this.executeCheck(), intervalMs);
         this.emitStatus();
+        this.runLoop(); // Bắt đầu vòng lặp chính
     }
     
     stop() {
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-        }
         this.status = 'STOPPED';
-        this.lastRun = null;
-        this.nextRun = null;
+        if (this.loopTimeout) clearTimeout(this.loopTimeout);
+        this.loopTimeout = null;
         console.log('[AutoCheck] Service stopped.');
         this.emitStatus();
     }
 
+    async runLoop() {
+        while (this.status === 'RUNNING') {
+            try {
+                const accountsProcessed = await this.executeCheck();
+                
+                if (accountsProcessed === 0) {
+                    // Nếu không có account nào được xử lý, chờ một lúc trước khi thử lại
+                    await new Promise(resolve => this.loopTimeout = setTimeout(resolve, PAUSE_WHEN_NO_ACCOUNTS));
+                } else {
+                    // Chờ một khoảng ngắn giữa các batch để giảm tải
+                    await new Promise(resolve => this.loopTimeout = setTimeout(resolve, PAUSE_BETWEEN_BATCHES));
+                }
+            } catch (error) {
+                console.error('[AutoCheck] Error in main loop:', error);
+                // Chờ lâu hơn nếu có lỗi
+                await new Promise(resolve => this.loopTimeout = setTimeout(resolve, 60000)); // Chờ 1 phút
+            }
+        }
+    }
+
     async executeCheck() {
-        console.log('[AutoCheck] Starting scheduled check...');
+        console.log('[AutoCheck] Starting a new check cycle...');
         this.lastRun = new Date();
-        const intervalMs = this.config.intervalMinutes * 60 * 1000;
-        this.nextRun = new Date(Date.now() + intervalMs);
         this.emitStatus();
 
         try {
             // === START: THAY ĐỔI LOGIC LỰA CHỌN & ƯU TIÊN ===
-            const { batchSize = 50 } = this.config;
+            const { batchSize = 50, intervalMinutes = 10 } = this.config;
             const accountsToQueue = [];
 
             // 1. Tìm và "đánh thức" các tài khoản RESTING đủ điều kiện
@@ -109,14 +121,17 @@ class AutoCheckManager extends EventEmitter {
             
             accountsToQueue.push(...uncheckedAccounts.map(a => a._id));
 
-            // Ưu tiên 2: Nếu chưa đủ batchSize, lấy các tài khoản còn lại
+            // Ưu tiên 2: Nếu chưa đủ batchSize, lấy các tài khoản còn lại theo ngưỡng thời gian
             if (accountsToQueue.length < batchSize) {
                 const remainingLimit = batchSize - accountsToQueue.length;
+                const priorityTimeLimit = new Date(Date.now() - intervalMinutes * 60 * 1000);
+                
                 const otherAccounts = await Account.find({
                     status: { $in: ['LIVE', 'DIE', 'ERROR'] },
-                    isDeleted: false
+                    isDeleted: false,
+                    lastCheckedAt: { $lte: priorityTimeLimit } // Điều kiện ưu tiên
                 })
-                .sort({ lastCheckedAt: 1 }) // Ưu tiên check acc lâu chưa check nhất
+                .sort({ lastCheckedAt: 1 }) // Sắp xếp từ cũ nhất -> mới nhất
                 .limit(remainingLimit)
                 .select('_id')
                 .lean();
@@ -132,11 +147,14 @@ class AutoCheckManager extends EventEmitter {
                     delay: this.config.delay,
                     timeout: this.config.timeout
                 });
+                return accountsToQueue.length;
             } else {
-                console.log('[AutoCheck] No accounts to check in this run.');
+                console.log('[AutoCheck] No accounts to check in this cycle.');
+                return 0;
             }
         } catch (error) {
             console.error('[AutoCheck] Error during execution:', error);
+            return 0;
         }
     }
 
@@ -145,7 +163,7 @@ class AutoCheckManager extends EventEmitter {
             status: this.status,
             config: this.config,
             lastRun: this.lastRun,
-            nextRun: this.nextRun
+            nextRun: null // Bỏ nextRun vì service chạy liên tục
         };
     }
 

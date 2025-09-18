@@ -2,7 +2,9 @@
 const Account = require('../models/Account');
 const Proxy = require('../models/Proxy');
 const ProcessRunner = require('./processRunner');
+// Import các lớp Error tùy chỉnh để phân loại lỗi
 const InstagramAuthenticator = require('./instagramAuthenticator');
+const { CheckpointError, InvalidCredentialsError, TwoFactorError } = require('./instagramAuthenticator');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const fetch = require('node-fetch');
 
@@ -111,7 +113,6 @@ async function runCheckLive(accountIds, io, options) {
                 assignedProxy = await acquireProxyForAccount(currentAccount);
             }
 
-            let isLive = false;
             const credentials = {
                 username: currentAccount.uid,
                 password: currentAccount.password,
@@ -121,45 +122,39 @@ async function runCheckLive(accountIds, io, options) {
 
             const ig = new InstagramAuthenticator(credentials);
 
+            // === START: LOGIC BẮT LỖI VÀ PHÂN LOẠI MỚI ===
             try {
                 await ig.login();
-                isLive = true
+                // Nếu login thành công, trả về trạng thái LIVE
+                return { finalStatus: 'LIVE', checkedAt: new Date() };
             } catch (error) {
+                 // Nếu là các lỗi xác thực cụ thể, coi là DIE
                  if (error instanceof CheckpointError || error instanceof InvalidCredentialsError || error instanceof TwoFactorError) {
-                    console.error(`Lỗi đăng nhập cho ${currentAccount.uid}: ${error.message}`);
+                    console.error(`Lỗi đăng nhập (DIE) cho ${currentAccount.uid}: ${error.message}`);
+                    return { finalStatus: 'DIE', checkedAt: new Date() };
                 } else {
+                   // Các lỗi khác (timeout, proxy, mạng...) thì ném ra để ProcessRunner coi là ERROR
                    throw error;
                 }
             }
-            
-            return { isLive, checkedAt: new Date() };
+            // === END: LOGIC BẮT LỖI VÀ PHÂN LOẠI MỚI ===
         }
     }));
     
     checkLiveRunner.addTasks(tasks);
 
+    // === START: LOGIC XỬ LÝ KẾT QUẢ MỚI ===
     checkLiveRunner.on('task:complete', async ({ result, taskWrapper }) => {
-        const { isLive, checkedAt } = result;
+        const { finalStatus, checkedAt } = result;
         const accountId = taskWrapper.id;
         const account = await Account.findById(accountId);
         if (!account) return;
 
         const updateData = { lastCheckedAt: checkedAt, previousStatus: null };
-        if (isLive) {
-            updateData.status = 'LIVE';
-            updateData.dieStreak = 0;
-        } else {
-            updateData.status = 'DIE';
-            updateData.dieStreak = (account.dieStreak || 0) + 1;
-        }
 
-        if (updateData.dieStreak >= 5) {
-            updateData.isDeleted = true;
-            updateData.deletedAt = new Date();
-            // Không cần gỡ proxy vì nó có thể đang được account khác dùng
-            await Account.findByIdAndUpdate(accountId, updateData);
-            io.emit('account:trashed', { id: accountId, message: `Account ${account.uid} đã bị xóa do die 5 lần liên tiếp.` });
-        } else {
+        if (finalStatus === 'LIVE') {
+            updateData.status = 'LIVE';
+            updateData.dieStreak = 0; // Reset die streak khi thành công
             await Account.findByIdAndUpdate(accountId, updateData);
             io.emit('account:update', {
                 id: accountId,
@@ -168,22 +163,45 @@ async function runCheckLive(accountIds, io, options) {
                 dieStreak: updateData.dieStreak,
                 proxy: account.proxy
             });
+        } else if (finalStatus === 'DIE') {
+            // Nếu là DIE, chuyển thẳng vào thùng rác
+            updateData.status = 'DIE';
+            updateData.isDeleted = true;
+            updateData.deletedAt = new Date();
+            await Account.findByIdAndUpdate(accountId, updateData);
+            io.emit('account:trashed', { id: accountId, message: `Account ${account.uid} đã DIE (Checkpoint/Sai pass) và được chuyển vào thùng rác.` });
         }
     });
+    // === END: LOGIC XỬ LÝ KẾT QUẢ MỚI ===
 
-     checkLiveRunner.on('task:error', async ({ error, taskWrapper }) => {
-        console.error(`Lỗi không thể thử lại với account ID ${taskWrapper.id}: ${error.message}`);
+    // Logic xử lý lỗi (task:error) giữ nguyên, vì nó đã xử lý đúng trường hợp ERROR
+    checkLiveRunner.on('task:error', async ({ error, taskWrapper }) => {
+        console.error(`Lỗi (ERROR) với account ID ${taskWrapper.id}: ${error.message}`);
         const account = await Account.findById(taskWrapper.id);
-        if (account) {
-            // Không cần gỡ proxy
-             const updatedAccount = await Account.findByIdAndUpdate(taskWrapper.id, { status: 'ERROR', proxy: '', previousStatus: null }, { new: true }).lean();
-             if (updatedAccount) {
-                 io.emit('account:update', {
-                    id: taskWrapper.id,
-                    status: 'ERROR',
-                    dieStreak: updatedAccount.dieStreak
-                });
-            }
+        if (!account) return;
+
+        const newDieStreak = (account.dieStreak || 0) + 1;
+        const updateData = {
+            status: 'ERROR',
+            previousStatus: null,
+            dieStreak: newDieStreak,
+            lastCheckedAt: new Date()
+        };
+
+        if (newDieStreak >= 5) {
+            updateData.isDeleted = true;
+            updateData.deletedAt = new Date();
+            await Account.findByIdAndUpdate(taskWrapper.id, updateData);
+            io.emit('account:trashed', { id: taskWrapper.id, message: `Account ${account.uid} đã bị xóa do ERROR 5 lần liên tiếp.` });
+        } else {
+            await Account.findByIdAndUpdate(taskWrapper.id, updateData);
+            io.emit('account:update', {
+                id: taskWrapper.id,
+                status: 'ERROR',
+                lastCheckedAt: updateData.lastCheckedAt.toLocaleString('vi-VN'),
+                dieStreak: newDieStreak,
+                proxy: account.proxy
+            });
         }
     });
     
