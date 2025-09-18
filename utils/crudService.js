@@ -1,4 +1,10 @@
-// services/CrudService.js
+// utils/crudService.js
+const mongoose = require('mongoose');
+// === START: THÊM IMPORT CÁC MODEL LIÊN QUAN ===
+const Item = require('../models/Item');
+const Log = require('../models/Log');
+// === END: THÊM IMPORT CÁC MODEL LIÊN QUAN ===
+
 class CrudService {
     /**
      * @param {mongoose.Model} Model - Mongoose model
@@ -94,6 +100,14 @@ class CrudService {
     }
 
     async hardDelete(id) {
+        // Áp dụng logic xóa theo tầng cho cả hàm xóa đơn lẻ
+        if (this.Model.modelName === 'Order') {
+            const orderIds = [id];
+            await Promise.all([
+                Item.deleteMany({ orderId: { $in: orderIds } }),
+                Log.deleteMany({ orderId: { $in: orderIds } }),
+            ]);
+        }
         return this.Model.findByIdAndDelete(id);
     }
     
@@ -144,11 +158,38 @@ class CrudService {
         const query = this._buildQuery(queryOptions);
         return this.Model.updateMany(query, { isDeleted: false, deletedAt: null, dieStreak: 0 });
     }
-
+    
+    // === START: NÂNG CẤP LOGIC XÓA HÀNG LOẠT ===
     async hardDeleteMany(queryOptions) {
         const query = this._buildQuery(queryOptions);
-        return this.Model.deleteMany(query);
+
+        // Nếu model không phải là Order, thực hiện xóa như bình thường
+        if (this.Model.modelName !== 'Order') {
+            return this.Model.deleteMany(query);
+        }
+
+        // Logic xóa theo tầng dành riêng cho Order
+        const ordersToDelete = await this.Model.find(query).select('_id').lean();
+        if (ordersToDelete.length === 0) {
+            return { deletedCount: 0 };
+        }
+
+        const orderIds = ordersToDelete.map(o => o._id);
+
+        // Xóa đồng thời Items và Logs liên quan
+        const [itemDeletionResult, logDeletionResult, orderDeletionResult] = await Promise.all([
+            Item.deleteMany({ orderId: { $in: orderIds } }),
+            Log.deleteMany({ orderId: { $in: orderIds } }),
+            this.Model.deleteMany({ _id: { $in: orderIds } }) // Sử dụng ID để xóa chính xác
+        ]);
+
+        console.log(`- Đã xóa ${itemDeletionResult.deletedCount} items.`);
+        console.log(`- Đã xóa ${logDeletionResult.deletedCount} logs.`);
+        console.log(`- Đã xóa ${orderDeletionResult.deletedCount} orders.`);
+
+        return orderDeletionResult;
     }
+    // === END: NÂNG CẤP LOGIC XÓA HÀNG LOẠT ===
 
     async findAllIds(queryOptions) {
         const {

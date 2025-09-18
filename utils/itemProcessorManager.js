@@ -1,6 +1,6 @@
 // utils/itemProcessorManager.js
 const EventEmitter = require('events');
-const settingsService = require('../utils/settingsService');
+const settingsService = require('./settingsService');
 const Order = require('../models/Order');
 const Item = require('../models/Item');
 const Account = require('../models/Account');
@@ -13,6 +13,9 @@ const { runAppealProcess } = require('../insta/runInsta');
 const MAX_ITEM_RETRIES = 3;
 const DELAY_BETWEEN_ACCOUNTS = 1000; // ms, delay khi thử lại với account khác
 const LOG_BATCH_INTERVAL = 2000; // Gửi log mỗi 2 giây
+// === START: THÊM TỪ KHÓA GIẢ LẬP ===
+const SIMULATION_KEYWORDS = ['success', 'error'];
+// === END: THÊM TỪ KHÓA GIẢ LẬP ===
 
 class ItemProcessorManager extends EventEmitter {
     constructor() {
@@ -80,15 +83,11 @@ class ItemProcessorManager extends EventEmitter {
     sendBufferedLogs() {
         if (this.logBuffer.size === 0) return;
 
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Key của buffer giờ là itemId
         for (const [itemId, logs] of this.logBuffer.entries()) {
             if (logs.length > 0) {
-                // Gửi sự kiện đến room của item cụ thể
                 this.io.to(`item_${itemId}`).emit('order:new_logs_batch', logs);
             }
         }
-        // === END: THAY ĐỔI QUAN TRỌNG ===
         this.logBuffer.clear();
     }
 
@@ -127,6 +126,26 @@ class ItemProcessorManager extends EventEmitter {
             this.io.to(`order_${parentOrder._id.toString()}`).emit('order:update', { id: parentOrder._id.toString(), status: 'processing' });
             this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
         }
+
+        // === START: LOGIC GIẢ LẬP ===
+        const itemDataLowerCase = item.data.toLowerCase().trim();
+        if (SIMULATION_KEYWORDS.includes(itemDataLowerCase)) {
+            const delay = Math.random() * (3000 - 1000) + 1000; // Giả lập thời gian xử lý từ 1-3 giây
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            if (itemDataLowerCase === 'success') {
+                await Item.findByIdAndUpdate(item._id, { status: 'completed' });
+                await this.writeLog(item.orderId, item._id, 'INFO', `Item giả lập thành công.`);
+                await this.updateOrderProgress(item.orderId, 'completed', item);
+            } else if (itemDataLowerCase === 'error') {
+                await Item.findByIdAndUpdate(item._id, { status: 'failed' });
+                await this.writeLog(item.orderId, item._id, 'ERROR', `Item giả lập thất bại.`);
+                await this.updateOrderProgress(item.orderId, 'failed', item);
+            }
+            return; // Kết thúc phiên xử lý cho item này
+        }
+        // === END: LOGIC GIẢ LẬP ===
+
 
         this.addLogToUI(`Worker đã nhận item <strong class="text-yellow-400">...${item.data.slice(-10)}</strong>. Bắt đầu tìm account...`);
 
@@ -225,7 +244,9 @@ class ItemProcessorManager extends EventEmitter {
         if (!order) return;
         
         const updatedItem = await Item.findById(item._id).lean();
-        this.io.to(`order_${orderId}`).emit('order:item_update', {
+        const orderRoom = `order_${orderId}`;
+        const userRoom = `user_${order.user._id.toString()}`;
+        this.io.to(orderRoom).to(userRoom).emit('order:item_update', {
             id: order._id.toString(),
             completedItems: order.completedItems,
             failedItems: order.failedItems,
@@ -271,7 +292,9 @@ class ItemProcessorManager extends EventEmitter {
 
         await Promise.all([order.save(), user.save()]);
         
-        this.io.to(`order_${order._id.toString()}`).emit('order:update', { id: order._id.toString(), status: 'completed' });
+        const orderRoom = `order_${order._id.toString()}`;
+        const userRoom = `user_${order.user._id.toString()}`;
+        this.io.to(orderRoom).to(userRoom).emit('order:update', { id: order._id.toString(), status: 'completed' });
         
         const [ totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount ] = await Promise.all([
              Order.countDocuments({ isDeleted: false }),
@@ -312,13 +335,10 @@ class ItemProcessorManager extends EventEmitter {
         try {
             const newLog = await Log.create({ orderId, itemId, level, message });
             
-            // === START: THAY ĐỔI QUAN TRỌNG ===
-            // Gom log theo itemId để gửi đến đúng phòng
             if (!this.logBuffer.has(itemId)) {
                 this.logBuffer.set(itemId, []);
             }
             this.logBuffer.get(itemId).push(newLog);
-            // === END: THAY ĐỔI QUAN TRỌNG ===
 
         } catch (error) {
             console.error(`Failed to write log for item ${itemId}:`, error);

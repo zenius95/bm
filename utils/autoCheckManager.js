@@ -1,8 +1,11 @@
 // utils/autoCheckManager.js
-const settingsService = require('./settingsService');
-const Account = require('../models/Account');
-const { runCheckLive } = require('./checkLiveService');
 const EventEmitter = require('events');
+const Account = require('../models/Account');
+const settingsService = require('../utils/settingsService');
+const { runCheckLive } = require('../utils/checkLiveService');
+
+const CHECK_INTERVAL = 60 * 1000; // 1 minute
+const RESTING_PERIOD_HOURS = 24;
 
 class AutoCheckManager extends EventEmitter {
     constructor() {
@@ -11,159 +14,142 @@ class AutoCheckManager extends EventEmitter {
         this.timer = null;
         this.config = {};
         this.status = 'STOPPED';
+        this.lastRun = null;
         this.nextRun = null;
-        this.isJobRunning = false;
     }
 
     initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Check Manager...');
         this.config = settingsService.get('autoCheck');
-        this.emitStatus();
+        
+        if (this.config.isEnabled) {
+            this.start();
+        } else {
+            this.emitStatus();
+        }
     }
 
     async updateConfig(newConfig) {
-        const oldConfig = { ...this.config };
+        const wasEnabled = this.config.isEnabled;
         this.config = { ...this.config, ...newConfig };
         
         await settingsService.update('autoCheck', this.config);
-        
         console.log(`[AutoCheck] Config updated: ${JSON.stringify(this.config)}`);
 
-        const wasEnabled = oldConfig.isEnabled;
-        const isNowEnabled = this.config.isEnabled;
-        
-        const settingsChanged = this.config.intervalMinutes !== oldConfig.intervalMinutes ||
-                                this.config.concurrency !== oldConfig.concurrency ||
-                                this.config.delay !== oldConfig.delay ||
-                                this.config.timeout !== oldConfig.timeout ||
-                                this.config.batchSize !== oldConfig.batchSize;
-
-        if (wasEnabled && !isNowEnabled) this.stop();
-        else if (!wasEnabled && isNowEnabled) this.start();
-        else if (wasEnabled && isNowEnabled && settingsChanged) this.restart();
-        else this.emitStatus();
+        if (this.config.isEnabled && !wasEnabled) {
+            this.start();
+        } else if (!this.config.isEnabled && wasEnabled) {
+            this.stop();
+        }
+        this.emitStatus();
     }
-
+    
     start() {
-        if (this.timer) clearInterval(this.timer);
-        
+        if (this.timer) {
+            console.log('[AutoCheck] Service is already running.');
+            return;
+        }
         const intervalMs = this.config.intervalMinutes * 60 * 1000;
-        console.log(`[AutoCheck] Service started. Interval: ${this.config.intervalMinutes} minutes.`);
+        console.log(`[AutoCheck] Service started. Running every ${this.config.intervalMinutes} minutes.`);
         this.status = 'RUNNING';
-        
-        const runJob = async () => {
-            if (this.isJobRunning) {
-                console.log('[AutoCheck] A check is already in progress. Skipping this run.');
-                return;
-            }
-            try {
-                this.isJobRunning = true;
-                this.emitStatus();
-                await this.executeCheck();
-            } catch(e) {
-                console.error('[AutoCheck] Error during scheduled check:', e);
-            } finally {
-                this.isJobRunning = false;
-                this.updateNextRunTime();
-            }
-        };
-        
-        runJob();
-        this.timer = setInterval(runJob, intervalMs);
-        this.updateNextRunTime();
-    }
+        this.nextRun = new Date(Date.now() + intervalMs);
 
+        this.timer = setInterval(() => this.executeCheck(), intervalMs);
+        this.emitStatus();
+    }
+    
     stop() {
         if (this.timer) {
             clearInterval(this.timer);
             this.timer = null;
         }
         this.status = 'STOPPED';
+        this.lastRun = null;
         this.nextRun = null;
         console.log('[AutoCheck] Service stopped.');
         this.emitStatus();
     }
 
-    restart() {
-        console.log('[AutoCheck] Restarting service...');
-        this.stop();
-        setTimeout(() => this.start(), 200);
-    }
-    
     async executeCheck() {
-        const batchSize = parseInt(this.config.batchSize, 10) || 50;
-        
-        // Bước 1: "Đánh thức" các account đang nghỉ và chuyển về UNCHECKED
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const restedAccounts = await Account.updateMany(
-            { 
-                status: 'RESTING', 
-                lastUsedAt: { $lte: twentyFourHoursAgo },
-                isDeleted: false
-            },
-            {
-                $set: {
-                    status: 'UNCHECKED', // Chuyển về UNCHECKED để buộc phải check lại
-                    successCount: 0,
-                    errorCount: 0,
-                    lastCheckedAt: null // Reset lastCheckedAt để đảm bảo được ưu tiên
-                }
-            }
-        );
-        if (restedAccounts.modifiedCount > 0) {
-            console.log(`[AutoCheck] Resurrected and reset ${restedAccounts.modifiedCount} RESTING accounts to UNCHECKED.`);
-        }
-        
-        let accountsToCheck = [];
-
-        // Bước 2: Ưu tiên lấy các account UNCHECKED
-        const uncheckedAccounts = await Account.find({ status: 'UNCHECKED', isDeleted: { $ne: true } }).limit(batchSize).lean();
-        accountsToCheck.push(...uncheckedAccounts);
-
-        const remainingLimit = batchSize - accountsToCheck.length;
-
-        // Bước 3: Nếu còn chỗ, lấy các account LIVE (ưu tiên check cũ nhất trước)
-        if (remainingLimit > 0) {
-            const liveAccounts = await Account.find({
-                status: 'LIVE', isDeleted: { $ne: true }
-            }).sort({ lastCheckedAt: 1 }).limit(remainingLimit).lean(); // Sắp xếp tăng dần (cũ nhất trước)
-            accountsToCheck.push(...liveAccounts);
-        }
-
-        if (accountsToCheck.length > 0) {
-            const accountIds = accountsToCheck.map(acc => acc._id.toString());
-            console.log(`[AutoCheck] Found ${accountIds.length} accounts to check.`);
-            await runCheckLive(accountIds, this.io, {
-                concurrency: this.config.concurrency,
-                delay: this.config.delay,
-                timeout: this.config.timeout
-            });
-        } else {
-            console.log('[AutoCheck] No accounts to check in this run.');
-        }
-    }
-    
-    updateNextRunTime() { 
-        if (this.status === 'RUNNING' && this.timer) {
-            const intervalMs = this.config.intervalMinutes * 60 * 1000;
-            this.nextRun = new Date(Date.now() + intervalMs);
-        } else {
-            this.nextRun = null;
-        }
+        console.log('[AutoCheck] Starting scheduled check...');
+        this.lastRun = new Date();
+        const intervalMs = this.config.intervalMinutes * 60 * 1000;
+        this.nextRun = new Date(Date.now() + intervalMs);
         this.emitStatus();
+
+        try {
+            // === START: THAY ĐỔI LOGIC LỰA CHỌN & ƯU TIÊN ===
+            const { batchSize = 50 } = this.config;
+            const accountsToQueue = [];
+
+            // 1. Tìm và "đánh thức" các tài khoản RESTING đủ điều kiện
+            const restingTimeLimit = new Date(Date.now() - RESTING_PERIOD_HOURS * 60 * 60 * 1000);
+            const readyToWakeAccounts = await Account.find({
+                status: 'RESTING',
+                lastUsedAt: { $lte: restingTimeLimit }
+            }).select('_id').lean();
+
+            if (readyToWakeAccounts.length > 0) {
+                const idsToWake = readyToWakeAccounts.map(a => a._id);
+                await Account.updateMany(
+                    { _id: { $in: idsToWake } },
+                    { $set: { status: 'UNCHECKED', successCount: 0, errorCount: 0 } }
+                );
+                console.log(`[AutoCheck] Woke up ${idsToWake.length} RESTING accounts.`);
+            }
+
+            // 2. Lấy tài khoản theo thứ tự ưu tiên mới
+            // Ưu tiên 1: Lấy các tài khoản UNCHECKED (bao gồm cả các tài khoản vừa được đánh thức)
+            const uncheckedAccounts = await Account.find({ status: 'UNCHECKED', isDeleted: false })
+                .sort({ createdAt: 1 }) // Ưu tiên check acc cũ trước
+                .limit(batchSize)
+                .select('_id')
+                .lean();
+            
+            accountsToQueue.push(...uncheckedAccounts.map(a => a._id));
+
+            // Ưu tiên 2: Nếu chưa đủ batchSize, lấy các tài khoản còn lại
+            if (accountsToQueue.length < batchSize) {
+                const remainingLimit = batchSize - accountsToQueue.length;
+                const otherAccounts = await Account.find({
+                    status: { $in: ['LIVE', 'DIE', 'ERROR'] },
+                    isDeleted: false
+                })
+                .sort({ lastCheckedAt: 1 }) // Ưu tiên check acc lâu chưa check nhất
+                .limit(remainingLimit)
+                .select('_id')
+                .lean();
+
+                accountsToQueue.push(...otherAccounts.map(a => a._id));
+            }
+            // === END: THAY ĐỔI LOGIC LỰA CHỌN & ƯU TIÊN ===
+
+            if (accountsToQueue.length > 0) {
+                console.log(`[AutoCheck] Queued ${accountsToQueue.length} accounts for checking.`);
+                runCheckLive(accountsToQueue, this.io, {
+                    concurrency: this.config.concurrency,
+                    delay: this.config.delay,
+                    timeout: this.config.timeout
+                });
+            } else {
+                console.log('[AutoCheck] No accounts to check in this run.');
+            }
+        } catch (error) {
+            console.error('[AutoCheck] Error during execution:', error);
+        }
     }
-    
-    getStatus() { 
+
+    getStatus() {
         return {
             status: this.status,
             config: this.config,
-            nextRun: this.nextRun ? this.nextRun.toISOString() : null,
-            isJobRunning: this.isJobRunning,
+            lastRun: this.lastRun,
+            nextRun: this.nextRun
         };
     }
 
-    emitStatus() { 
+    emitStatus() {
         if (this.io) {
             this.io.emit('autoCheck:statusUpdate', this.getStatus());
         }

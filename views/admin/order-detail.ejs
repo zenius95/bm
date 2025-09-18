@@ -112,16 +112,15 @@ bg-gray-500/20 text-gray-400" title="Queued">
 <div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
 
 <div id="item-log-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-4xl p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
-    <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 flex flex-col" style="height: 80vh;">
-        <div class="p-6 border-b border-white/10 flex justify-between items-center flex-shrink-0">
+    <div class="bg-gray-950/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl flex flex-col" style="height: 80vh;">
+        <div class="p-4 border-b border-white/10 flex justify-between items-center flex-shrink-0">
             <div>
-                <h3 class="text-xl font-bold text-white">Logs cho Item: <span id="modal-item-data" class="font-mono text-blue-400"></span></h3>
-                <p class="text-sm text-gray-400 mt-1">Các bản ghi được cập nhật theo thời gian thực.</p>
+                <h3 class="text-lg font-semibold text-white">Terminal Log: <span id="modal-item-data" class="font-mono text-blue-400"></span></h3>
             </div>
             <button class="btn-cancel p-2 rounded-md hover:bg-white/10 text-gray-400 transition"><i class="ri-close-line ri-lg"></i></button>
         </div>
-        <div id="modal-log-content" class="p-4 flex-grow overflow-y-auto font-mono text-xs space-y-2 flex flex-col-reverse">
-            <div class="text-gray-500 text-center m-auto">Đang tải logs...</div>
+        <div id="modal-log-content" class="p-4 flex-grow overflow-y-auto font-mono text-xs">
+            <div class="text-gray-500">Connecting to stream...</div>
         </div>
     </div>
 </div>
@@ -157,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const hideModal = () => {
         if (currentItemRoom) {
             socket.emit('leave_room', currentItemRoom);
-            console.log(`Left room: ${currentItemRoom}`);
             currentItemRoom = null;
         }
         backdrop.classList.add('opacity-0');
@@ -171,76 +169,87 @@ document.addEventListener('DOMContentLoaded', () => {
     backdrop.addEventListener('click', hideModal);
     itemLogModal.querySelector('.btn-cancel').addEventListener('click', hideModal);
 
-    document.querySelectorAll('#item-list-body tr').forEach(row => {
+    document.querySelectorAll('tr[data-item-id]').forEach(row => {
         row.addEventListener('click', async () => {
             const itemId = row.dataset.itemId;
             const itemData = row.dataset.itemData;
 
             modalItemData.textContent = itemData;
-            modalLogContent.innerHTML = '<div class="text-gray-500 text-center m-auto">Đang tải logs...</div>';
+            modalLogContent.innerHTML = '<div class="text-gray-500">Fetching history...</div>';
             showModal();
+            
+            const scrollToBottom = () => {
+                modalLogContent.scrollTop = modalLogContent.scrollHeight;
+            };
 
-            // Fetch initial logs
             try {
                 const response = await fetch(`/admin/items/${itemId}/logs`);
                 const result = await response.json();
                 modalLogContent.innerHTML = '';
                 if (result.success && result.logs.length > 0) {
-                    result.logs.forEach(log => appendLog(log));
+                    appendLogBatch(result.logs, true);
                 } else if (!result.success) {
-                    modalLogContent.innerHTML = `<div class="text-red-400 text-center m-auto">Lỗi: ${result.message}</div>`;
+                    modalLogContent.innerHTML = `<div class="text-red-400">Error: ${result.message}</div>`;
                 } else {
-                     modalLogContent.innerHTML = '<div class="text-gray-500 text-center m-auto">Chưa có log nào cho item này.</div>';
+                     modalLogContent.innerHTML = '<div id="no-logs-message" class="text-gray-500">No historical logs found for this item. Waiting for real-time events...</div>';
                 }
             } catch (error) {
-                 modalLogContent.innerHTML = `<div class="text-red-400 text-center m-auto">Lỗi kết nối: ${error.message}</div>`;
+                 modalLogContent.innerHTML = `<div class="text-red-400">Connection Error: ${error.message}</div>`;
             }
             
-            // Join item-specific room for real-time updates
             currentItemRoom = `item_${itemId}`;
             socket.emit('join_room', currentItemRoom);
-            console.log(`Joined room: ${currentItemRoom}`);
+            scrollToBottom();
         });
     });
+    
+    function appendLogBatch(logs, isInitialLoad = false) {
+        const noLogsMsg = modalLogContent.querySelector('#no-logs-message');
+        if(noLogsMsg) noLogsMsg.remove();
 
-    function appendLog(log, isBatch = false) {
-        const logEl = document.createElement('div');
-        logEl.className = 'flex items-start';
-        const timestamp = new Date(log.timestamp).toLocaleTimeString('vi-VN');
-        const levelClass = log.level === 'INFO' ? 'text-green-400' : 'text-red-400';
+        const fragment = document.createDocumentFragment();
+        logs.forEach(log => {
+            const logEl = document.createElement('div');
+            const timestamp = new Date(log.timestamp).toLocaleTimeString('vi-VN');
+            const levelClass = log.level === 'INFO' ? 'text-green-400' : 'text-gray-300';
+            const levelText = log.level === 'INFO' ? '[INFO]' : '[ERROR]';
+            const levelColor = log.level === 'INFO' ? 'text-green-500' : 'text-red-500';
+
+            logEl.innerHTML = `
+                <span class="text-gray-600 mr-2">${timestamp}</span>
+                <span class="${levelColor} font-bold mr-2">${levelText}</span>
+                <span class="text-gray-300 whitespace-pre-wrap">${log.message}</span>
+            `;
+            fragment.appendChild(logEl);
+        });
         
-        logEl.innerHTML = `
-            <span class="text-gray-500 mr-3">${timestamp}</span>
-            <span class="${levelClass} font-bold mr-2">[${log.level}]</span>
-            <span class="text-gray-300 flex-1">${log.message}</span>
-        `;
-
-        if (isBatch) {
-             modalLogContent.prepend(logEl);
-        } else {
-            // Remove initial message if it exists
-            const initialMsg = modalLogContent.querySelector('div:only-child');
-            if (initialMsg && (initialMsg.textContent.includes('Đang tải') || initialMsg.textContent.includes('Chưa có log'))) {
-                modalLogContent.innerHTML = '';
-            }
-            modalLogContent.prepend(logEl);
-        }
+        modalLogContent.appendChild(fragment);
+        modalLogContent.scrollTop = modalLogContent.scrollHeight;
     }
 
     socket.on('connect', () => {
         const orderRoom = `order_${orderId}`;
-        console.log('Connected to socket. Joining room:', orderRoom);
         socket.emit('join_room', orderRoom);
     });
 
     socket.on('order:update', (data) => {
         if (data.id !== orderId) return;
-        let config = { text: 'pending', color: 'gray' };
-        if (data.status === 'processing') config = { text: 'processing', color: 'yellow' };
-        if (data.status === 'completed') config = { text: 'completed', color: 'green' };
-        if (data.status === 'failed') config = { text: 'failed', color: 'red' };
-        orderStatusBadge.textContent = data.status;
-        orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
+
+        // === START: THAY ĐỔI QUAN TRỌNG ===
+        if (data.status === 'completed' || data.status === 'failed') {
+            // Hiển thị toast thông báo và tải lại trang để hiển thị mục quyết toán
+            showToast('Đơn hàng đã hoàn tất! Tự động làm mới...', 'Thành công', 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            // Cập nhật trạng thái như bình thường cho các trạng thái khác
+            let config = { text: 'pending', color: 'gray' };
+            if (data.status === 'processing') config = { text: 'processing', color: 'yellow' };
+            orderStatusBadge.textContent = data.status;
+            orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
+        }
+        // === END: THAY ĐỔI QUAN TRỌNG ===
     });
 
     socket.on('order:item_update', (data) => {
@@ -269,10 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('order:new_logs_batch', (logs) => {
-        if (!logs || logs.length === 0 || logs[0].orderId !== orderId) return;
-        if (!currentItemRoom || currentItemRoom !== `item_${logs[0].itemId}`) return;
-        
-        logs.forEach(log => appendLog(log, true));
+        if (!logs || logs.length === 0) return;
+        if (currentItemRoom === `item_${logs[0].itemId}`) {
+            appendLogBatch(logs);
+        }
     });
 });
 </script>

@@ -34,17 +34,21 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// === START: THAY ĐỔI LOGIC SOCKET.IO CONNECTION ===
 io.on('connection', (socket) => {
-    // Lắng nghe sự kiện client yêu cầu tham gia một room bất kỳ
     socket.on('join_room', (roomName) => {
         if (roomName) {
             socket.join(roomName);
-            // console.log(`Socket ${socket.id} joined room: ${roomName}`); // Dùng để debug nếu cần
         }
     });
+
+    // === START: THÊM LOGIC RỜI PHÒNG ===
+    socket.on('leave_room', (roomName) => {
+        if (roomName) {
+            socket.leave(roomName);
+        }
+    });
+    // === END: THÊM LOGIC RỜI PHÒNG ===
 });
-// === END: THAY ĐỔI LOGIC SOCKET.IO CONNECTION ===
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '/views'));

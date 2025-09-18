@@ -110,7 +110,7 @@
                         <th scope="col" class="px-6 py-3 text-center">Success</th>
                         <th scope="col" class="px-6 py-3 text-center">Error</th>
                         <th scope="col" class="px-6 py-3 text-center">Check Lỗi</th>
-                        <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Lần cuối sử dụng' %></th>
+                        <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Lần check cuối' %></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -155,11 +155,11 @@
                                 <% if (inTrash && account.deletedAt) { %>
                                     <%= new Date(account.deletedAt).toLocaleString('vi-VN') %>
                       
-                         <% } else if (!inTrash && account.lastUsedAt) { %>
-                                    <%= new Date(account.lastUsedAt).toLocaleString('vi-VN') %>
+                         <% } else if (!inTrash && account.lastCheckedAt) { %>
+                                    <%= new Date(account.lastCheckedAt).toLocaleString('vi-VN') %>
                                 <% } else if (!inTrash) { %>
      
-                                     Chưa dùng
+                                     Chưa check
                                 <% } %>
                             </td>
       

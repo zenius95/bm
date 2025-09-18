@@ -153,28 +153,34 @@ completedItems - failedItems;
                              <span>Tổng chi phí ban đầu</span>
                             <span class="font-semibold font-mono text-yellow-400 text-base"><%= (order.pricePerItem * order.totalItems).toLocaleString('vi-VN') %>đ</span>
                         </div>
-                        <% if (order.status === 'completed' || order.status === 'failed') { %> <% const initialCost = order.pricePerItem * order.totalItems; const finalCost = order.totalCost;
-                const refundAmount = initialCost - finalCost; %>
-                            <h4 class="text-base font-semibold text-white pt-3">Quyết toán & Chi phí</h4>
-                            <div class="space-y-2 text-sm max-w-md">
-                                    <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
-                                    <strong class="font-mono text-yellow-400 text-lg"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
-                                    </div>
-                                <div class="flex justify-between items-center text-xs">
-                                    <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
-                                        <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ? (finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
-                                </div>
-                                <% if (refundAmount > 0) { %>
-                                <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
-                                    <strong class="text-green-400">Đã hoàn lại vào số dư</strong>
-                                        <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
-                                </div>
-                                <% } %>
-                            </div>
-                        <% } %>
                     </div>
                  </div>
+            </div>
+
+            <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+
+                <% if (order.status === 'completed' || order.status === 'failed') { %> <% const initialCost = order.pricePerItem * order.totalItems; const finalCost = order.totalCost;
+                const refundAmount = initialCost - finalCost; %>
+                    <div class="border-white/10">
+                        <h4 class="text-base font-semibold text-white mb-3">Quyết toán & Chi phí</h4>
+                        <div class="space-y-2 text-sm max-w-md">
+                             <div class="flex justify-between items-center">
+                                <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
+                                <strong class="font-mono text-yellow-400 text-lg"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
+                             </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
+                                 <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ? (finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
+                            </div>
+                            <% if (refundAmount > 0) { %>
+                            <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
+                                <strong class="text-green-400">Đã hoàn lại vào số dư</strong>
+                                 <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
+                            </div>
+                            <% } %>
+                        </div>
+                     </div>
+                <% } %>
             </div>
         </div>
     </div>
@@ -263,38 +269,40 @@ completedItems - failedItems;
         // SOCKET.IO
         const socket = io();
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
         socket.on("connect", () => {
             const orderRoom = `order_${orderId}`;
-            console.log("Connected to order detail socket. Joining room:", orderRoom);
-            socket.emit('join_room', orderRoom); // Sử dụng sự kiện chung
+            socket.emit('join_room', orderRoom); 
         });
-        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         socket.on("order:update", (data) => {
             if (data.id !== orderId) return;
 
-            if (orderStatusBadge) {
-                let config = { text: "Pending", color: "gray" };
-                if (data.status === "processing") config = { text: "Processing", color: "yellow" };
-                if (data.status === "completed") config = { text: "Completed", color: "green" };
-                if (data.status === "failed") config = { text: "Failed", color: "red" };
-                orderStatusBadge.textContent = config.text;
-                orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            if (data.status === 'completed' || data.status === 'failed') {
+                showToast('Đơn hàng của bạn đã hoàn tất! Tự động làm mới...', 'Thành công', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                if (orderStatusBadge) {
+                    let config = { text: "Pending", color: "gray" };
+                    if (data.status === "processing") config = { text: "Processing", color: "yellow" };
+                    orderStatusBadge.textContent = config.text;
+                    orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
+                }
             }
+            // === END: THAY ĐỔI QUAN TRỌNG ===
         });
         
         socket.on("order:item_update", (data) => {
             if (data.id !== orderId) return;
 
-            // Cập nhật các thẻ đếm tổng quan
             if (completedCountEl) completedCountEl.textContent = data.completedItems;
             if (failedCountEl) failedCountEl.textContent = data.failedItems;
              if (pendingCountEl) {
                 pendingCountEl.textContent = data.totalItems - data.completedItems - data.failedItems;
             }
 
-            // Cập nhật trạng thái của từng item nếu có dữ liệu chi tiết
             if (data.item) {
                  const itemRow = document.getElementById(`item-row-${data.item._id}`);
                 if (itemRow) {
@@ -308,7 +316,6 @@ completedItems - failedItems;
                     if (data.item.status === "failed") itemStatus = { text: "Failed", color: "red", icon: "ri-close-line" };
                     statusDisplay.className = `item-status-display flex items-center flex-shrink-0 gap-2 text-xs font-semibold text-${itemStatus.color}-400`;
                     statusDisplay.innerHTML = `<i class="${itemStatus.icon}"></i><span>${itemStatus.text}</span>`;
-                    // Áp dụng lại bộ lọc để ẩn/hiện item nếu cần
                     applyFilter();
                 }
             }
