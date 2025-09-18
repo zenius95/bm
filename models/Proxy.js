@@ -11,21 +11,15 @@ const ProxySchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['AVAILABLE', 'ASSIGNED', 'DEAD', 'CHECKING', 'UNCHECKED'],
+        enum: ['AVAILABLE', 'DEAD', 'CHECKING', 'UNCHECKED'], // Đã xóa 'ASSIGNED'
         default: 'UNCHECKED'
     },
-    // === START: THÊM TRƯỜNG MỚI ===
     previousStatus: {
         type: String,
-        enum: ['AVAILABLE', 'ASSIGNED', 'DEAD', 'UNCHECKED', null],
+        enum: ['AVAILABLE', 'DEAD', 'UNCHECKED', null], // Đã xóa 'ASSIGNED'
         default: null
     },
-    // === END: THÊM TRƯỜNG MỚI ===
-    assignedTo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Account',
-        default: null
-    },
+    // Đã xóa trường assignedTo
     notes: {
         type: String,
         trim: true
@@ -34,7 +28,11 @@ const ProxySchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    // Thêm các trường cho thùng rác
+    // Thêm trường mới để theo dõi lần sử dụng cuối
+    lastUsedAt: {
+        type: Date,
+        default: null
+    },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },
 }, {

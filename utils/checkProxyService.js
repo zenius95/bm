@@ -2,7 +2,7 @@
 const Proxy = require('../models/Proxy');
 const Account = require('../models/Account');
 const ProcessRunner = require('./processRunner');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); // <<< SỬA LỖI: THÊM DÒNG NÀY
 const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const PROXY_CHECK_APIS = [
@@ -54,19 +54,15 @@ async function runCheckProxy(proxyIds, io, options) {
             const originalProxy = await Proxy.findById(proxyId).lean();
             if (!originalProxy) throw new Error(`Không tìm thấy proxy: ${proxyId}`);
 
-            // === START: THAY ĐỔI QUAN TRỌNG ===
-            // Lưu trạng thái hiện tại trước khi chuyển sang CHECKING
             await Proxy.findByIdAndUpdate(proxyId, { 
                 status: 'CHECKING',
                 previousStatus: originalProxy.status
             });
-            // === END: THAY ĐỔI QUAN TRỌNG ===
 
             io.emit('proxy:update', { id: proxyId, status: 'CHECKING' });
             
             const checkResult = await checkSingleProxy(originalProxy.proxyString);
             
-            // Trả về cả kết quả check và trạng thái gốc của proxy
             return { ...checkResult, originalProxy };
         }
     }));
@@ -77,24 +73,17 @@ async function runCheckProxy(proxyIds, io, options) {
         const { isLive, checkedAt, originalProxy } = result;
         const proxyId = taskWrapper.id;
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Reset previousStatus sau khi hoàn tất
         let updateData = { lastCheckedAt: checkedAt, previousStatus: null };
-        // === END: THAY ĐỔI QUAN TRỌNG ===
 
         if (isLive) {
-            // Dựa vào trạng thái gốc để quyết định status mới
-            updateData.status = originalProxy.status === 'ASSIGNED' ? 'ASSIGNED' : 'AVAILABLE';
+            updateData.status = 'AVAILABLE';
         } else {
             updateData.status = 'DEAD';
             updateData.isDeleted = true;
             updateData.deletedAt = new Date();
-            updateData.assignedTo = null;
 
-            if (originalProxy.assignedTo) {
-                console.log(`Proxy ${originalProxy.proxyString} DIE, gỡ khỏi account ${originalProxy.assignedTo}.`);
-                await Account.updateOne({ _id: originalProxy.assignedTo }, { $set: { proxy: '' } });
-            }
+            console.log(`Proxy ${originalProxy.proxyString} DIE, gỡ khỏi tất cả các account đang dùng.`);
+            await Account.updateMany({ proxy: originalProxy.proxyString }, { $set: { proxy: '' } });
         }
 
         await Proxy.findByIdAndUpdate(proxyId, updateData);
@@ -115,25 +104,18 @@ async function runCheckProxy(proxyIds, io, options) {
     checkProxyRunner.on('task:error', async ({ error, taskWrapper }) => {
         console.error(`Lỗi khi kiểm tra Proxy ID ${taskWrapper.id}: ${error.message}`);
         
-        const proxy = await Proxy.findById(taskWrapper.id);
+        const proxy = await Proxy.findById(taskWrapper.id).lean();
         if (!proxy) return;
 
-        if (proxy.assignedTo) {
-            console.log(`Proxy ${proxy.proxyString} gặp lỗi, gỡ khỏi account ${proxy.assignedTo}.`);
-            await Account.updateOne({ _id: proxy.assignedTo }, { $set: { proxy: '' } });
-        }
+        await Account.updateMany({ proxy: proxy.proxyString }, { $set: { proxy: '' } });
         
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        // Reset previousStatus khi có lỗi
         const updateData = { 
             status: 'DEAD', 
             lastCheckedAt: new Date(),
             isDeleted: true,
             deletedAt: new Date(),
-            assignedTo: null,
             previousStatus: null
         };
-        // === END: THAY ĐỔI QUAN TRỌNG ===
         await Proxy.findByIdAndUpdate(taskWrapper.id, updateData);
 
         const newTrashCount = await Proxy.countDocuments({ isDeleted: true });

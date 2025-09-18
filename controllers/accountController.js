@@ -1,6 +1,6 @@
 // controllers/accountController.js
 const Account = require('../models/Account');
-const Proxy = require('../models/Proxy'); // Thêm model Proxy
+const Proxy = require('../models/Proxy');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const { runCheckLive } = require('../utils/checkLiveService');
@@ -9,7 +9,7 @@ const { logActivity } = require('../utils/activityLogService');
 
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy'],
-    additionalSoftDeleteFields: { status: 'UNCHECKED' } // Thêm dòng này
+    additionalSoftDeleteFields: { status: 'UNCHECKED' }
 });
 
 const accountController = createCrudController(accountService, 'accounts', {
@@ -17,31 +17,11 @@ const accountController = createCrudController(accountService, 'accounts', {
     plural: 'accounts'
 });
 
-// --- Hàm helper để giải phóng proxy và làm rỗng cột proxy trong account ---
+// Chức năng của hàm này không còn cần thiết trong mô hình proxy chia sẻ
 const releaseProxiesForAccounts = async (accountIds) => {
     if (!accountIds || accountIds.length === 0) return;
-    
-    // Lấy danh sách các proxy string đang được sử dụng bởi các account sắp bị xóa
-    const accountsToDelete = await Account.find({ _id: { $in: accountIds } }).select('proxy').lean();
-    const proxyStringsToRelease = accountsToDelete
-        .map(acc => acc.proxy)
-        .filter(p => p); // Lọc ra các chuỗi proxy không rỗng
-
-    if (proxyStringsToRelease.length > 0) {
-        console.log(`[Proxy Release] Releasing proxies: ${proxyStringsToRelease.join(', ')}`);
-        // Cập nhật các proxy tương ứng: gỡ gán và đặt lại trạng thái AVAILABLE
-        await Proxy.updateMany(
-            { proxyString: { $in: proxyStringsToRelease } },
-            { $set: { assignedTo: null, status: 'AVAILABLE' } }
-        );
-    }
-    
-    // Luôn làm rỗng trường proxy của các account đang được xử lý
-    await Account.updateMany(
-        { _id: { $in: accountIds } },
-        { $set: { proxy: '' } }
-    );
-    console.log(`[Proxy Release] Cleared proxy field for ${accountIds.length} accounts.`);
+    // Khi một account bị xóa, proxy nó đang dùng không bị ảnh hưởng vì có thể account khác cũng đang dùng.
+    console.log(`Account deletion event for ${accountIds.length} accounts. No proxy status will be changed.`);
 };
 
 accountController.addMultiple = async (req, res) => {
@@ -130,14 +110,7 @@ accountController.checkSelected = async (req, res) => {
 
 const originalSoftDelete = accountController.handleSoftDelete;
 accountController.handleSoftDelete = async (req, res, next) => {
-    const { ids, selectAll, filters } = req.body;
-    try {
-        const accountIds = selectAll ? await accountService.findAllIds(filters) : ids;
-        await releaseProxiesForAccounts(accountIds);
-    } catch (error) {
-        console.error("[Proxy Release] Error during soft delete:", error);
-    }
-
+    const { ids, selectAll } = req.body;
     const count = selectAll ? 'tất cả' : ids.length;
     await originalSoftDelete(req, res, next);
     await logActivity(req.session.user.id, 'ADMIN_SOFT_DELETE_ACCOUNTS', {
@@ -161,14 +134,7 @@ accountController.handleRestore = async (req, res, next) => {
 
 const originalHardDelete = accountController.handleHardDelete;
 accountController.handleHardDelete = async (req, res, next) => {
-    const { ids, selectAll, filters } = req.body;
-    try {
-        const accountIds = selectAll ? await accountService.findAllIds(filters) : ids;
-        await releaseProxiesForAccounts(accountIds);
-    } catch (error) {
-        console.error("[Proxy Release] Error during hard delete:", error);
-    }
-    
+    const { ids, selectAll } = req.body;
     const count = selectAll ? 'tất cả' : ids.length;
     await originalHardDelete(req, res, next);
     await logActivity(req.session.user.id, 'ADMIN_HARD_DELETE_ACCOUNTS', {

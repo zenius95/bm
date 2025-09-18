@@ -6,12 +6,8 @@ const { runCheckProxy } = require('../utils/checkProxyService');
 const settingsService = require('../utils/settingsService');
 
 const proxyService = new CrudService(Proxy, {
-    searchableFields: ['proxyString', 'status', 'notes'],
-    // === START: THAY ĐỔI QUAN TRỌNG ===
-    // Yêu cầu populate (lấy thông tin liên kết) từ trường assignedTo
-    // và chỉ lấy trường 'uid' của Account để hiển thị
-    populateFields: { path: 'assignedTo', select: 'uid' }
-    // === END: THAY ĐỔI QUAN TRỌNG ===
+    searchableFields: ['proxyString', 'status', 'notes']
+    // <<< SỬA LỖI: Đã xóa dòng populateFields gây ra lỗi >>>
 });
 
 const proxyController = createCrudController(proxyService, 'proxies', {
