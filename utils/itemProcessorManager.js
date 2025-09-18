@@ -13,9 +13,7 @@ const { runAppealProcess } = require('../insta/runInsta');
 const MAX_ITEM_RETRIES = 3;
 const DELAY_BETWEEN_ACCOUNTS = 1000; // ms, delay khi thử lại với account khác
 const LOG_BATCH_INTERVAL = 2000; // Gửi log mỗi 2 giây
-// === START: THÊM TỪ KHÓA GIẢ LẬP ===
 const SIMULATION_KEYWORDS = ['success', 'error'];
-// === END: THÊM TỪ KHÓA GIẢ LẬP ===
 
 class ItemProcessorManager extends EventEmitter {
     constructor() {
@@ -127,10 +125,9 @@ class ItemProcessorManager extends EventEmitter {
             this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
         }
 
-        // === START: LOGIC GIẢ LẬP ===
         const itemDataLowerCase = item.data.toLowerCase().trim();
         if (SIMULATION_KEYWORDS.includes(itemDataLowerCase)) {
-            const delay = Math.random() * (3000 - 1000) + 1000; // Giả lập thời gian xử lý từ 1-3 giây
+            const delay = Math.random() * (3000 - 1000) + 1000;
             await new Promise(resolve => setTimeout(resolve, delay));
 
             if (itemDataLowerCase === 'success') {
@@ -142,19 +139,18 @@ class ItemProcessorManager extends EventEmitter {
                 await this.writeLog(item.orderId, item._id, 'ERROR', `Item giả lập thất bại.`);
                 await this.updateOrderProgress(item.orderId, 'failed', item);
             }
-            return; // Kết thúc phiên xử lý cho item này
+            return;
         }
-        // === END: LOGIC GIẢ LẬP ===
-
 
         this.addLogToUI(`Worker đã nhận item <strong class="text-yellow-400">...${item.data.slice(-10)}</strong>. Bắt đầu tìm account...`);
 
         let success = false;
         let attemptCount = 0;
+        const usedAccountIds = []; // <<< SỬA LỖI 1: Khởi tạo danh sách account đã thử
 
         while (attemptCount < MAX_ITEM_RETRIES && !success) {
             attemptCount++;
-            const account = await this.acquireAccount();
+            const account = await this.acquireAccount(usedAccountIds); // <<< SỬA LỖI 1: Truyền danh sách đã thử
             if (!account) {
                 this.addLogToUI('Tạm thời không có account nào khả dụng. Sẽ thử lại sau.');
                 await this.writeLog(item.orderId, item._id, 'ERROR', `Không tìm thấy account khả dụng để xử lý item: "${item.data}"`);
@@ -162,6 +158,8 @@ class ItemProcessorManager extends EventEmitter {
                 continue;
             }
             
+            usedAccountIds.push(account._id); // <<< SỬA LỖI 1: Thêm account vào danh sách đã thử
+
             const logCallback = (message) => {
                 const formattedMessage = `[<strong class="text-green-400">${account.uid}</strong> | <strong class="text-yellow-400">${item.data}</strong>] ${message}`;
                 this.addLogToUI(formattedMessage);
@@ -206,19 +204,29 @@ class ItemProcessorManager extends EventEmitter {
         }
     }
 
-    async acquireAccount() {
+    async acquireAccount(excludeIds = []) { // <<< SỬA LỖI 1: Thêm tham số excludeIds
         return Account.findOneAndUpdate(
-            { status: 'LIVE', isDeleted: false },
+            { status: 'LIVE', isDeleted: false, _id: { $nin: excludeIds } }, // <<< SỬA LỖI 1: Loại trừ các ID đã thử
             { $set: { status: 'IN_USE' } },
             { new: true, sort: { lastUsedAt: 1 } }
         );
     }
     
     async updateAccountOnFinish(account, wasSuccessful) {
-        const update = {
-            $inc: wasSuccessful ? { successCount: 1 } : { errorCount: 1 },
-            $set: { lastUsedAt: new Date() }
-        };
+        let update;
+        if (wasSuccessful) {
+            // <<< SỬA LỖI 2: Reset errorCount khi thành công
+            update = {
+                $inc: { successCount: 1 },
+                $set: { lastUsedAt: new Date(), errorCount: 0 } 
+            };
+        } else {
+            update = {
+                $inc: { errorCount: 1 },
+                $set: { lastUsedAt: new Date() }
+            };
+        }
+
         const updatedAccount = await Account.findByIdAndUpdate(account._id, update, { new: true });
 
         const { maxSuccess, maxError } = settingsService.get('itemProcessor');

@@ -21,7 +21,6 @@ const accountController = createCrudController(accountService, 'accounts', {
 const releaseProxiesForAccounts = async (accountIds) => {
     if (!accountIds || accountIds.length === 0) return;
     // Khi một account bị xóa, proxy nó đang dùng không bị ảnh hưởng vì có thể account khác cũng đang dùng.
-    console.log(`Account deletion event for ${accountIds.length} accounts. No proxy status will be changed.`);
 };
 
 accountController.addMultiple = async (req, res) => {
