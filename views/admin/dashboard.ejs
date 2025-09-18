@@ -1,181 +1,249 @@
+<%
+// Helper functions
+const formatNumber = (num) => (num || 0).toLocaleString('vi-VN');
+const formatCurrency = (num) => (num || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+const getChangeIndicator = (change) => {
+    const changeNum = Number(change) || 0;
+    if (changeNum > 0) return { icon: 'ri-arrow-up-line', color: 'text-green-400' };
+    if (changeNum < 0) return { icon: 'ri-arrow-down-line', color: 'text-red-400' };
+    return { icon: 'ri-subtract-line', color: 'text-gray-500' };
+};
+const periodLabels = { day: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Toàn thời gian' };
+const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
+%>
+
 <div class="space-y-8">
-    <div>
-        <h1 class="text-3xl font-bold text-white">Dashboard</h1>
-        <p class="mt-1 text-gray-400">Tổng quan hệ thống của Bro đây.</p>
-    </div>
-
-    <div>
-        <h2 class="text-xl font-semibold text-white mb-4">Thống kê Đơn Hàng</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Tổng Đơn Hàng</span>
-                    <i class="ri-stack-line text-2xl text-blue-400"></i>
-                </div>
-                <p id="order-stats-total" class="mt-2 text-3xl font-bold text-white"><%= orderStats.total %></p>
-            </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-yellow-400/50 hover:shadow-2xl hover:shadow-yellow-500/10 transform hover:-translate-y-1">
-                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Đang Xử Lý</span>
-                    <i class="ri-loader-4-line text-2xl text-yellow-400"></i>
-                </div>
-                <p id="order-stats-processing" class="mt-2 text-3xl font-bold text-yellow-400"><%= orderStats.processing %></p>
-            </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
-               <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Hoàn Thành</span>
-                    <i class="ri-checkbox-circle-line text-2xl text-green-400"></i>
-                </div>
-                <p id="order-stats-completed" class="mt-2 text-3xl font-bold text-green-400"><%= orderStats.completed %></p>
-           </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-red-400/50 hover:shadow-2xl hover:shadow-red-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Thất Bại</span>
-                    <i class="ri-close-circle-line text-2xl text-red-400"></i>
-               </div>
-                <p id="order-stats-failed" class="mt-2 text-3xl font-bold text-red-400"><%= orderStats.failed %></p>
-            </div>
+    <!-- Header and Period Filter -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Dashboard</h1>
+            <p class="mt-1 text-gray-400">Tổng quan hệ thống - Dữ liệu cho: <span class="font-semibold text-blue-400"><%= currentPeriodLabel %></span></p>
+        </div>
+        <div class="relative">
+            <select id="period-filter" class="form-select !pl-10">
+                <option value="day" <%= currentPeriod === 'day' ? 'selected' : '' %>>Hôm nay</option>
+                <option value="week" <%= currentPeriod === 'week' ? 'selected' : '' %>>Tuần này</option>
+                <option value="month" <%= currentPeriod === 'month' ? 'selected' : '' %>>Tháng này</option>
+                <option value="year" <%= currentPeriod === 'year' ? 'selected' : '' %>>Năm nay</option>
+                <option value="all" <%= currentPeriod === 'all' ? 'selected' : '' %>>Toàn thời gian</option>
+            </select>
+            <i class="ri-calendar-2-line text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
         </div>
     </div>
 
-    <div>
-        <h2 class="text-xl font-semibold text-white mb-4">Thống kê Account</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-             <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Tổng Account</span>
-                    <i class="ri-group-line text-2xl text-blue-400"></i>
-                </div>
-                <p class="mt-2 text-3xl font-bold text-white"><%= accountStats.total %></p>
+    <!-- Main Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Revenue Card -->
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-400">Doanh số</span>
+                <i class="ri-wallet-3-line text-2xl text-green-400"></i>
             </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Live</span>
-                   <i class="ri-shield-check-line text-2xl text-green-400"></i>
-                </div>
-                <p class="mt-2 text-3xl font-bold text-green-400"><%= accountStats.live %></p>
+            <p class="mt-2 text-3xl font-bold text-white"><%= formatCurrency(stats.revenue.current) %></p>
+            <% const revenueChange = getChangeIndicator(stats.revenue.changePercentage); %>
+            <p class="text-xs text-gray-400 mt-1 flex items-center <%= revenueChange.color %>">
+                <i class="<%= revenueChange.icon %> mr-1"></i>
+                <%= stats.revenue.changePercentage %>% so với kỳ trước
+            </p>
+        </div>
+        <!-- Orders Card -->
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-400">Đơn hàng mới</span>
+                <i class="ri-shopping-cart-line text-2xl text-blue-400"></i>
             </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-red-400/50 hover:shadow-2xl hover:shadow-red-500/10 transform hover:-translate-y-1">
-                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Die</span>
-                    <i class="ri-skull-line text-2xl text-red-400"></i>
-                </div>
-                <p class="mt-2 text-3xl font-bold text-red-400"><%= accountStats.die %></p>
+            <p class="mt-2 text-3xl font-bold text-white"><%= formatNumber(stats.orders.current) %></p>
+            <% const orderChange = getChangeIndicator(stats.orders.changePercentage); %>
+            <p class="text-xs text-gray-400 mt-1 flex items-center <%= orderChange.color %>">
+                 <i class="<%= orderChange.icon %> mr-1"></i>
+                 <%= stats.orders.changePercentage %>% so với kỳ trước
+            </p>
+        </div>
+        <!-- New Users Card -->
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-purple-400/50 hover:shadow-2xl hover:shadow-purple-500/10 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-400">Thành viên mới</span>
+                <i class="ri-user-add-line text-2xl text-purple-400"></i>
             </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-gray-400/50 hover:shadow-2xl hover:shadow-gray-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Chưa check</span>
-                    <i class="ri-question-mark text-2xl text-gray-400"></i>
-                </div>
-                <p class="mt-2 text-3xl font-bold text-gray-400"><%= accountStats.unchecked %></p>
+            <p class="mt-2 text-3xl font-bold text-white"><%= formatNumber(stats.newUsers.current) %></p>
+             <% const userChange = getChangeIndicator(stats.newUsers.changePercentage); %>
+            <p class="text-xs text-gray-400 mt-1 flex items-center <%= userChange.color %>">
+                 <i class="<%= userChange.icon %> mr-1"></i>
+                 <%= stats.newUsers.changePercentage %>% so với kỳ trước
+            </p>
+        </div>
+        <!-- Costs Card -->
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-yellow-400/50 hover:shadow-2xl hover:shadow-yellow-500/10 transform hover:-translate-y-1">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-400">Chi phí đơn hàng</span>
+                 <i class="ri-exchange-dollar-line text-2xl text-yellow-400"></i>
             </div>
+            <p class="mt-2 text-3xl font-bold text-white"><%= formatCurrency(stats.costs.current) %></p>
+             <% const costChange = getChangeIndicator(stats.costs.changePercentage); %>
+            <p class="text-xs text-gray-400 mt-1 flex items-center <%= costChange.color %>">
+                <i class="<%= costChange.icon %> mr-1"></i>
+                <%= stats.costs.changePercentage %>% so với kỳ trước
+            </p>
+        </div>
+    </div>
+
+    <!-- Revenue and Orders Chart -->
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Biểu đồ Doanh thu & Đơn hàng</h2>
+        <div class="h-80">
+            <canvas id="revenueChart"></canvas>
         </div>
     </div>
     
+    <!-- Detailed Stats -->
     <div>
-        <h2 class="text-xl font-semibold text-white mb-4">Thống kê Người Dùng</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-               <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-purple-400/50 hover:shadow-2xl hover:shadow-purple-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Tổng User</span>
-                    <i class="ri-team-line text-2xl text-purple-400"></i>
-               </div>
-                <p class="mt-2 text-3xl font-bold text-white"><%= userStats.total %></p>
+        <h2 class="text-xl font-semibold text-white mb-4">Thống kê chi tiết (Toàn thời gian)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Accounts Stats -->
+            <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+                <h3 class="font-semibold text-white mb-4 flex items-center gap-2"><i class="ri-group-line text-blue-400"></i> Accounts</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between"><span class="text-gray-400">Tổng</span><strong class="font-mono text-white"><%= formatNumber(detailedStats.accounts.total) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Live</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.accounts.live) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Die</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.accounts.die) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Chưa check</span><strong class="font-mono text-gray-500"><%= formatNumber(detailedStats.accounts.unchecked) %></strong></div>
+                </div>
             </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                 <span class="text-sm font-medium text-gray-400">Admin</span>
-                    <i class="ri-shield-user-line text-2xl text-green-400"></i>
+            <!-- Proxies Stats -->
+            <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+                 <h3 class="font-semibold text-white mb-4 flex items-center gap-2"><i class="ri-swap-box-line text-purple-400"></i> Proxies</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between"><span class="text-gray-400">Tổng</span><strong class="font-mono text-white"><%= formatNumber(detailedStats.proxies.total) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Available</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.proxies.available) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Assigned</span><strong class="font-mono text-yellow-400"><%= formatNumber(detailedStats.proxies.assigned) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Dead</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.proxies.dead) %></strong></div>
                 </div>
-                <p class="mt-2 text-3xl font-bold text-green-400"><%= userStats.admins %></p>
             </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:-translate-y-1">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">User</span>
-                    <i class="ri-user-line text-2xl text-blue-400"></i>
+            <!-- Workers Stats -->
+            <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+                 <h3 class="font-semibold text-white mb-4 flex items-center gap-2"><i class="ri-cpu-line text-yellow-400"></i> Workers</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between"><span class="text-gray-400">Tổng</span><strong class="font-mono text-white"><%= formatNumber(detailedStats.workers.total) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Online</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.workers.online) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Offline</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.workers.offline) %></strong></div>
                 </div>
-                <p class="mt-2 text-3xl font-bold text-blue-400"><%= userStats.users %></p>
             </div>
-        </div>
-    </div>
-    
-    <div>
-        <h2 class="text-xl font-semibold text-white mb-4">Đơn Hàng Gần Nhất</h2>
-        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
-           <% if (orders && orders.length > 0) { %>
-               <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-300">
-                        <thead class="text-xs text-gray-400 uppercase bg-white/5">
-                            <tr>
-                                 <th scope="col" class="px-6 py-3">Order ID</th>
-                                <th scope="col" class="px-6 py-3">User</th>
-                                <th scope="col" class="px-6 py-3">Trạng Thái</th>
-                                <th scope="col" class="px-6 py-3 text-center">Items (Tổng/OK/Lỗi)</th>
-                                <th scope="col" class="px-6 py-3">Ngày Tạo</th>
-                            </tr>
-                         </thead>
-                        <tbody>
-                            <% orders.forEach(order => { %>
-                                <% 
-                                    let statusClass = 'bg-gray-700 text-gray-300';
-                                    if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
-                                    if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
-                                    if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
-                                %>
-                                <tr class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
-                                    <td class="px-6 py-4 font-mono font-medium text-white">
-                                        <a href="/admin/orders/<%= order._id %>" class="hover:text-blue-400 hover:underline">#<%= order.shortId %></a>
-                                    </td>
-                                    <td class="px-6 py-4 font-semibold text-white">
-                                        <%= order.user ? order.user.username : 'N/A' %>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
-                                    </td>
-                                    <%# === START: THAY ĐỔI QUAN TRỌNG: Hiển thị tiến độ từ các trường mới === %>
-                                    <td class="px-6 py-4 text-center">
-                                        <span class="font-bold text-white"><%= order.totalItems %></span> /
-                                        <span class="text-green-400"><%= order.completedItems %></span> /
-                                        <span class="text-red-400"><%= order.failedItems %></span>
-                                    </td>
-                                    <%# === END: THAY ĐỔI QUAN TRỌNG === %>
-                                    <td class="px-6 py-4 text-gray-400">
-                                        <%= new Date(order.createdAt).toLocaleString('vi-VN') %>
-                                    </td>
-                                </tr>
-                            <% }); %>
-                        </tbody>
-                    </table>
-                </div>
-            <% } else { %>
-                <div class="text-center py-16 px-6">
-                    <i class="ri-file-list-3-line text-6xl text-gray-700"></i>
-                    <h4 class="mt-4 text-xl font-semibold text-white">Chưa có đơn hàng nào</h4>
-                    <p class="mt-2 text-gray-400">Hãy thử tạo một đơn hàng mới qua API, danh sách sẽ xuất hiện ở đây.</p>
-                </div>
-            <% } %>
         </div>
     </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io();
-    socket.on('connect', () => console.log('Connected to dashboard socket.'));
-
-    socket.on('dashboard:stats:update', (data) => {
-        if (data.orderStats) {
-            const stats = data.orderStats;
-            const totalEl = document.getElementById('order-stats-total');
-            const processingEl = document.getElementById('order-stats-processing');
-            const completedEl = document.getElementById('order-stats-completed');
-            const failedEl = document.getElementById('order-stats-failed');
-            if (stats.total !== undefined && totalEl) totalEl.textContent = stats.total;
-            if (stats.processing !== undefined && processingEl) processingEl.textContent = stats.processing;
-            if (stats.completed !== undefined && completedEl) completedEl.textContent = stats.completed;
-            if (stats.failed !== undefined && failedEl) failedEl.textContent = stats.failed;
-        }
+    // Period Filter Logic
+    const periodFilter = document.getElementById('period-filter');
+    periodFilter.addEventListener('change', (e) => {
+        const selectedPeriod = e.target.value;
+        const url = new URL(window.location);
+        url.searchParams.set('period', selectedPeriod);
+        window.location.href = url.toString();
     });
+    
+    // Chart.js Logic
+    const ctx = document.getElementById('revenueChart');
+    if (ctx) {
+        // Use EJS to inject server-side data into the script
+        const chartData = <%- JSON.stringify(chartData || { labels: [], revenues: [], orders: [], timeUnit: 'day' }) %>;
+        
+        const canvas = document.getElementById('revenueChart');
+        const chartCtx = canvas.getContext('2d');
+
+        // Create gradients
+        const revenueGradient = chartCtx.createLinearGradient(0, 0, 0, canvas.height);
+        revenueGradient.addColorStop(0, 'rgba(34, 197, 94, 0.6)');
+        revenueGradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+        
+        const orderGradient = chartCtx.createLinearGradient(0, 0, 0, canvas.height);
+        orderGradient.addColorStop(0, 'rgba(59, 130, 246, 0.8)');
+        orderGradient.addColorStop(1, 'rgba(59, 130, 246, 0.4)');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: 'Doanh số (VND)',
+                        data: chartData.revenues,
+                        backgroundColor: revenueGradient,
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                        yAxisID: 'yRevenue',
+                        type: 'line',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                        pointBorderColor: '#111827',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(34, 197, 94, 1)',
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBorderWidth: 2,
+                    },
+                    {
+                        label: 'Đơn hàng',
+                        data: chartData.orders,
+                        backgroundColor: orderGradient,
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 0,
+                        yAxisID: 'yOrders',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                             unit: chartData.timeUnit,
+                             tooltipFormat: 'dd/MM/yyyy',
+                             displayFormats: { day: 'dd/MM', week: 'dd/MM', month: 'MM/yyyy', year: 'yyyy', }
+                        },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)', borderDash: [5, 5] },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    yRevenue: {
+                        type: 'linear', position: 'left', beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#a7f3d0', callback: (v) => v >= 1e6 ? `${v/1e6}tr` : (v >= 1e3 ? `${v/1e3}k` : v) }
+                    },
+                    yOrders: {
+                        type: 'linear', position: 'right', beginAtZero: true,
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#93c5fd', precision: 0 }
+                    }
+                },
+                 plugins: {
+                    legend: { labels: { color: '#d1d5db', usePointStyle: true, boxWidth: 8 } },
+                    tooltip: { 
+                        enabled: true,
+                        backgroundColor: 'rgba(17, 24, 39, 0.85)', titleColor: '#ffffff', bodyColor: '#d1d5db', 
+                        borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, padding: 12, cornerRadius: 8,
+                        usePointStyle: true, boxPadding: 4,
+                        callbacks: { 
+                            label: (c) => `${c.dataset.label}: ${c.dataset.yAxisID==='yRevenue' ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(c.parsed.y) : c.parsed.y}` 
+                        } 
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
+

@@ -6,6 +6,9 @@ const Item = require('../models/Item');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const User = require('../models/User'); 
+const Proxy = require('../models/Proxy');
+const Worker = require('../models/Worker');
+const ActivityLog = require('../models/ActivityLog');
 const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 
@@ -17,6 +20,202 @@ const adminOrderController = createCrudController(orderService, 'orders', {
     single: 'order',
     plural: 'orders'
 });
+
+// Helper to get date ranges
+const getDatesForPeriod = (period) => {
+    const now = new Date();
+    let startOfPeriod = new Date(now);
+    let endOfPeriod = new Date(now);
+    let startOfPreviousPeriod, endOfPreviousPeriod;
+
+    switch (period) {
+        case 'day':
+            startOfPeriod.setHours(0, 0, 0, 0);
+            endOfPeriod.setHours(23, 59, 59, 999);
+            startOfPreviousPeriod = new Date(startOfPeriod);
+            startOfPreviousPeriod.setDate(startOfPeriod.getDate() - 1);
+            endOfPreviousPeriod = new Date(endOfPeriod);
+            endOfPreviousPeriod.setDate(endOfPeriod.getDate() - 1);
+            break;
+        case 'week':
+            const dayOfWeek = now.getDay();
+            const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // week starts on Monday
+            startOfPeriod = new Date(now.setDate(diff));
+            startOfPeriod.setHours(0, 0, 0, 0);
+            endOfPeriod = new Date(startOfPeriod);
+            endOfPeriod.setDate(startOfPeriod.getDate() + 6);
+            endOfPeriod.setHours(23, 59, 59, 999);
+            startOfPreviousPeriod = new Date(startOfPeriod);
+            startOfPreviousPeriod.setDate(startOfPeriod.getDate() - 7);
+            endOfPreviousPeriod = new Date(endOfPeriod);
+            endOfPreviousPeriod.setDate(endOfPeriod.getDate() - 7);
+            break;
+        case 'month':
+            startOfPeriod = new Date(now.getFullYear(), now.getMonth(), 1);
+            endOfPeriod = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            startOfPreviousPeriod = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            endOfPreviousPeriod = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+            break;
+        case 'year':
+            startOfPeriod = new Date(now.getFullYear(), 0, 1);
+            endOfPeriod = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+            startOfPreviousPeriod = new Date(now.getFullYear() - 1, 0, 1);
+            endOfPreviousPeriod = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+            break;
+        default: // 'all'
+            return { currentRange: {}, previousRange: {}, startOfPeriod: null, endOfPeriod: null };
+    }
+
+    return {
+        currentRange: { $gte: startOfPeriod, $lte: endOfPeriod },
+        previousRange: { $gte: startOfPreviousPeriod, $lte: endOfPreviousPeriod },
+        startOfPeriod,
+        endOfPeriod
+    };
+};
+
+// Helper to calculate percentage change
+const calculateChange = (current, previous) => {
+    if (previous === 0) {
+        return current > 0 ? 100 : 0;
+    }
+    const change = ((current - previous) / previous) * 100;
+    return Math.round(change);
+};
+
+// Helper for aggregation pipelines to get totals
+const getAggregationData = async (Model, dateRange, sumField, actionFilter = null) => {
+    const matchCriteria = dateRange.hasOwnProperty('$gte') ? { createdAt: dateRange } : {};
+     if (actionFilter) {
+        matchCriteria.action = actionFilter;
+    }
+
+    const result = await Model.aggregate([
+        { $match: matchCriteria },
+        { $group: { _id: null, total: { $sum: sumField } } }
+    ]);
+    return result.length > 0 ? result[0].total : 0;
+};
+
+// Helper for chart data aggregation
+const getChartAggregation = async (Model, start, end, sumField, groupByFormat, actionFilter = null) => {
+    const matchCriteria = { createdAt: { $gte: start, $lte: end } };
+     if (actionFilter) {
+        matchCriteria.action = actionFilter;
+    }
+
+    return Model.aggregate([
+        { $match: matchCriteria },
+        {
+            $group: {
+                _id: { $dateToString: { format: groupByFormat, date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
+                value: { $sum: sumField }
+            }
+        },
+        { $sort: { _id: 1 } }
+    ]);
+};
+
+adminOrderController.getDashboard = async (req, res) => {
+    try {
+        const currentPeriod = req.query.period || 'day';
+        const { currentRange, previousRange, startOfPeriod, endOfPeriod } = getDatesForPeriod(currentPeriod);
+        
+        const depositActions = { $in: ['CLIENT_DEPOSIT', 'CLIENT_DEPOSIT_AUTO'] };
+
+        // --- Main Stats ---
+        const [
+            currentRevenue, previousRevenue,
+            currentOrders, previousOrders,
+            currentNewUsers, previousNewUsers,
+            currentCosts, previousCosts
+        ] = await Promise.all([
+            getAggregationData(ActivityLog, currentRange, '$metadata.change', depositActions),
+            getAggregationData(ActivityLog, previousRange, '$metadata.change', depositActions),
+            Order.countDocuments(currentRange.hasOwnProperty('$gte') ? { createdAt: currentRange, isDeleted: false } : { isDeleted: false }),
+            Order.countDocuments(previousRange.hasOwnProperty('$gte') ? { createdAt: previousRange, isDeleted: false } : { isDeleted: false }),
+            User.countDocuments(currentRange.hasOwnProperty('$gte') ? { createdAt: currentRange, isDeleted: false } : { isDeleted: false }),
+            User.countDocuments(previousRange.hasOwnProperty('$gte') ? { createdAt: previousRange, isDeleted: false } : { isDeleted: false }),
+            getAggregationData(Order, currentRange, '$totalCost'),
+            getAggregationData(Order, previousRange, '$totalCost')
+        ]);
+        
+        const stats = {
+            revenue: { current: currentRevenue, changePercentage: calculateChange(currentRevenue, previousRevenue) },
+            orders: { current: currentOrders, changePercentage: calculateChange(currentOrders, previousOrders) },
+            newUsers: { current: currentNewUsers, changePercentage: calculateChange(currentNewUsers, previousNewUsers) },
+            costs: { current: currentCosts, changePercentage: calculateChange(currentCosts, previousCosts) }
+        };
+
+        // --- Chart Data ---
+        let chartData = { labels: [], revenues: [], orders: [], timeUnit: 'day' };
+        if (currentPeriod !== 'all') {
+             let groupByFormat = "%Y-%m-%d";
+             let timeUnit = 'day';
+             
+             if (currentPeriod === 'year') { 
+                groupByFormat = "%Y-%m";
+                timeUnit = 'month';
+             } else if (currentPeriod === 'month' || currentPeriod === 'week') {
+                 groupByFormat = "%Y-%m-%d";
+                 timeUnit = 'day';
+             }
+
+            const [revenueData, orderData] = await Promise.all([
+                getChartAggregation(ActivityLog, startOfPeriod, endOfPeriod, '$metadata.change', groupByFormat, depositActions),
+                getChartAggregation(Order, startOfPeriod, endOfPeriod, 1, groupByFormat)
+            ]);
+
+            const dataMap = new Map();
+            revenueData.forEach(item => {
+                if (!dataMap.has(item._id)) dataMap.set(item._id, { revenue: 0, orders: 0 });
+                dataMap.get(item._id).revenue = item.value;
+            });
+            orderData.forEach(item => {
+                if (!dataMap.has(item._id)) dataMap.set(item._id, { revenue: 0, orders: 0 });
+                dataMap.get(item._id).orders = item.value;
+            });
+
+            const sortedLabels = Array.from(dataMap.keys()).sort();
+
+            chartData.labels = sortedLabels;
+            chartData.revenues = sortedLabels.map(label => dataMap.get(label).revenue);
+            chartData.orders = sortedLabels.map(label => dataMap.get(label).orders);
+            chartData.timeUnit = timeUnit;
+        }
+
+        // --- Detailed Stats (All time) ---
+        const [
+            totalAccounts, liveAccounts, dieAccounts, uncheckedAccounts,
+            totalProxies, availableProxies, assignedProxies, deadProxies,
+            totalWorkers, onlineWorkers
+        ] = await Promise.all([
+            Account.countDocuments({ isDeleted: false }), Account.countDocuments({ status: 'LIVE', isDeleted: false }),
+            Account.countDocuments({ status: 'DIE', isDeleted: false }), Account.countDocuments({ status: 'UNCHECKED', isDeleted: false }),
+            Proxy.countDocuments({ isDeleted: false }), Proxy.countDocuments({ status: 'AVAILABLE', isDeleted: false }),
+            Proxy.countDocuments({ status: 'ASSIGNED', isDeleted: false }), Proxy.countDocuments({ status: 'DEAD', isDeleted: false }),
+            Worker.countDocuments(), Worker.countDocuments({ status: 'online' })
+        ]);
+        
+        const detailedStats = {
+            accounts: { total: totalAccounts, live: liveAccounts, die: dieAccounts, unchecked: uncheckedAccounts },
+            proxies: { total: totalProxies, available: availableProxies, assigned: assignedProxies, dead: deadProxies },
+            workers: { total: totalWorkers, online: onlineWorkers, offline: totalWorkers - onlineWorkers }
+        };
+
+        res.render('admin/dashboard', { 
+            stats,
+            chartData,
+            detailedStats,
+            currentPeriod,
+            title: 'Admin Dashboard',
+            page: 'dashboard'
+        });
+    } catch (error) {
+        console.error("Error loading admin dashboard:", error);
+        res.status(500).send("Could not load admin dashboard.");
+    }
+};
 
 adminOrderController.handleGetAll = async (req, res) => {
     try {
@@ -83,12 +282,11 @@ adminOrderController.handleGetById = async (req, res) => {
         const items = await Item.find({ orderId: order._id }).lean();
         order.items = items;
 
-        // Lấy tất cả logs thuộc về orderId này, sắp xếp theo thời gian
         const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 }).lean();
 
         res.render('admin/order-detail', { 
             order, 
-            logs, // Truyền toàn bộ mảng logs của order cho view
+            logs, 
             currentQuery: req.query,
             title: `Order #${order.shortId}`,
             page: 'orders'
@@ -99,10 +297,6 @@ adminOrderController.handleGetById = async (req, res) => {
     }
 };
 
-// === START: THÊM HÀM MỚI ===
-/**
- * Lấy danh sách logs cho một item cụ thể.
- */
 adminOrderController.getItemLogs = async (req, res) => {
     try {
         const { itemId } = req.params;
@@ -113,7 +307,6 @@ adminOrderController.getItemLogs = async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi server khi tải logs.' });
     }
 };
-// === END: THÊM HÀM MỚI ===
 
 adminOrderController.handleCreate = async (req, res) => {
     try {
@@ -227,44 +420,5 @@ adminOrderController.handleHardDelete = async (req, res, next) => {
     });
 };
 
-adminOrderController.getDashboard = async (req, res) => {
-    try {
-        const [
-            totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount,
-            totalAccountCount, liveAccountCount, dieAccountCount, uncheckedAccountCount,
-            totalUserCount, adminUserCount,
-            orders
-        ] = await Promise.all([
-            Order.countDocuments({ isDeleted: false }),
-            Order.countDocuments({ status: { $in: ['pending', 'processing'] }, isDeleted: false }),
-            Order.countDocuments({ status: 'completed', isDeleted: false }),
-            Order.countDocuments({ status: 'failed', isDeleted: false }),
-            Account.countDocuments({ isDeleted: false }),
-            Account.countDocuments({ status: 'LIVE', isDeleted: false }),
-            Account.countDocuments({ status: 'DIE', isDeleted: false }),
-            Account.countDocuments({ status: 'UNCHECKED', isDeleted: false }),
-            User.countDocuments({ isDeleted: false }),
-            User.countDocuments({ role: 'admin', isDeleted: false }),
-            Order.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(10).populate('user', 'username').lean()
-        ]);
-
-        const orderStats = { total: totalOrderCount, processing: processingOrderCount, completed: completedOrderCount, failed: failedOrderCount };
-        const accountStats = { total: totalAccountCount, live: liveAccountCount, die: dieAccountCount, unchecked: uncheckedAccountCount };
-        const userStats = { total: totalUserCount, admins: adminUserCount, users: totalUserCount - adminUserCount };
-
-        res.render('admin/dashboard', { 
-            orderStats, 
-            accountStats, 
-            userStats, 
-            orders, 
-            currentQuery: req.query,
-            title: 'Admin Dashboard',
-            page: 'dashboard'
-        });
-    } catch (error) {
-        console.error("Error loading admin dashboard:", error);
-        res.status(500).send("Could not load admin dashboard.");
-    }
-};
-
 module.exports = adminOrderController;
+
