@@ -146,11 +146,11 @@ class ItemProcessorManager extends EventEmitter {
 
         let success = false;
         let attemptCount = 0;
-        const usedAccountIds = []; // <<< SỬA LỖI 1: Khởi tạo danh sách account đã thử
+        const usedAccountIds = [];
 
         while (attemptCount < MAX_ITEM_RETRIES && !success) {
             attemptCount++;
-            const account = await this.acquireAccount(usedAccountIds); // <<< SỬA LỖI 1: Truyền danh sách đã thử
+            const account = await this.acquireAccount(usedAccountIds);
             if (!account) {
                 this.addLogToUI('Tạm thời không có account nào khả dụng. Sẽ thử lại sau.');
                 await this.writeLog(item.orderId, item._id, 'ERROR', `Không tìm thấy account khả dụng để xử lý item: "${item.data}"`);
@@ -158,7 +158,7 @@ class ItemProcessorManager extends EventEmitter {
                 continue;
             }
             
-            usedAccountIds.push(account._id); // <<< SỬA LỖI 1: Thêm account vào danh sách đã thử
+            usedAccountIds.push(account._id);
 
             const logCallback = (message) => {
                 const formattedMessage = `[<strong class="text-green-400">${account.uid}</strong> | <strong class="text-yellow-400">${item.data}</strong>] ${message}`;
@@ -204,9 +204,9 @@ class ItemProcessorManager extends EventEmitter {
         }
     }
 
-    async acquireAccount(excludeIds = []) { // <<< SỬA LỖI 1: Thêm tham số excludeIds
+    async acquireAccount(excludeIds = []) {
         return Account.findOneAndUpdate(
-            { status: 'LIVE', isDeleted: false, _id: { $nin: excludeIds } }, // <<< SỬA LỖI 1: Loại trừ các ID đã thử
+            { status: 'LIVE', isDeleted: false, _id: { $nin: excludeIds } },
             { $set: { status: 'IN_USE' } },
             { new: true, sort: { lastUsedAt: 1 } }
         );
@@ -215,7 +215,6 @@ class ItemProcessorManager extends EventEmitter {
     async updateAccountOnFinish(account, wasSuccessful) {
         let update;
         if (wasSuccessful) {
-            // <<< SỬA LỖI 2: Reset errorCount khi thành công
             update = {
                 $inc: { successCount: 1 },
                 $set: { lastUsedAt: new Date(), errorCount: 0 } 
@@ -343,10 +342,10 @@ class ItemProcessorManager extends EventEmitter {
         try {
             const newLog = await Log.create({ orderId, itemId, level, message });
             
-            if (!this.logBuffer.has(itemId)) {
-                this.logBuffer.set(itemId, []);
+            // <<< SỬA LỖI: Bắn sự kiện real-time cho log mới >>>
+            if (this.io) {
+                this.io.to(`order_${orderId}`).emit('order:new_log', newLog);
             }
-            this.logBuffer.get(itemId).push(newLog);
 
         } catch (error) {
             console.error(`Failed to write log for item ${itemId}:`, error);

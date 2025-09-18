@@ -1,107 +1,95 @@
+<%#
+    File: zenius95/bm/bm-bff7df9ead8541917064533cf5cbf53b3b3a71a3/views/admin/order-detail.ejs
+    Description: Trang chi tiết đơn hàng trong Admin.
+%>
+
 <div class="space-y-8">
-    <div>
-        <a href="/admin/orders" class="inline-flex items-center text-sm text-gray-400 hover:text-white transition-colors duration-200 mb-2">
-            <i class="ri-arrow-left-line mr-2"></i>
-            Quay lại Quản lý Đơn hàng
-        </a>
-        <h1 class="text-3xl font-bold text-white">Chi Tiết Đơn Hàng</h1>
+    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div>
+             <h1 class="text-3xl font-bold text-white">Đơn Hàng #<%= order.shortId %></h1>
+             <p class="mt-1 text-gray-400">Chi tiết thông tin, trạng thái các item và log hệ thống.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/admin/orders" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition">
+                <i class="ri-arrow-left-line -ml-1 mr-2"></i> Quay Lại Danh Sách
+            </a>
+        </div>
     </div>
 
-    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-        <div class="px-6 py-4 flex 
-justify-between items-center border-b border-white/10">
-            <h3 class="text-lg font-semibold text-white">Thông tin chung</h3>
-            <% 
-                let statusClass = 'bg-gray-700 text-gray-300';
-                if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
-                if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
-                if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
-            %>
-            <span id="order-status-badge" class="px-3 py-1 text-sm font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
-        </div>
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <p class="text-gray-300"><strong>ID:</strong> <span class="font-mono text-blue-400">#<%= order.shortId %></span></p>
-            <p class="text-gray-300"><strong>User đặt hàng:</strong> <span class="font-semibold text-white"><%= order.user ?
-order.user.username : 'N/A' %></span></p>
-            <p class="text-gray-300"><strong>Ngày tạo:</strong> <span class="text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></span></p>
-            <p class="text-gray-300"><strong>Đơn giá ban đầu:</strong> <span class="text-gray-400"><%= order.pricePerItem.toLocaleString('vi-VN') %>đ / item</span></p>
-            <p class="text-gray-300"><strong>Tiến độ:</strong> <span class="font-semibold text-white"><span id="completed-count"><%= order.completedItems %></span> Thành công / <span id="failed-count"><%= order.failedItems %></span> Thất bại (<span id="processed-count"><%= order.completedItems + order.failedItems %></span> / <span id="total-count"><%= order.totalItems %></span>)</span></p>
-        </div>
-        
-    
-    <%# --- START: KHU VỰC QUYẾT TOÁN MỚI --- %>
-        <% if (order.status === 'completed' || order.status === 'failed') { %>
-            <%
-                const initialCost = order.pricePerItem * order.totalItems;
-                const finalCost = order.totalCost;
-                const refundAmount = initialCost - finalCost;
-            %>
-            <div class="p-6 border-t border-white/10">
-                <h4 class="text-base font-semibold text-white mb-3">Quyết toán & Chi phí</h4>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between items-center">
-    <span class="text-gray-400">Chi phí tạm tính ban đầu</span>
-                        <span class="font-mono text-gray-400"><%= initialCost.toLocaleString('vi-VN') %>đ</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-     <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
-                        <strong class="font-mono text-yellow-400"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
-                    </div>
-                    <div class="flex justify-between items-center text-xs">
-                         <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
-                        <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ?
-(finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
-                    </div>
-                    <% if (refundAmount > 0) { %>
-                    <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
-     <strong class="text-green-400">Đã hoàn lại cho user</strong>
-                        <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
-                    </div>
-                    <% } %>
-                </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-400">Người Dùng</span>
+                <i class="ri-user-line text-xl text-gray-500"></i>
             </div>
-        <% } %>
-        <%# --- END: KHU VỰC QUYẾT TOÁN MỚI --- %>
-
+            <p class="text-xl font-semibold text-white truncate"><%= order.user ? order.user.username : 'N/A' %></p>
+        </div>
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-400">Tổng Chi Phí</span>
+                 <i class="ri-wallet-3-line text-xl text-gray-500"></i>
+            </div>
+            <p class="text-xl font-semibold text-white"><%= order.totalCost.toLocaleString('vi-VN') %>đ</p>
+        </div>
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-400">Trạng Thái</span>
+                <i class="ri-loader-4-line text-xl text-gray-500"></i>
+            </div>
+            <p id="order-status-text" class="text-xl font-semibold text-white capitalize"><%= order.status %></p>
+        </div>
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-400">Ngày Tạo</span>
+                 <i class="ri-calendar-2-line text-xl text-gray-500"></i>
+            </div>
+            <p class="text-xl font-semibold text-white"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
+        </div>
     </div>
 
-    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-        <div class="px-6 py-4 border-b border-white/10">
-            <h3 class="text-lg font-semibold text-white">Danh Sách Items (<%= order.items.length %>)</h3>
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
+        <h3 class="text-lg font-semibold text-white mb-4">Tiến Độ Xử Lý</h3>
+        <div class="w-full bg-gray-700 rounded-full h-2.5">
+            <% const progressPercentage = (order.completedItems + order.failedItems) / order.totalItems * 100; %>
+            <div id="order-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: <%= progressPercentage %>%"></div>
         </div>
-        <div class="overflow-auto max-h-[60vh]">
+        <div class="flex justify-between mt-2 text-sm text-gray-400">
+            <span>Hoàn thành: <strong id="completed-count" class="text-green-400"><%= order.completedItems %></strong></span>
+            <span>Thất bại: <strong id="failed-count" class="text-red-400"><%= order.failedItems %></strong></span>
+            <span>Tổng cộng: <strong id="total-count" class="text-white"><%= order.totalItems %></strong></span>
+        </div>
+    </div>
+
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+         <div class="p-6 border-b border-white/10 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-white">Danh Sách Items</h3>
+         </div>
+        <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-gray-300">
-                <thead class="text-xs text-gray-400 uppercase bg-white/5 sticky top-0 backdrop-blur-sm">
+                <thead class="text-xs text-gray-400 uppercase bg-white/5">
                     <tr>
-                        <th class="px-6 py-3">Item Data</th>
-                        <th class="px-6 py-3 text-center">Trạng Thái</th>
+                        <th scope="col" class="px-6 py-3">#</th>
+                        <th scope="col" class="px-6 py-3">Data</th>
+                        <th scope="col" class="px-6 py-3">Trạng Thái</th>
+                        <th scope="col" class="px-6 py-3">Xử lý với Account</th>
+                        <th scope="col" class="px-6 py-3 text-right">Hành động</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/10">
-                    <% order.items.forEach(item => { %>
-                        <tr id="item-row-<%= item._id %>" class="hover:bg-white/10 transition-colors duration-200 cursor-pointer" data-item-id="<%= item._id %>" data-item-data="<%= item.data %>">
-                            <td class="px-6 py-3 font-mono"><%= item.data %></td>
-                            <td class="px-6 py-3 text-center">
-                               <% if (item.status === 'completed') { %>
-                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/20 text-green-400" title="Completed">
-                                        <i class="ri-check-line"></i>
-                                    </span>
-                               <% } else if (item.status === 'failed') { %>
-                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400" title="Failed">
-                                        <i class="ri-close-line"></i>
-                                    </span>
-                               <% } else if (item.status === 'processing') { %>
-                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/20 text-blue-400" title="Processing">
-                                        <i class="ri-loader-4-line animate-spin"></i>
-                                     </span>
-                                <% } else { %>
-                                     <span class="inline-flex items-center justify-center w-6 h-6 rounded-full 
-bg-gray-500/20 text-gray-400" title="Queued">
-                                         <i class="ri-time-line"></i>
-                                    </span>
-                                <% } %>
+                <tbody id="items-table-body">
+                    <% items.forEach((item, index) => { %>
+                        <tr id="item-row-<%= item._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                            <td class="px-6 py-4"><%= index + 1 %></td>
+                            <td class="px-6 py-4 font-mono text-white"><%= item.data %></td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge <%= item.status %>"><%= item.status %></span>
                             </td>
-                         </tr>
+                            <td class="px-6 py-4 font-mono text-gray-400"><%= item.processedWith ? '...' + item.processedWith.toString().slice(-8) : 'N/A' %></td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="btn-view-log p-2 rounded-md hover:bg-white/10 text-gray-400 transition" data-item-id="<%= item._id %>" title="Xem Log">
+                                    <i class="ri-file-text-line"></i>
+                                </button>
+                            </td>
+                        </tr>
                     <% }); %>
                 </tbody>
             </table>
@@ -109,179 +97,151 @@ bg-gray-500/20 text-gray-400" title="Queued">
     </div>
 </div>
 
-<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
 
-<div id="item-log-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-4xl p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
-    <div class="bg-gray-950/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl flex flex-col" style="height: 80vh;">
-        <div class="p-4 border-b border-white/10 flex justify-between items-center flex-shrink-0">
-            <div>
-                <h3 class="text-lg font-semibold text-white">Terminal Log: <span id="modal-item-data" class="font-mono text-blue-400"></span></h3>
-            </div>
-            <button class="btn-cancel p-2 rounded-md hover:bg-white/10 text-gray-400 transition"><i class="ri-close-line ri-lg"></i></button>
+<div id="log-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-2xl p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
+    <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 flex flex-col max-h-[80vh]">
+        <div class="p-6 border-b border-white/10 flex-shrink-0">
+            <h3 class="text-xl font-bold text-white">Logs cho Item <span id="log-modal-item-id" class="font-mono text-yellow-400"></span></h3>
         </div>
-        <div id="modal-log-content" class="p-4 flex-grow overflow-y-auto font-mono text-xs">
-            <div class="text-gray-500">Connecting to stream...</div>
+        <div id="log-modal-body" class="p-6 space-y-2 overflow-y-auto flex-grow font-mono text-sm">
+            <div class="text-center py-8">
+                <i class="ri-loader-4-line animate-spin text-4xl text-gray-500"></i>
+                <p class="mt-2 text-gray-400">Đang tải logs...</p>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-white/5 rounded-b-2xl flex justify-end items-center gap-3 flex-shrink-0">
+            <button type="button" class="btn-cancel px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-white transition">Đóng</button>
         </div>
     </div>
 </div>
 
+<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const orderId = "<%= order._id %>";
-    const socket = io();
-
-    // Elements
-    const completedCountEl = document.getElementById("completed-count");
-    const failedCountEl = document.getElementById("failed-count");
-    const processedCountEl = document.getElementById("processed-count");
-    const orderStatusBadge = document.getElementById("order-status-badge");
-    
-    // Modal Elements
+    // Modal handling
     const backdrop = document.getElementById('modal-backdrop');
-    const itemLogModal = document.getElementById('item-log-modal');
-    const modalItemData = document.getElementById('modal-item-data');
-    const modalLogContent = document.getElementById('modal-log-content');
-    let currentItemRoom = null;
+    const logModal = document.getElementById('log-modal');
+    const logModalBody = document.getElementById('log-modal-body');
+    const logModalItemId = document.getElementById('log-modal-item-id');
+    let currentViewingItemId = null; // <<< Biến để theo dõi item đang xem log
 
-    const showModal = () => {
+    const showModal = (modalEl) => {
         backdrop.classList.remove('hidden');
-        itemLogModal.classList.remove('hidden');
+        modalEl.classList.remove('hidden');
         setTimeout(() => {
             backdrop.classList.remove('opacity-0');
-            itemLogModal.classList.remove('opacity-0', 'scale-95');
+            modalEl.classList.remove('opacity-0', 'scale-95');
         }, 10);
     };
-
-    const hideModal = () => {
-        if (currentItemRoom) {
-            socket.emit('leave_room', currentItemRoom);
-            currentItemRoom = null;
-        }
+    const hideModal = (modalEl) => {
+        if (!modalEl) return;
         backdrop.classList.add('opacity-0');
-        itemLogModal.classList.add('opacity-0', 'scale-95');
+        modalEl.classList.add('opacity-0', 'scale-95');
         setTimeout(() => {
             backdrop.classList.add('hidden');
-            itemLogModal.classList.add('hidden');
+            modalEl.classList.add('hidden');
+            currentViewingItemId = null; // <<< Reset khi đóng modal
         }, 300);
     };
+    backdrop.addEventListener('click', () => document.querySelectorAll('.modal-container').forEach(hideModal));
+    document.querySelectorAll('.btn-cancel').forEach(btn => btn.addEventListener('click', () => hideModal(btn.closest('.modal-container'))));
 
-    backdrop.addEventListener('click', hideModal);
-    itemLogModal.querySelector('.btn-cancel').addEventListener('click', hideModal);
-
-    document.querySelectorAll('tr[data-item-id]').forEach(row => {
-        row.addEventListener('click', async () => {
-            const itemId = row.dataset.itemId;
-            const itemData = row.dataset.itemData;
-
-            modalItemData.textContent = itemData;
-            modalLogContent.innerHTML = '<div class="text-gray-500">Fetching history...</div>';
-            showModal();
-            
-            const scrollToBottom = () => {
-                modalLogContent.scrollTop = modalLogContent.scrollHeight;
-            };
+    // View Log button functionality
+    document.querySelectorAll('.btn-view-log').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const itemId = btn.dataset.itemId;
+            currentViewingItemId = itemId; // <<< Set item đang xem
+            logModalItemId.textContent = `...${itemId.slice(-12)}`;
+            logModalBody.innerHTML = `<div class="text-center py-8"><i class="ri-loader-4-line animate-spin text-4xl text-gray-500"></i><p class="mt-2 text-gray-400">Đang tải logs...</p></div>`;
+            showModal(logModal);
 
             try {
-                const response = await fetch(`/admin/items/${itemId}/logs`);
+                const response = await fetch(`/admin/orders/logs/${itemId}`);
                 const result = await response.json();
-                modalLogContent.innerHTML = '';
-                if (result.success && result.logs.length > 0) {
-                    appendLogBatch(result.logs, true);
-                } else if (!result.success) {
-                    modalLogContent.innerHTML = `<div class="text-red-400">Error: ${result.message}</div>`;
+                if (result.success) {
+                    renderLogs(result.logs);
                 } else {
-                     modalLogContent.innerHTML = '<div id="no-logs-message" class="text-gray-500">No historical logs found for this item. Waiting for real-time events...</div>';
+                    logModalBody.innerHTML = `<p class="text-red-400">${result.message}</p>`;
                 }
             } catch (error) {
-                 modalLogContent.innerHTML = `<div class="text-red-400">Connection Error: ${error.message}</div>`;
+                logModalBody.innerHTML = `<p class="text-red-400">Lỗi mạng khi tải logs.</p>`;
             }
-            
-            currentItemRoom = `item_${itemId}`;
-            socket.emit('join_room', currentItemRoom);
-            scrollToBottom();
         });
     });
-    
-    function appendLogBatch(logs, isInitialLoad = false) {
-        const noLogsMsg = modalLogContent.querySelector('#no-logs-message');
-        if(noLogsMsg) noLogsMsg.remove();
 
-        const fragment = document.createDocumentFragment();
-        logs.forEach(log => {
-            const logEl = document.createElement('div');
-            const timestamp = new Date(log.timestamp).toLocaleTimeString('vi-VN');
-            const levelClass = log.level === 'INFO' ? 'text-green-400' : 'text-gray-300';
-            const levelText = log.level === 'INFO' ? '[INFO]' : '[ERROR]';
-            const levelColor = log.level === 'INFO' ? 'text-green-500' : 'text-red-500';
-
-            logEl.innerHTML = `
-                <span class="text-gray-600 mr-2">${timestamp}</span>
-                <span class="${levelColor} font-bold mr-2">${levelText}</span>
-                <span class="text-gray-300 whitespace-pre-wrap">${log.message}</span>
-            `;
-            fragment.appendChild(logEl);
-        });
-        
-        modalLogContent.appendChild(fragment);
-        modalLogContent.scrollTop = modalLogContent.scrollHeight;
+    function renderLogs(logs) {
+        if (logs.length === 0) {
+            logModalBody.innerHTML = '<p class="text-gray-500">Chưa có log nào cho item này.</p>';
+            return;
+        }
+        logModalBody.innerHTML = logs.map(log => {
+             const levelColor = log.level === 'ERROR' ? 'text-red-400' : 'text-gray-400';
+             const timestamp = new Date(log.createdAt).toLocaleString('vi-VN');
+             return `<div class="log-entry"><span class="text-cyan-400">${timestamp}</span> <span class="${levelColor}">[${log.level}]</span> <span class="text-white">${log.message}</span></div>`;
+        }).join('');
+        logModalBody.scrollTop = logModalBody.scrollHeight;
     }
+    
+    // <<< --- LOGIC REAL-TIME --- >>>
+    const socket = io();
+    const orderId = "<%= order._id %>";
+    
+    // Join the room for this specific order
+    socket.emit('joinRoom', `order_${orderId}`);
 
-    socket.on('connect', () => {
-        const orderRoom = `order_${orderId}`;
-        socket.emit('join_room', orderRoom);
-    });
-
-    socket.on('order:update', (data) => {
-        if (data.id !== orderId) return;
-
-        // === START: THAY ĐỔI QUAN TRỌNG ===
-        if (data.status === 'completed' || data.status === 'failed') {
-            // Hiển thị toast thông báo và tải lại trang để hiển thị mục quyết toán
-            showToast('Đơn hàng đã hoàn tất! Tự động làm mới...', 'Thành công', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } else {
-            // Cập nhật trạng thái như bình thường cho các trạng thái khác
-            let config = { text: 'pending', color: 'gray' };
-            if (data.status === 'processing') config = { text: 'processing', color: 'yellow' };
-            orderStatusBadge.textContent = data.status;
-            orderStatusBadge.className = `px-3 py-1 text-sm font-semibold rounded-full bg-${config.color}-500/20 text-${config.color}-300`;
-        }
-        // === END: THAY ĐỔI QUAN TRỌNG ===
-    });
-
-    socket.on('order:item_update', (data) => {
-        if (data.id !== orderId) return;
-        
-        completedCountEl.textContent = data.completedItems;
-        failedCountEl.textContent = data.failedItems;
-        processedCountEl.textContent = data.completedItems + data.failedItems;
-
-        if (data.item) {
-            const itemRow = document.getElementById(`item-row-${data.item._id}`);
-            if (itemRow) {
-                const statusCell = itemRow.cells[1];
-                let itemStatus = { color: 'gray', icon: 'ri-time-line', title: 'Queued' };
-                if (data.item.status === 'processing') itemStatus = { color: 'blue', icon: 'ri-loader-4-line animate-spin', title: 'Processing' };
-                if (data.item.status === 'completed') itemStatus = { color: 'green', icon: 'ri-check-line', title: 'Completed' };
-                if (data.item.status === 'failed') itemStatus = { color: 'red', icon: 'ri-close-line', title: 'Failed' };
-
-                statusCell.innerHTML = `
-                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-${itemStatus.color}-500/20 text-${itemStatus.color}-400" title="${itemStatus.title}">
-                        <i class="${itemStatus.icon}"></i>
-                    </span>
-                `;
+    // Listen for new logs
+    socket.on('order:new_log', (newLog) => {
+        // Check if the log belongs to the currently viewed item
+        if (newLog.itemId === currentViewingItemId) {
+            const logContainer = document.querySelector('#log-modal-body');
+            
+            // Nếu đang hiển thị "chưa có log", xóa nó đi
+            if (logContainer.querySelector('p.text-gray-500')) {
+                logContainer.innerHTML = '';
             }
+
+            // Create and append the new log element
+            const levelColor = newLog.level === 'ERROR' ? 'text-red-400' : 'text-gray-400';
+            const timestamp = new Date(newLog.createdAt).toLocaleString('vi-VN');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `<span class="text-cyan-400">${timestamp}</span> <span class="${levelColor}">[${newLog.level}]</span> <span class="text-white">${newLog.message}</span>`;
+            
+            logContainer.appendChild(logEntry);
+            
+            // Auto-scroll to the bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
         }
     });
 
-    socket.on('order:new_logs_batch', (logs) => {
-        if (!logs || logs.length === 0) return;
-        if (currentItemRoom === `item_${logs[0].itemId}`) {
-            appendLogBatch(logs);
+    // Listen for item status updates
+    socket.on('order:item_update', (data) => {
+        if(data.id !== orderId) return;
+
+        // Update progress bar and counts
+        document.getElementById('completed-count').textContent = data.completedItems;
+        document.getElementById('failed-count').textContent = data.failedItems;
+        const progress = (data.completedItems + data.failedItems) / data.totalItems * 100;
+        document.getElementById('order-progress-bar').style.width = `${progress}%`;
+
+        // Update the specific item row
+        const itemRow = document.getElementById(`item-row-${data.item._id}`);
+        if (itemRow) {
+            const statusBadge = itemRow.querySelector('.status-badge');
+            statusBadge.className = `status-badge ${data.item.status}`;
+            statusBadge.textContent = data.item.status;
+            
+            const processedWithCell = itemRow.querySelector('td:nth-child(4)');
+            processedWithCell.textContent = data.item.processedWith ? '...' + data.item.processedWith.toString().slice(-8) : 'N/A';
         }
+    });
+
+     // Listen for overall order status update
+    socket.on('order:update', (data) => {
+        if(data.id !== orderId) return;
+        document.getElementById('order-status-text').textContent = data.status;
     });
 });
 </script>

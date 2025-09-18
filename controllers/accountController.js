@@ -1,6 +1,5 @@
 // controllers/accountController.js
 const Account = require('../models/Account');
-const Proxy = require('../models/Proxy');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
 const { runCheckLive } = require('../utils/checkLiveService');
@@ -9,7 +8,8 @@ const { logActivity } = require('../utils/activityLogService');
 
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy'],
-    additionalSoftDeleteFields: { status: 'UNCHECKED' }
+    additionalSoftDeleteFields: { status: 'UNCHECKED' },
+    defaultSort: { lastCheckedAt: -1 } // <<< THÊM DÒNG NÀY ĐỂ SẮP XẾP MẶC ĐỊNH
 });
 
 const accountController = createCrudController(accountService, 'accounts', {
@@ -20,7 +20,7 @@ const accountController = createCrudController(accountService, 'accounts', {
 // Chức năng của hàm này không còn cần thiết trong mô hình proxy chia sẻ
 const releaseProxiesForAccounts = async (accountIds) => {
     if (!accountIds || accountIds.length === 0) return;
-    // Khi một account bị xóa, proxy nó đang dùng không bị ảnh hưởng vì có thể account khác cũng đang dùng.
+    console.log(`Account deletion event for ${accountIds.length} accounts. No proxy status will be changed.`);
 };
 
 accountController.addMultiple = async (req, res) => {

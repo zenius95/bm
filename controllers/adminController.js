@@ -13,7 +13,7 @@ const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 
 const orderService = new CrudService(Order, {
-    populateFields: { path: 'user', select: 'username' }
+    populateFields: ['user'] // <<< SỬA LỖI DUY NHẤT TẠI ĐÂY
 });
 
 const adminOrderController = createCrudController(orderService, 'orders', {
@@ -421,4 +421,3 @@ adminOrderController.handleHardDelete = async (req, res, next) => {
 };
 
 module.exports = adminOrderController;
-
