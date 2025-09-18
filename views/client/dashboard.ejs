@@ -1,33 +1,160 @@
-<div class="space-y-8">
-    <div>
-        <h1 class="text-3xl font-bold text-white">Xin chào, <%= user.username %>!</h1>
-        <p class="mt-1 text-gray-400">Chào mừng Bro đã quay trở lại.</p>
-    </div>
+<%#
+    File: zenius95/bm/bm-2ac25d703f43c9898e6ce18b8f007144f1121bad/views/client/dashboard.ejs
+    Description: Final update for dashboard UI with equal height columns and scrollbars.
+%>
 
-    <div>
-        <h2 class="text-xl font-semibold text-white mb-4">Tổng quan tài khoản</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Tổng Đơn Hàng</span>
-                    <i class="ri-stack-line text-2xl text-blue-400"></i>
+<style>
+    .card-hover {
+        transition: all 0.3s ease-in-out;
+    }
+    .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div class="max-w-screen-2xl mx-auto">
+    
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Xin chào, <%= user.username %>!</h1>
+            <p class="mt-1 text-gray-400">Chào mừng Bro đã quay trở lại.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/deposit" class="px-4 py-2 bg-gray-800/80 border border-white/10 rounded-lg font-semibold text-white hover:bg-gray-700/80 transition-all duration-200 whitespace-nowrap">
+                <i class="ri-wallet-3-line mr-2 align-middle"></i>
+                <span>Nạp Tiền</span>
+            </a>
+            <a href="/create-order" class="px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-semibold text-white hover:bg-blue-500 transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5 whitespace-nowrap">
+                <i class="ri-add-line mr-2 align-middle"></i>
+                <span>Tạo Đơn Hàng Mới</span>
+            </a>
+        </div>
+    </header>
+
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="card-hover bg-gray-900/70 backdrop-blur-xl border border-green-500/30 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4"><span class="text-sm font-medium text-gray-400">Số Dư Hiện Tại</span><i class="ri-wallet-3-line text-2xl text-green-400"></i></div>
+            <p class="text-3xl font-bold text-white"><%= stats.balance.toLocaleString('vi-VN') %>đ</p>
+        </div>
+        <div class="card-hover bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4"><span class="text-sm font-medium text-gray-400">Tổng Chi Tiêu</span><i class="ri-exchange-dollar-line text-2xl text-yellow-400"></i></div>
+            <p class="text-3xl font-bold text-white"><%= stats.totalSpending.toLocaleString('vi-VN') %>đ</p>
+        </div>
+        <div class="card-hover bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4"><span class="text-sm font-medium text-gray-400">Đơn Đang Xử Lý</span><i class="ri-loader-4-line text-2xl text-blue-400 animate-spin"></i></div>
+            <p class="text-3xl font-bold text-white"><%= stats.pending %></p>
+        </div>
+        <div class="card-hover bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4"><span class="text-sm font-medium text-gray-400">Tổng Đơn Hàng</span><i class="ri-stack-line text-2xl text-purple-400"></i></div>
+            <p class="text-3xl font-bold text-white"><%= stats.orders %></p>
+        </div>
+    </section>
+
+    <section class="space-y-8">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="/create-order" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
+                        <i class="ri-add-circle-line text-3xl text-blue-400 mb-2"></i><span class="text-sm font-medium">Tạo Đơn</span>
+                    </a>
+                    <a href="/deposit" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
+                        <i class="ri-bank-card-line text-3xl text-green-400 mb-2"></i><span class="text-sm font-medium">Nạp Tiền</span>
+                    </a>
+                    <a href="/transactions" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
+                        <i class="ri-history-line text-3xl text-purple-400 mb-2"></i><span class="text-sm font-medium">Lịch Sử GD</span>
+                    </a>
+                    <a href="/profile" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
+                        <i class="ri-user-line text-3xl text-yellow-400 mb-2"></i><span class="text-sm font-medium">Hồ Sơ</span>
+                    </a>
                 </div>
-                <p class="mt-2 text-3xl font-bold text-white"><%= stats.orders %></p>
             </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Đơn Chờ Xử Lý</span>
-                    <i class="ri-loader-4-line text-2xl text-yellow-400"></i>
+            
+            <div class="bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6 flex flex-col">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2 flex-shrink-0"><i class="ri-megaphone-line text-yellow-400"></i> Thông Báo</h3>
+                <div class="flex-grow overflow-y-auto pr-2 min-h-0">
+                    <ul class="space-y-4 text-sm">
+                        <%# This is placeholder data. You should fetch this from settings or a database. %>
+                        <li class="border-l-2 border-yellow-400 pl-4">
+                            <p class="font-semibold text-gray-200">Cập nhật hệ thống</p>
+                            <p class="text-xs text-gray-400">Hệ thống sẽ bảo trì vào 02:00 ngày 20/09 để nâng cấp.</p>
+                        </li>
+                        <li class="border-l-2 border-blue-400 pl-4">
+                            <p class="font-semibold text-gray-200">Chính sách giá mới</p>
+                            <p class="text-xs text-gray-400">Bảng giá mới sẽ được áp dụng từ ngày 01/10. Xem chi tiết tại đây.</p>
+                        </li>
+                    </ul>
                 </div>
-                <p class="mt-2 text-3xl font-bold text-yellow-400"><%= stats.pending %></p>
             </div>
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-400">Số Dư</span>
-                    <i class="ri-wallet-3-line text-2xl text-green-400"></i>
+
+            <div class="bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6 flex flex-col">
+                <h3 class="text-lg font-semibold text-white mb-4 flex-shrink-0">Bảng Giá Hiện Tại</h3>
+                <div class="flex-grow overflow-y-auto pr-2 min-h-0">
+                    <div class="space-y-2 text-sm">
+                        <% if (pricingTiers && pricingTiers.length > 0) { %>
+                            <% pricingTiers.forEach((tier, index) => { %>
+                                <div class="flex justify-between p-2 rounded <%= index % 2 === 0 ? 'bg-gray-800/50' : '' %>">
+                                    <span class="text-gray-400">Từ <%= tier.quantity %> items</span>
+                                    <strong class="font-mono text-white"><%= tier.price.toLocaleString('vi-VN') %>đ</strong>
+                                </div>
+                            <% }); %>
+                        <% } else { %>
+                            <p class="text-gray-500 text-center">Chưa có thông tin bảng giá.</p>
+                        <% } %>
+                    </div>
                 </div>
-                <p class="mt-2 text-3xl font-bold text-green-400"><%= stats.balance.toLocaleString('vi-VN') %>đ</p>
             </div>
         </div>
-    </div>
+
+        <div class="bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white">Đơn Hàng Gần Đây</h3>
+                <a href="/orders" class="text-sm text-blue-400 hover:underline">Xem tất cả</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-400 uppercase">
+                        <tr>
+                            <th class="px-6 py-3">Order ID</th>
+                            <th class="px-6 py-3 text-center">Số Lượng (OK/Lỗi/Tổng)</th>
+                            <th class="px-6 py-3 text-center">Trạng Thái</th>
+                            <th class="px-6 py-3 text-right">Chi Phí</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body" class="divide-y divide-white/10">
+                        <% if (recentOrders && recentOrders.length > 0) { %>
+                            <% recentOrders.forEach(order => { %>
+                                <tr class="hover:bg-white/5 transition-colors duration-200">
+                                    <td class="px-6 py-4">
+                                        <a href="/orders/<%= order._id %>" class="font-mono text-white hover:text-blue-400">#<%= order.shortId %></a>
+                                        <p class="text-xs text-gray-500"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center font-mono">
+                                        <span class="text-green-400 font-semibold"><%= order.completedItems %></span> / 
+                                        <span class="text-red-400"><%= order.failedItems %></span> / 
+                                        <span class="text-white"><%= order.totalItems %></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <% let statusConfig = { text: 'Pending', color: 'gray' };
+                                           if (order.status === 'processing') statusConfig = { text: 'Processing', color: 'yellow' };
+                                           if (order.status === 'completed') statusConfig = { text: 'Completed', color: 'green' };
+                                           if (order.status === 'failed') statusConfig = { text: 'Failed', color: 'red' };
+                                        %>
+                                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-<%= statusConfig.color %>-500/20 text-<%= statusConfig.color %>-300"><%= statusConfig.text %></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right font-mono text-gray-300"><%= order.totalCost.toLocaleString('vi-VN') %>đ</td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="4" class="text-center py-8 text-gray-400">Bro chưa có đơn hàng nào gần đây.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>

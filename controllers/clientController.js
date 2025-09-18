@@ -5,6 +5,7 @@ const Item = require('../models/Item');
 const ActivityLog = require('../models/ActivityLog');
 const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
+const mongoose = require('mongoose'); // <<< THÊM DÒNG NÀY
 
 const clientController = {};
 
@@ -17,18 +18,56 @@ const CLIENT_ACTION_LABELS = {
     'ADMIN_ADJUST_BALANCE': { label: 'Admin Điều chỉnh', color: 'bg-purple-500/20 text-purple-400' },
 };
 
-clientController.getDashboard = (req, res) => {
-    const stats = {
-        orders: 0, 
-        pending: 0,
-        balance: res.locals.user.balance 
-    };
-    res.render('client/dashboard', { 
-        page: 'dashboard',
-        stats,
-        title: 'Client Dashboard'
-    });
+clientController.getDashboard = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+
+        // Lấy các thống kê cơ bản
+        const [orderCount, pendingCount, spendingResult] = await Promise.all([
+            Order.countDocuments({ user: userId, isDeleted: false }),
+            Order.countDocuments({ user: userId, isDeleted: false, status: { $in: ['pending', 'processing'] } }),
+            Order.aggregate([
+                { $match: { user: new mongoose.Types.ObjectId(userId), isDeleted: false, status: 'completed' } },
+                { $group: { _id: null, total: { $sum: '$totalCost' } } }
+            ])
+        ]);
+        
+        // Lấy 5 đơn hàng gần nhất
+        const recentOrders = await Order.find({ user: userId, isDeleted: false })
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .lean();
+
+        // Lấy bảng giá từ settings và sắp xếp tăng dần
+        const pricingTiers = settingsService.get('order').pricingTiers.sort((a, b) => a.quantity - b.quantity);
+
+        const stats = {
+            orders: orderCount,
+            pending: pendingCount,
+            balance: res.locals.user.balance,
+            totalSpending: spendingResult.length > 0 ? spendingResult[0].total : 0
+        };
+
+        res.render('client/dashboard', { 
+            page: 'dashboard',
+            stats,
+            recentOrders,
+            pricingTiers,
+            title: 'Client Dashboard'
+        });
+    } catch (error) {
+        console.error("Lỗi khi tải client dashboard:", error);
+        res.status(500).render('client/dashboard', {
+            page: 'dashboard',
+            stats: { orders: 0, pending: 0, balance: res.locals.user.balance, totalSpending: 0 },
+            recentOrders: [],
+            pricingTiers: [],
+            title: 'Client Dashboard',
+            error: "Không thể tải dữ liệu dashboard."
+        });
+    }
 };
+
 
 clientController.getProfilePage = (req, res) => {
     res.render('client/profile', {
