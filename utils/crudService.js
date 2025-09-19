@@ -9,7 +9,6 @@ class CrudService {
         this.defaultSort = options.defaultSort || { createdAt: -1 };
     }
 
-    // <<< SỬA LỖI: THÊM HÀM getById BỊ THIẾU >>>
     async getById(id) {
         let query = this.Model.findById(id);
         if (this.populateFields.length > 0) {
@@ -96,19 +95,42 @@ class CrudService {
         return this.Model.findByIdAndUpdate(id, data, { new: true, runValidators: true });
     }
 
-    async softDelete(ids) {
+    async softDelete(id) {
         const updateData = { isDeleted: true, deletedAt: new Date(), ...this.additionalSoftDeleteFields };
-        return this.Model.updateMany({ _id: { $in: ids } }, { $set: updateData });
+        return this.Model.findByIdAndUpdate(id, updateData);
     }
 
-    async restore(ids) {
+    // === START: THÊM HÀM MỚI ===
+    async softDeleteMany(filters) {
+        const dbQuery = { ...filters, isDeleted: false };
+        const updateData = { isDeleted: true, deletedAt: new Date(), ...this.additionalSoftDeleteFields };
+        return this.Model.updateMany(dbQuery, { $set: updateData });
+    }
+    // === END: THÊM HÀM MỚI ===
+
+    async restore(id) {
         const updateData = { isDeleted: false, deletedAt: null };
-        return this.Model.updateMany({ _id: { $in: ids } }, { $set: updateData });
+        return this.Model.findByIdAndUpdate(id, updateData);
     }
 
-    async hardDelete(ids) {
-        return this.Model.deleteMany({ _id: { $in: ids } });
+    // === START: THÊM HÀM MỚI ===
+    async restoreMany(filters) {
+        const dbQuery = { ...filters, isDeleted: true };
+        const updateData = { isDeleted: false, deletedAt: null };
+        return this.Model.updateMany(dbQuery, { $set: updateData });
     }
+    // === END: THÊM HÀM MỚI ===
+
+    async hardDelete(id) {
+        return this.Model.findByIdAndDelete(id);
+    }
+
+    // === START: THÊM HÀM MỚI ===
+    async hardDeleteMany(filters) {
+        const dbQuery = { ...filters, isDeleted: true };
+        return this.Model.deleteMany(dbQuery);
+    }
+    // === END: THÊM HÀM MỚI ===
 }
 
 module.exports = CrudService;

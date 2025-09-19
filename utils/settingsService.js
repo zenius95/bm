@@ -46,22 +46,24 @@ const DEFAULT_SETTINGS = {
         isEnabled: false,
         concurrency: 10,
         pollingInterval: 5,
-        timeout: 180000, // <<< START: THÊM CÀI ĐẶT TIMEOUT MẶC ĐỊNH (3 PHÚT)
+        timeout: 180000, 
         maxSuccess: 4,
         maxError: 5
     },
-    // <<< END: THÊM CÀI ĐẶT TIMEOUT MẶC ĐỊNH >>>
-    // <<< START: CẬP NHẬT CẤU TRÚC DỊCH VỤ >>>
     services: {
-        selectedImageCaptchaService: 'omocaptcha_image.json', // Đổi tên
-        selectedRecaptchaService: '', // Thêm mới
+        selectedImageCaptchaService: 'omocaptcha_image.json', 
+        selectedRecaptchaService: '', 
         selectedPhoneService: '',
         apiKeys: {
             captcha: {},
             phone: {}
-        }
+        },
+        // === START: THÊM MỚI ===
+        userAgents: [
+            "Instagram 361.0.0.46.88 Android (29/10; 560dpi; 1440x2792; samsung; SM-G960N; starlteks; samsungexynos9810; en_US; 674675098)"
+        ]
+        // === END: THÊM MỚI ===
     }
-    // <<< END: CẬP NHẬT CẤU TRÚC DỊCH VỤ >>>
 };
 
 class SettingsService extends EventEmitter {
@@ -89,7 +91,10 @@ class SettingsService extends EventEmitter {
                     apiKeys: {
                         ...DEFAULT_SETTINGS.services.apiKeys,
                         ...(fileData.services?.apiKeys || {})
-                    }
+                    },
+                    // === START: THÊM LOGIC MERGE CHO USER AGENTS ===
+                    userAgents: fileData.services?.userAgents || DEFAULT_SETTINGS.services.userAgents
+                    // === END: THÊM LOGIC MERGE CHO USER AGENTS ===
                 }
             };
             console.log('[SettingsService] Loaded config from settings.json');

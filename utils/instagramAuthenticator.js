@@ -2,6 +2,7 @@
 const fetch = require('node-fetch');
 const twofactor = require('node-2fa');
 const { HttpsProxyAgent } = require('https-proxy-agent'); // Dùng https-proxy-agent để hỗ trợ proxy tốt hơn
+const settingsService = require('./settingsService'); // <<< THÊM DÒNG NÀY
 
 // --- Định nghĩa các URL và Header tĩnh ---
 // Để ở đây cho dễ quản lý, sau này IG có đổi thì sửa 1 chỗ thôi
@@ -62,11 +63,21 @@ class InstagramAuthenticator {
      * @param {string} auth.password - Mật khẩu
      * @param {string} [auth.twofa] - Mã bí mật 2FA (nếu có)
      * @param {string} [auth.proxy] - Chuỗi proxy (ví dụ: http://user:pass@host:port)
-     * @param {string} [auth.userAgent] - User-Agent tùy chỉnh
      */
     constructor(auth) {
         this.#auth = auth;
-        this.#session.userAgent = auth.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        
+        // === START: LOGIC LẤY USER AGENT NGẪU NHIÊN ===
+        const configuredUAs = settingsService.get('services', {}).userAgents || [];
+        if (configuredUAs.length > 0) {
+            this.#session.userAgent = configuredUAs[Math.floor(Math.random() * configuredUAs.length)];
+            console.log(`[UserAgent] Using random UA: ${this.#session.userAgent}`);
+        } else {
+            this.#session.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+            console.log(`[UserAgent] Using default UA.`);
+        }
+        // === END: LOGIC LẤY USER AGENT NGẪU NHIÊN ===
+
         this.#proxyAgent = auth.proxy ? new HttpsProxyAgent(auth.proxy) : undefined;
     }
 

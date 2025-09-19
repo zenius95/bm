@@ -136,33 +136,39 @@ class ProcessRunner extends EventEmitter {
     }
 
     _runWithTimeout(taskFunc) {
-        if (this.options.timeout <= 0) {
-            // Bọc hàm taskFunc trong một Promise để bắt cả lỗi đồng bộ và bất đồng bộ
-            return new Promise((resolve, reject) => {
-                try {
-                    resolve(taskFunc());
-                } catch (error) {
-                    reject(error);
-                }
-            });
-        }
+        // Bọc hàm taskFunc trong một Promise để bắt cả lỗi đồng bộ và bất đồng bộ
         return new Promise((resolve, reject) => {
-            const timer = setTimeout(() => {
-                const timeoutError = new Error(`Task timed out sau ${this.options.timeout}ms`);
-                timeoutError.code = 'ETIMEOUT'; 
-                reject(timeoutError);
-            }, this.options.timeout);
+            if (this.options.timeout > 0) {
+                const timer = setTimeout(() => {
+                    const timeoutError = new Error(`Task timed out sau ${this.options.timeout}ms`);
+                    timeoutError.code = 'ETIMEOUT';
+                    reject(timeoutError);
+                }, this.options.timeout);
 
-            // Promise.resolve().then(...) sẽ bắt cả lỗi đồng bộ và bất đồng bộ từ taskFunc
-            Promise.resolve().then(() => taskFunc())
-                .then(result => {
-                    clearTimeout(timer);
-                    resolve(result);
-                })
-                .catch(err => {
-                    clearTimeout(timer);
-                    reject(err);
-                });
+                // Gói logic thực thi để có thể dọn dẹp timeout
+                const execute = async () => {
+                    try {
+                        const result = await taskFunc();
+                        clearTimeout(timer);
+                        resolve(result);
+                    } catch (err) {
+                        clearTimeout(timer);
+                        reject(err);
+                    }
+                };
+                execute();
+            } else {
+                 // Gói logic thực thi khi không có timeout
+                 const execute = async () => {
+                    try {
+                        const result = await taskFunc();
+                        resolve(result);
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                execute();
+            }
         });
     }
 

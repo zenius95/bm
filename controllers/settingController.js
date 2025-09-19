@@ -48,9 +48,6 @@ async function getServicesFromDir(dirPath) {
     }
 }
 
-// === START: THAY ĐỔI QUAN TRỌNG ===
-// Đã xóa hàm logSettingsChange và các lời gọi đến nó
-// === END: THAY ĐỔI QUAN TRỌNG ===
 
 settingController.getSettingsPage = async (req, res) => {
     try {
@@ -91,7 +88,10 @@ settingController.updateServicesConfig = async (req, res) => {
         const { 
             selectedImageCaptchaService, imageCaptchaApiKey,
             selectedRecaptchaService, recaptchaApiKey,
-            selectedPhoneService, phoneApiKey 
+            selectedPhoneService, phoneApiKey,
+            // === START: LẤY THÊM userAgents TỪ REQUEST ===
+            userAgents 
+            // === END: LẤY THÊM userAgents TỪ REQUEST ===
         } = req.body;
         
         const currentServices = settingsService.get('services');
@@ -112,11 +112,18 @@ settingController.updateServicesConfig = async (req, res) => {
             newApiKeys.phone[selectedPhoneService] = phoneApiKey;
         }
 
+        // === START: XỬ LÝ VÀ LƯU DANH SÁCH USER AGENT ===
+        const userAgentList = typeof userAgents === 'string' 
+            ? userAgents.split('\n').map(ua => ua.trim()).filter(ua => ua)
+            : [];
+        // === END: XỬ LÝ VÀ LƯU DANH SÁCH USER AGENT ===
+
         const newConfig = {
             selectedImageCaptchaService: selectedImageCaptchaService || currentServices.selectedImageCaptchaService,
             selectedRecaptchaService: selectedRecaptchaService || currentServices.selectedRecaptchaService,
             selectedPhoneService: selectedPhoneService || currentServices.selectedPhoneService,
-            apiKeys: newApiKeys
+            apiKeys: newApiKeys,
+            userAgents: userAgentList // Thêm vào object config
         };
 
         await settingsService.update('services', newConfig);
@@ -249,15 +256,13 @@ settingController.updateAutoProxyCheckConfig = async (req, res) => {
 
 settingController.updateItemProcessorConfig = async (req, res) => {
     try {
-        // <<< START: THÊM 'timeout' VÀO DANH SÁCH LẤY RA >>>
         const { concurrency, pollingInterval, timeout, maxSuccess, maxError } = req.body;
-        // <<< END: THÊM 'timeout' VÀO DANH SÁCH LẤY RA >>>
         
         const configToUpdate = {};
         const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
         configToUpdate.concurrency = parse(concurrency, 1);
         configToUpdate.pollingInterval = parse(pollingInterval, 1);
-        configToUpdate.timeout = parse(timeout, 1000); // <<< THÊM LOGIC PARSE CHO TIMEOUT
+        configToUpdate.timeout = parse(timeout, 1000); 
         configToUpdate.maxSuccess = parse(maxSuccess, 0);
         configToUpdate.maxError = parse(maxError, 0);
 
