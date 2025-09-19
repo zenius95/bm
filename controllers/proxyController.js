@@ -7,7 +7,6 @@ const settingsService = require('../utils/settingsService');
 
 const proxyService = new CrudService(Proxy, {
     searchableFields: ['proxyString', 'status', 'notes']
-    // <<< SỬA LỖI: Đã xóa dòng populateFields gây ra lỗi >>>
 });
 
 const proxyController = createCrudController(proxyService, 'proxies', {
@@ -36,7 +35,6 @@ proxyController.handleGetAll = async (req, res) => {
         res.status(500).send(`Could not load proxies.`);
     }
 };
-
 
 // Ghi đè phương thức handleCreate để xử lý việc thêm hàng loạt và trả về JSON
 proxyController.handleCreate = async (req, res) => {
@@ -157,5 +155,17 @@ proxyController.checkSelected = async (req, res) => {
     }
 };
 
+// Thêm hàm getAllProxies để xử lý copy tất cả
+proxyController.getAllProxies = async (req, res) => {
+    const { filters } = req.body;
+    try {
+        const proxies = await Proxy.find({ ...filters, isDeleted: filters.inTrash === 'true' }).lean();
+        const proxyStrings = proxies.map(p => p.proxyString);
+        res.json({ success: true, proxies: proxyStrings });
+    } catch (error) {
+        console.error("Lỗi khi lấy tất cả proxy:", error);
+        res.status(500).json({ success: false, message: 'Lỗi server.' });
+    }
+};
 
 module.exports = proxyController;

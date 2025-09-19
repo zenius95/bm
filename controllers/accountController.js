@@ -9,19 +9,13 @@ const { logActivity } = require('../utils/activityLogService');
 const accountService = new CrudService(Account, {
     searchableFields: ['uid', 'proxy'],
     additionalSoftDeleteFields: { status: 'UNCHECKED' },
-    defaultSort: { lastCheckedAt: -1 } // <<< THÊM DÒNG NÀY ĐỂ SẮP XẾP MẶC ĐỊNH
+    defaultSort: { lastCheckedAt: -1 }
 });
 
 const accountController = createCrudController(accountService, 'accounts', {
     single: 'account',
     plural: 'accounts'
 });
-
-// Chức năng của hàm này không còn cần thiết trong mô hình proxy chia sẻ
-const releaseProxiesForAccounts = async (accountIds) => {
-    if (!accountIds || accountIds.length === 0) return;
-    console.log(`Account deletion event for ${accountIds.length} accounts. No proxy status will be changed.`);
-};
 
 accountController.addMultiple = async (req, res) => {
     const { accountsData } = req.body;
@@ -141,6 +135,33 @@ accountController.handleHardDelete = async (req, res, next) => {
         ipAddress: req.ip || req.connection.remoteAddress,
         context: 'Admin'
     });
+};
+
+// Lấy chi tiết account để copy
+accountController.getAccountDetails = async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ success: false, message: 'Không có ID account nào được cung cấp.' });
+        }
+        const accounts = await Account.find({ _id: { $in: ids } }).select('uid password twofa email').lean();
+        res.json({ success: true, accounts });
+    } catch (error) {
+        console.error("Lỗi khi lấy chi tiết account:", error);
+        res.status(500).json({ success: false, message: 'Lỗi server khi lấy chi tiết account.' });
+    }
+};
+
+// Lấy tất cả account ID theo bộ lọc
+accountController.getAllAccounts = async (req, res) => {
+    const { filters } = req.body;
+    try {
+        const accountIds = await accountService.findAllIds(filters);
+        res.json({ success: true, accountIds });
+    } catch (error) {
+        console.error("Lỗi khi lấy tất cả account:", error);
+        res.status(500).json({ success: false, message: 'Lỗi server.' });
+    }
 };
 
 module.exports = accountController;

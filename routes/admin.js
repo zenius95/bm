@@ -24,6 +24,8 @@ router.post('/accounts/soft-delete', accountController.handleSoftDelete);
 router.post('/accounts/restore', accountController.handleRestore);
 router.post('/accounts/hard-delete', accountController.handleHardDelete);
 router.post('/accounts/check-selected', accountController.checkSelected);
+router.post('/accounts/all', accountController.getAllAccounts); // New route for "select all"
+router.post('/accounts/details', accountController.getAccountDetails); // New route for copying details
 
 // --- Proxy Routes ---
 router.get('/proxies', proxyController.handleGetAll);
@@ -33,6 +35,7 @@ router.post('/proxies/soft-delete', proxyController.handleSoftDelete);
 router.post('/proxies/restore', proxyController.handleRestore);
 router.post('/proxies/hard-delete', proxyController.handleHardDelete);
 router.post('/proxies/check-selected', proxyController.checkSelected);
+router.post('/proxies/all', proxyController.getAllProxies); // New route for "select all"
 
 // --- Order Routes ---
 router.get('/orders', adminController.handleGetAll);

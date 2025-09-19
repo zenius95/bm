@@ -2,8 +2,7 @@
 
 <div class="space-y-8">
     <div>
-        <h1 class="text-3xl font-bold text-white"><%= inTrash ?
- 'Thùng rác - Account' : 'Quản Lý Account' %></h1>
+        <h1 class="text-3xl font-bold text-white"><%= inTrash ? 'Thùng rác - Account' : 'Quản Lý Account' %></h1>
         <p class="mt-1 text-gray-400">Thêm mới, tìm kiếm và quản lý tất cả account của Bro.</p>
     </div>
     
@@ -11,8 +10,7 @@
         <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg relative" role="alert">
             <strong class="font-bold">Đã xảy ra lỗi!</strong>
             <span class="block sm:inline"><%= decodeURIComponent(currentQuery.error) %></span>
-      
-           </div>
+        </div>
     <% } %>
     <% if (currentQuery.success) { %>
          <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg relative" role="alert">
@@ -23,20 +21,17 @@
 
     <% if (!inTrash) { %>
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-     
-       <div class="px-6 py-4 border-b border-white/10">
+        <div class="px-6 py-4 border-b border-white/10">
             <h3 class="text-lg font-semibold text-white">Thêm Account Mới</h3>
         </div>
         <div class="p-6">
             <form id="add-accounts-form">
                 <div class="mb-4">
-                    <label for="accountsData" class="block text-sm font-medium text-gray-300 mb-2">Nhập danh sách 
- account (mỗi account một dòng)</label>
+                    <label for="accountsData" class="block text-sm font-medium text-gray-300 mb-2">Nhập danh sách account (mỗi account một dòng)</label>
                     <textarea class="form-input font-mono" id="accountsData" name="accountsData" rows="6" placeholder="uid|password|2fa|email (email không bắt buộc)"></textarea>
                 </div>
                 <button type="submit" id="add-accounts-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-950 transition-transform duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-          
-                     <span class="btn-text"><i class="ri-add-line -ml-1 mr-2"></i>Thêm Accounts</span>
+                    <span class="btn-text"><i class="ri-add-line -ml-1 mr-2"></i>Thêm Accounts</span>
                     <span class="spinner hidden"><i class="ri-loader-4-line animate-spin mr-2"></i>Đang xử lý...</span>
                 </button>
             </form>
@@ -45,53 +40,45 @@
     <% } %>
 
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-  
-           <form method="GET" action="/admin/accounts" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+        <form method="GET" action="/admin/accounts" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <% if (inTrash) { %><input type="hidden" name="inTrash" value="true"><% } %>
-            <input type="text" name="search" class="form-input" placeholder="Tìm theo Username, Proxy..." value="<%= currentQuery.search ||
- '' %>">
+            <input type="text" name="search" class="form-input" placeholder="Tìm theo Username, Proxy..." value="<%= currentQuery.search || '' %>">
             <select name="status" class="form-select">
                 <option value="">-- Lọc theo trạng thái --</option>
                 <option value="UNCHECKED" <%= currentQuery.status === 'UNCHECKED' ? 'selected' : '' %>>Unchecked</option>
                 <option value="LIVE" <%= currentQuery.status === 'LIVE' ? 'selected' : '' %>>Live</option>
-           
-                 <option value="DIE" <%= currentQuery.status === 'DIE' ? 'selected' : '' %>>Die</option>
+                <option value="DIE" <%= currentQuery.status === 'DIE' ? 'selected' : '' %>>Die</option>
                 <option value="CHECKING" <%= currentQuery.status === 'CHECKING' ? 'selected' : '' %>>Checking</option>
                 <option value="ERROR" <%= currentQuery.status === 'ERROR' ? 'selected' : '' %>>Error</option>
                 <option value="IN_USE" <%= currentQuery.status === 'IN_USE' ? 'selected' : '' %>>In Use</option>
                 <option value="RESTING" <%= currentQuery.status === 'RESTING' ? 'selected' : '' %>>Resting</option>
-      
              </select>
              <div class="flex items-center gap-2">
                 <button type="submit" class="w-full md:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Lọc</button>
-                 <a href="/admin/accounts<%= inTrash ?
- '?inTrash=true' : '' %>" class="w-full md:w-auto text-center px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-gray-300 transition whitespace-nowrap">Reset</a>
+                <a href="/admin/accounts<%= inTrash ? '?inTrash=true' : '' %>" class="w-full md:w-auto text-center px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-gray-300 transition whitespace-nowrap">Reset</a>
             </div>
         </form>
         <div>
             <% if (inTrash) { %>
                 <a href="/admin/accounts" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
-      
-                     <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
+                <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
                 <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
+                <button id="copySelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-indigo-600/80 border border-indigo-500 rounded-md font-semibold text-sm text-white hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-file-copy-line mr-2"></i> Copy</button>
             <% } else { %>
-               
-                 <a href="/admin/accounts?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
+                <a href="/admin/accounts?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
                 <button id="checkSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-green-600/80 border border-green-500 rounded-md font-semibold text-sm text-white hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i id="checkSelectedIcon" class="ri-refresh-line mr-2"></i> Check Live</button>
-                <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng 
- rác</button>
+                <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
+                <button id="copySelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-indigo-600/80 border border-indigo-500 rounded-md font-semibold text-sm text-white hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-file-copy-line mr-2"></i> Copy</button>
             <% } %>
         </div>
     </div>
     
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
-            <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
         </div>
         <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
-            <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
         </div>
     <% } %>
 
@@ -100,8 +87,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-gray-300">
                 <thead class="text-xs text-gray-400 uppercase bg-white/5">
-        
-                     <tr>
+                    <tr>
                         <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Username</th>
                         <th scope="col" class="px-6 py-3">Mật khẩu</th>
@@ -115,67 +101,52 @@
                 </thead>
                 <tbody>
                     <% accounts.forEach(account => { %>
-                  
-                       <%
+                        <%
                             let statusClass = 'bg-gray-700 text-gray-300';
                             if (account.status === 'LIVE') statusClass = 'bg-green-500/20 text-green-400';
-                           
-                             if (account.status === 'DIE' || account.status === 'ERROR') statusClass = 'bg-red-500/20 text-red-400';
+                            if (account.status === 'DIE' || account.status === 'ERROR') statusClass = 'bg-red-500/20 text-red-400';
                             if (account.status === 'IN_USE') statusClass = 'bg-purple-500/20 text-purple-400';
                             if (account.status === 'RESTING') statusClass = 'bg-blue-500/20 text-blue-400';
                         %>
-                        <tr id="account-row-<%= account._id %>" class="border-b 
- border-white/10 hover:bg-white/5 transition-colors duration-200">
+                        <tr id="account-row-<%= account._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                             <td class="p-4"><input type="checkbox" value="<%= account._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
                             <td class="px-6 py-4 font-medium text-white"><%= account.uid %></td>
                             <td class="px-6 py-4 font-medium text-white"><%= account.password %></td>
-                     
-                             <td id="proxy-cell-<%= account._id %>" class="px-6 py-4 text-gray-400 font-mono"><%= account.proxy || 'N/A' %></td>
+                            <td id="proxy-cell-<%= account._id %>" class="px-6 py-4 text-gray-400 font-mono"><%= account.proxy || 'N/A' %></td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
-                                   
-                                     <i id="spinner-<%= account._id %>" class="ri-loader-4-line animate-spin text-yellow-400 mr-2" style="display: <%= account.status === 'CHECKING' ? 'inline-block' : 'none' %>;"></i>
+                                    <i id="spinner-<%= account._id %>" class="ri-loader-4-line animate-spin text-yellow-400 mr-2" style="display: <%= account.status === 'CHECKING' ? 'inline-block' : 'none' %>;"></i>
                                     <% if (inTrash) { %>
-                                        <span class="px-2.5 
- py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">DELETED</span>
+                                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">DELETED</span>
                                     <% } else { %>
-                                        <span id="status-<%= account._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>" style="display: <%= account.status 
- === 'CHECKING' ? 'none' : 'inline-block' %>;">
+                                        <span id="status-<%= account._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>" style="display: <%= account.status === 'CHECKING' ? 'none' : 'inline-block' %>;">
                                             <%= account.status %>
                                         </span>
-        
                                      <% } %>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center font-semibold text-green-400"><%= account.successCount || 0 %></td>
                             <td class="px-6 py-4 text-center font-semibold text-red-400"><%= account.errorCount || 0 %></td>
                             <td class="px-6 py-4 text-center font-semibold text-red-400"><%= account.dieStreak || 0 %></td>
-                            <td id="lastUsed-<%= account._id %>" class="px-6 
- py-4 text-gray-400">
+                            <td id="lastUsed-<%= account._id %>" class="px-6 py-4 text-gray-400">
                                 <% if (inTrash && account.deletedAt) { %>
                                     <%= new Date(account.deletedAt).toLocaleString('vi-VN') %>
-                      
-                         <% } else if (!inTrash && account.lastCheckedAt) { %>
+                                <% } else if (!inTrash && account.lastCheckedAt) { %>
                                     <%= new Date(account.lastCheckedAt).toLocaleString('vi-VN') %>
                                 <% } else if (!inTrash) { %>
-     
                                      Chưa check
                                 <% } %>
                             </td>
-      
                        </tr>
                     <% }); %>
                 </tbody>
             </table>
         </div>
         <% } else { %>
-            
              <div class="text-center py-16 px-6">
                 <i class="ri-user-search-line text-6xl text-gray-700"></i>
                 <h4 class="mt-4 text-xl font-semibold text-white">Không tìm thấy account nào</h4>
-                <p class="mt-2 text-gray-400"><%= inTrash ?
- 'Thùng rác trống.' : 'Hãy thử thay đổi bộ lọc hoặc thêm account mới.'
- %></p>
+                <p class="mt-2 text-gray-400"><%= inTrash ? 'Thùng rác trống.' : 'Hãy thử thay đổi bộ lọc hoặc thêm account mới.' %></p>
             </div>
         <% } %>
     </div>
@@ -190,15 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const addAccountsBtn = document.getElementById('add-accounts-btn');
         addAccountsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-        
-             addAccountsBtn.disabled = true;
+            addAccountsBtn.disabled = true;
             addAccountsBtn.querySelector('.btn-text').classList.add('hidden');
             addAccountsBtn.querySelector('.spinner').classList.remove('hidden');
             try {
                 const response = await fetch('/admin/accounts/add-multiple', {
                     method: 'POST',
-               
-                     headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ accountsData: document.getElementById('accountsData').value })
                 });
                 const result = await response.json();
@@ -209,8 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const url = new URL(window.location);
                         url.searchParams.delete('error');
                         url.searchParams.delete('success');
-                     
-                       window.location.href = url.toString();
+                        window.location.href = url.toString();
                     }, 1000);
                 } else {
                     showToast(result.message, `Lỗi (Code: ${response.status})`, 'error');
@@ -232,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const softDeleteSelectedBtn = document.getElementById('softDeleteSelectedBtn');
     const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
     const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
+    const copySelectedBtn = document.getElementById('copySelectedBtn');
     const selectAllBanner = document.getElementById('select-all-banner');
     const clearSelectionBanner = document.getElementById('clear-selection-banner');
     const selectAllMatchingItemsLink = document.getElementById('select-all-matching-items');
@@ -239,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemsOnPageCountSpan = document.getElementById('items-on-page-count');
     let isSelectAllAcrossPages = false;
     let isCheckLiveRunning = false;
+
     function updateBanners() {
         if (!selectAllBanner) return;
         const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
@@ -261,20 +231,19 @@ document.addEventListener('DOMContentLoaded', () => {
             checkSelectedBtn.disabled = true;
             if(checkSelectedIcon) checkSelectedIcon.classList.add('animate-spin');
         } else {
-            const anyChecked = [...itemCheckboxes].some(cb => cb.checked) ||
- isSelectAllAcrossPages;
+            const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
             checkSelectedBtn.disabled = !anyChecked;
             if(checkSelectedIcon) checkSelectedIcon.classList.remove('animate-spin');
         }
     }
 
     function toggleActionButtons() {
-        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) ||
- isSelectAllAcrossPages;
+        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
         updateCheckLiveButtonState();
         if (softDeleteSelectedBtn) softDeleteSelectedBtn.disabled = !anyChecked;
         if (restoreSelectedBtn) restoreSelectedBtn.disabled = !anyChecked;
         if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
+        if (copySelectedBtn) copySelectedBtn.disabled = !anyChecked;
     }
 
     if(selectAllCheckbox) {
@@ -294,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBanners();
         });
     });
+
     if (selectAllMatchingItemsLink) {
         selectAllMatchingItemsLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -311,8 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             itemCheckboxes.forEach(cb => cb.checked = false);
             toggleActionButtons();
             updateBanners();
-  
-             });
+        });
     }
     
     async function handleAction(url, confirmMessage, confirmType = 'warning') {
@@ -328,8 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             payload = { ids: selectedIdsOnPage };
         }
-        const totalCount = isSelectAllAcrossPages ?
- <%= pagination.totalItems %> : selectedIdsOnPage.length;
+        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : selectedIdsOnPage.length;
 
         const confirmed = await showConfirm(confirmMessage(totalCount), confirmType);
         if (confirmed) {
@@ -341,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    
                     body: JSON.stringify(payload)
                 });
                 const result = await response.json();
@@ -351,12 +318,10 @@ document.addEventListener('DOMContentLoaded', () => {
                          setTimeout(() => {
                             const currentUrl = new URL(window.location);
                             currentUrl.searchParams.delete('success');
-         
-                                   currentUrl.searchParams.delete('error');
+                            currentUrl.searchParams.delete('error');
                             window.location.href = currentUrl.toString();
                         }, 1000);
                     }
-
                 } else {
                     showToast(result.message || 'Có lỗi xảy ra từ server.', 'Lỗi!', 'error');
                     if (url.includes('check-selected')) {
@@ -395,20 +360,78 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (copySelectedBtn) {
+        copySelectedBtn.addEventListener('click', async () => {
+            let accountIdsToCopy = [];
+            if (isSelectAllAcrossPages) {
+                try {
+                    const response = await fetch('/admin/accounts/all', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filters: <%- JSON.stringify(currentQuery) %> })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        accountIdsToCopy = result.accountIds;
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    showToast('Không thể lấy danh sách account để copy.', 'Lỗi!', 'error');
+                    return;
+                }
+            } else {
+                accountIdsToCopy = [...itemCheckboxes]
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+            }
+
+            if (accountIdsToCopy.length === 0) {
+                showToast('Vui lòng chọn ít nhất một account để copy.', 'Cảnh báo!', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/accounts/details', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: accountIdsToCopy })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    const accountText = result.accounts.map(acc => {
+                        const parts = [acc.uid, acc.password, acc.twofa];
+                        if (acc.email) parts.push(acc.email);
+                        return parts.join('|');
+                    }).join('\n');
+                    
+                    navigator.clipboard.writeText(accountText).then(() => {
+                        showToast(`Đã copy ${result.accounts.length} account vào clipboard.`, 'Thành công!', 'success');
+                    }, () => {
+                        showToast('Không thể copy vào clipboard.', 'Lỗi!', 'error');
+                    });
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                showToast('Không thể lấy chi tiết account để copy.', 'Lỗi!', 'error');
+            }
+        });
+    }
+
     const socket = io();
     socket.on('connect', () => console.log('Connected to server via WebSocket.'));
     socket.on('account:update', (data) => {
         const { id, status, lastCheckedAt, dieStreak, proxy } = data;
         const statusBadge = document.getElementById(`status-${id}`);
         const spinner = document.getElementById(`spinner-${id}`);
-        const lastCheckedCell = document.getElementById(`lastChecked-${id}`);
-        const dieStreakCell = document.getElementById(`dieStreak-${id}`);
+        const lastCheckedCell = document.getElementById(`lastUsed-${id}`);
+        const dieStreakCell = document.querySelector(`#account-row-${id} td:nth-child(8)`); // Assuming dieStreak is 8th column
         const proxyCell = document.getElementById(`proxy-cell-${id}`);
 
         if (!statusBadge || !spinner) return;
         
-     
-           const isChecking = status === 'CHECKING';
+        const isChecking = status === 'CHECKING';
     
         spinner.style.display = isChecking ? 'inline-block' : 'none';
         statusBadge.style.display = isChecking ? 'none' : 'inline-block';
@@ -416,8 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isChecking) {
             statusBadge.textContent = status;
             let statusClass = 'bg-gray-700 text-gray-300';
-            if (status === 
- 'LIVE') statusClass = 'bg-green-500/20 text-green-400';
+            if (status === 'LIVE') statusClass = 'bg-green-500/20 text-green-400';
             if (status === 'DIE' || status === 'ERROR') statusClass = 'bg-red-500/20 text-red-400';
             if (status === 'IN_USE') statusClass = 'bg-purple-500/20 text-purple-400';
             statusBadge.className = `px-2.5 py-1 text-xs font-semibold rounded-full ${statusClass}`;
@@ -429,13 +451,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (dieStreakCell && typeof dieStreak !== 'undefined') {
             dieStreakCell.textContent = dieStreak;
-            dieStreakCell.classList.toggle('text-red-400', dieStreak > 0);
-            dieStreakCell.classList.toggle('text-white', dieStreak === 0 || typeof dieStreak === 'undefined');
         }
         
         if (proxyCell && typeof proxy !== 'undefined') {
-            proxyCell.textContent = proxy ||
- 'N/A';
+            proxyCell.textContent = proxy || 'N/A';
         }
     });
 

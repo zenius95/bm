@@ -47,16 +47,19 @@
                 <a href="/admin/proxies" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
                 <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
                 <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
+                <button id="copySelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-indigo-600/80 border border-indigo-500 rounded-md font-semibold text-sm text-white hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-file-copy-line mr-2"></i> Copy</button>
             <% } else { %>
-                  <a href="/admin/proxies?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
+                <a href="/admin/proxies?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
                 <button id="checkSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-green-600/80 border border-green-500 rounded-md font-semibold text-sm text-white hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i id="checkSelectedIcon" class="ri-refresh-line mr-2"></i> Check Live</button>
                 <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
+                <button id="copySelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-indigo-600/80 border border-indigo-500 rounded-md font-semibold text-sm text-white hover:bg-indigo-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-file-copy-line mr-2"></i> Copy</button>
             <% } %>
         </div>
     </div>
+
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-             Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
         </div>
         <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
             Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
@@ -67,7 +70,7 @@
             <table class="w-full text-sm text-left text-gray-300">
                 <thead class="text-xs text-gray-400 uppercase bg-white/5">
                     <tr>
-                         <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
+                        <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Proxy</th>
                         <th scope="col" class="px-6 py-3">Trạng thái</th>
                         <th scope="col" class="px-6 py-3">Ghi chú</th>
@@ -76,13 +79,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                     <% if (proxies && proxies.length > 0) { %>
+                    <% if (proxies && proxies.length > 0) { %>
                         <% proxies.forEach(proxy => { %>
                             <tr id="proxy-row-<%= proxy._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
-                                 <td class="p-4"><input type="checkbox" value="<%= proxy._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
+                                <td class="p-4"><input type="checkbox" value="<%= proxy._id %>" data-proxy-string="<%- proxy.proxyString %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
                                 <td class="px-6 py-4 font-mono text-white"><%= proxy.proxyString %></td>
                                 <td class="px-6 py-4">
-                                     <% 
+                                    <% 
                                         let statusClass = 'bg-gray-700 text-gray-300';
                                         if (proxy.status === 'AVAILABLE') statusClass = 'bg-green-500/20 text-green-400';
                                         if (proxy.status === 'DEAD') statusClass = 'bg-red-500/20 text-red-400';
@@ -102,7 +105,7 @@
                                 <td class="px-6 py-4 text-gray-400"><%= proxy.notes || 'N/A' %></td>
                                 <td id="lastUsed-<%= proxy._id %>" class="px-6 py-4 text-gray-400">
                                     <% if (inTrash && proxy.deletedAt) { %>
-                                         <%= new Date(proxy.deletedAt).toLocaleString('vi-VN') %>
+                                        <%= new Date(proxy.deletedAt).toLocaleString('vi-VN') %>
                                     <% } else if (!inTrash && proxy.lastUsedAt) { %>
                                         <%= new Date(proxy.lastUsedAt).toLocaleString('vi-VN') %>
                                     <% } else if (!inTrash) { %>
@@ -112,13 +115,13 @@
                                 <td class="px-6 py-4 text-right">
                                      <% if (!inTrash) { %>
                                     <button class="btn-edit-proxy p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Sửa"
-                                         data-id="<%= proxy._id %>"
-                                            data-proxy-string="<%- proxy.proxyString %>"
-                                         data-status="<%= proxy.status %>"
-                                            data-notes="<%- proxy.notes || '' %>">
+                                        data-id="<%= proxy._id %>"
+                                        data-proxy-string="<%- proxy.proxyString %>"
+                                        data-status="<%= proxy.status %>"
+                                        data-notes="<%- proxy.notes || '' %>">
                                         <i class="ri-pencil-line"></i>
                                     </button>
-                                     <% } %>
+                                <% } %>
                                 </td>
                             </tr>
                         <% }); %>
@@ -137,8 +140,6 @@
     </div>
     <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
 </div>
-
-<%# ... (phần script giữ nguyên, không cần thay đổi) ... %>
 
 <div id="edit-proxy-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-lg p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
     <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20">
@@ -197,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     backdrop.addEventListener('click', () => document.querySelectorAll('.modal-container').forEach(hideModal));
     document.querySelectorAll('.btn-cancel').forEach(btn => btn.addEventListener('click', () => hideModal(btn.closest('.modal-container'))));
+
     // Add Proxy Form
     const addProxyForm = document.getElementById('add-proxy-form');
     if (addProxyForm) {
@@ -208,17 +210,17 @@ document.addEventListener('DOMContentLoaded', () => {
             addProxyBtn.querySelector('.spinner').classList.remove('hidden');
             const data = { proxyData: document.getElementById('proxyData').value };
             try {
-                  const response = await fetch('/admin/proxies/create', {
+                const response = await fetch('/admin/proxies/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                 const result = await response.json();
+                const result = await response.json();
                 if (result.success) {
                     showToast(result.message, 'Thành công!', 'success');
                     addProxyForm.reset();
                     setTimeout(() => window.location.reload(), 1500);
-                 } else {
+                } else {
                     showToast(result.message, 'Có lỗi!', 'error');
                 }
             } catch (error) {
@@ -240,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             form.querySelector('#edit-proxy-id').value = id;
             form.querySelector('#edit-proxyString').value = proxyString;
             form.querySelector('#edit-status').value = status;
-              form.querySelector('#edit-notes').value = notes;
+            form.querySelector('#edit-notes').value = notes;
             showModal(editProxyModal);
         });
     });
@@ -252,23 +254,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = Object.fromEntries(formData.entries());
         try {
             const response = await fetch(`/admin/proxies/update/${id}`, {
-                method: 
-                'POST',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
             const result = await response.json();
             if (result.success) {
                 showToast(result.message, 'Thành công!', 'success');
-                  hideModal(editProxyModal);
+                hideModal(editProxyModal);
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 showToast(result.message, 'Có lỗi!', 'error');
             }
         } catch (error) {
-              showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
+            showToast('Không thể kết nối đến server.', 'Lỗi mạng!', 'error');
         }
     });
+
     // Bulk actions logic
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
@@ -277,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
     const checkSelectedBtn = document.getElementById('checkSelectedBtn');
     const checkSelectedIcon = document.getElementById('checkSelectedIcon');
+    const copySelectedBtn = document.getElementById('copySelectedBtn');
     const selectAllBanner = document.getElementById('select-all-banner');
     const clearSelectionBanner = document.getElementById('clear-selection-banner');
     const selectAllMatchingItemsLink = document.getElementById('select-all-matching-items');
@@ -288,11 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateBanners() {if (!selectAllBanner) return;const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);if (isSelectAllAcrossPages) {selectAllBanner.classList.add('hidden');clearSelectionBanner.classList.remove('hidden');} else if (allCheckedOnPage) {itemsOnPageCountSpan.textContent = itemCheckboxes.length;selectAllBanner.classList.remove('hidden');clearSelectionBanner.classList.add('hidden');} else {selectAllBanner.classList.add('hidden');clearSelectionBanner.classList.add('hidden');}}
     
     function toggleActionButtons() {
-        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) ||
-        isSelectAllAcrossPages;
+        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
         if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
         if (softDeleteSelectedBtn) softDeleteSelectedBtn.disabled = !anyChecked;
         if (restoreSelectedBtn) restoreSelectedBtn.disabled = !anyChecked;
+        if (copySelectedBtn) copySelectedBtn.disabled = !anyChecked;
+
         if (isCheckProxyRunning) {
             if(checkSelectedBtn) checkSelectedBtn.disabled = true;
             if(checkSelectedIcon) checkSelectedIcon.classList.add('animate-spin');
@@ -318,8 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             payload = { ids: selectedIdsOnPage };
         }
-        const totalCount = isSelectAllAcrossPages ?
-        <%= pagination.totalItems %> : selectedIdsOnPage.length;
+        const totalCount = isSelectAllAcrossPages ? <%= pagination.totalItems %> : selectedIdsOnPage.length;
 
         const confirmed = await showConfirm(confirmMessage(totalCount), confirmType);
         if (confirmed) {
@@ -331,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    
                     body: JSON.stringify(payload)
                 });
                 const result = await response.json();
@@ -380,6 +382,46 @@ document.addEventListener('DOMContentLoaded', () => {
              handleBulkAction('/admin/proxies/check-selected', (count) => `Bắt đầu tiến trình kiểm tra cho ${count} proxy?`, 'info');
         });
     }
+
+    if (copySelectedBtn) {
+        copySelectedBtn.addEventListener('click', async () => {
+            let proxiesToCopy = [];
+            if (isSelectAllAcrossPages) {
+                try {
+                    const response = await fetch('/admin/proxies/all', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filters: <%- JSON.stringify(currentQuery) %> })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        proxiesToCopy = result.proxies;
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    showToast('Không thể lấy danh sách proxy để copy.', 'Lỗi!', 'error');
+                    return;
+                }
+            } else {
+                proxiesToCopy = [...itemCheckboxes]
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.dataset.proxyString);
+            }
+
+            if (proxiesToCopy.length === 0) {
+                showToast('Vui lòng chọn ít nhất một proxy để copy.', 'Cảnh báo!', 'warning');
+                return;
+            }
+
+            const proxyText = proxiesToCopy.join('\n');
+            navigator.clipboard.writeText(proxyText).then(() => {
+                showToast(`Đã copy ${proxiesToCopy.length} proxy vào clipboard.`, 'Thành công!', 'success');
+            }, () => {
+                showToast('Không thể copy vào clipboard.', 'Lỗi!', 'error');
+            });
+        });
+    }
     
     // Socket.IO listeners
     const socket = io();
@@ -390,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const statusBadge = row.querySelector(`#status-${id}`);
         const spinner = row.querySelector(`#spinner-${id}`);
-        const lastCheckedCell = row.querySelector(`#lastUsed-${id}`); // Changed to lastUsed
+        const lastCheckedCell = row.querySelector(`#lastUsed-${id}`);
 
         const isChecking = status === 'CHECKING';
         spinner.style.display = isChecking ? 'inline-block' : 'none';
