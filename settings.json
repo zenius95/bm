@@ -78,6 +78,9 @@
             },
             "phone": {}
         },
+        "userAgents": [
+            "Instagram 361.0.0.46.88 Android (29/10; 560dpi; 1440x2792; samsung; SM-G960N; starlteks; samsungexynos9810; en_US; 674675098)"
+        ],
         "selectedCaptchaService": "omocaptcha_image.json"
     }
 }
