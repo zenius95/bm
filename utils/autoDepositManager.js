@@ -104,21 +104,22 @@ class AutoDepositManager extends EventEmitter {
             if (!response.ok) {
                 throw new Error(`API trả về lỗi: ${response.status} ${response.statusText}`);
             }
-            //const result = await response.json();
+            
+            const result = await response.json();
 
-            const result = {
-            "status": true,
-            "message": "Thành công",
-                "transactions": [
-                    {
-                        "transactionID": "000cEOM-7nmZE7xHI",
-                        "amount": "10000",
-                        "description": "NAPTIEN admin",
-                        "transactionDate": "28/12/2023",
-                        "type": "IN"
-                    }
-                ]
-            }
+            // const result = {
+            // "status": true,
+            // "message": "Thành công",
+            //     "transactions": [
+            //         {
+            //             "transactionID": "000cEOM-7nmZE7xHI",
+            //             "amount": "10000",
+            //             "description": "NAPTIEN admin",
+            //             "transactionDate": "28/12/2023",
+            //             "type": "IN"
+            //         }
+            //     ]
+            // }
 
             if (!result || !result.transactions || !Array.isArray(result.transactions)) {
                 this.addLog('<span class="text-yellow-400">API không trả về dữ liệu giao dịch hợp lệ.</span>');

@@ -7,9 +7,11 @@ class ProcessRunner extends EventEmitter {
         this.options = {
             concurrency: 5,      // Số luồng chạy đồng thời
             delay: 0,            // Thời gian chờ (ms) giữa các task
-            retries: 3,          // Số lần thử lại nếu thất bại
-            timeout: 30000,      // Timeout cho mỗi task (ms)
-            maxErrors: 10,       // Dừng lại nếu có quá nhiều lỗi
+            // === START: THAY ĐỔI MẶC ĐỊNH ===
+            retries: 0,          // Số lần thử lại nếu thất bại (0: không thử lại)
+            timeout: 0,          // Timeout cho mỗi task (ms) (0: không có timeout)
+            maxErrors: 0,       // Dừng lại nếu có quá nhiều lỗi (0: không giới hạn)
+            // === END: THAY ĐỔI MẶC ĐỊNH ===
             ...options,
         };
 
@@ -70,7 +72,9 @@ class ProcessRunner extends EventEmitter {
     _run() {
         if (this.status !== 'running') return;
 
+        // === START: THAY ĐỔI LOGIC - Chỉ kiểm tra maxErrors khi > 0 ===
         if (this.options.maxErrors > 0 && this.errors >= this.options.maxErrors) {
+        // === END: THAY ĐỔI LOGIC ===
             this.status = 'stopped';
             this.emit('error', new Error(`Dừng tiến trình do vượt quá số lỗi tối đa (${this.options.maxErrors}).`));
             this.emit('end', { message: 'Đã dừng do quá nhiều lỗi.' });
@@ -97,7 +101,9 @@ class ProcessRunner extends EventEmitter {
             this.completedTasks++;
             this.emit('task:complete', { result, taskWrapper });
         } catch (error) {
-            if (attempt <= this.options.retries) {
+            // === START: THAY ĐỔI LOGIC - Chỉ thử lại khi retries > 0 ===
+            if (this.options.retries > 0 && attempt <= this.options.retries) {
+            // === END: THAY ĐỔI LOGIC ===
                 this.emit('task:retry', { error: error, taskWrapper, attempt: attempt + 1 });
                 await this._delay(1000);
                 this._executeTask(taskWrapper, attempt + 1);
@@ -105,9 +111,7 @@ class ProcessRunner extends EventEmitter {
             } else {
                 this.errors++;
                 this.failedTasks++;
-                // <<< START: SỬA ĐỔI - GỬI ĐI TOÀN BỘ OBJECT LỖI >>>
                 this.emit('task:error', { error: error, taskWrapper });
-                // <<< END: SỬA ĐỔI >>>
             }
         }
         
@@ -127,13 +131,16 @@ class ProcessRunner extends EventEmitter {
     }
 
     _runWithTimeout(taskFunc) {
+        // === START: THAY ĐỔI LOGIC - Chỉ bật timeout khi > 0 ===
+        if (this.options.timeout <= 0) {
+            return Promise.resolve(taskFunc());
+        }
+        // === END: THAY ĐỔI LOGIC ===
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
-                // <<< START: SỬA ĐỔI - TẠO LỖI TIMEOUT CÓ MÃ LỖI RIÊNG >>>
                 const timeoutError = new Error(`Task timed out sau ${this.options.timeout}ms`);
-                timeoutError.code = 'ETIMEOUT'; // Thêm mã lỗi chuẩn
+                timeoutError.code = 'ETIMEOUT'; 
                 reject(timeoutError);
-                // <<< END: SỬA ĐỔI >>>
             }, this.options.timeout);
 
             Promise.resolve(taskFunc())
