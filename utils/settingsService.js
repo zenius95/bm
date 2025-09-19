@@ -46,9 +46,11 @@ const DEFAULT_SETTINGS = {
         isEnabled: false,
         concurrency: 10,
         pollingInterval: 5,
+        timeout: 180000, // <<< START: THÊM CÀI ĐẶT TIMEOUT MẶC ĐỊNH (3 PHÚT)
         maxSuccess: 4,
         maxError: 5
     },
+    // <<< END: THÊM CÀI ĐẶT TIMEOUT MẶC ĐỊNH >>>
     // <<< START: CẬP NHẬT CẤU TRÚC DỊCH VỤ >>>
     services: {
         selectedImageCaptchaService: 'omocaptcha_image.json', // Đổi tên

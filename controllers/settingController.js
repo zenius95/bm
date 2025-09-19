@@ -249,11 +249,15 @@ settingController.updateAutoProxyCheckConfig = async (req, res) => {
 
 settingController.updateItemProcessorConfig = async (req, res) => {
     try {
-        const { concurrency, pollingInterval, maxSuccess, maxError } = req.body;
+        // <<< START: THÊM 'timeout' VÀO DANH SÁCH LẤY RA >>>
+        const { concurrency, pollingInterval, timeout, maxSuccess, maxError } = req.body;
+        // <<< END: THÊM 'timeout' VÀO DANH SÁCH LẤY RA >>>
+        
         const configToUpdate = {};
         const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
         configToUpdate.concurrency = parse(concurrency, 1);
         configToUpdate.pollingInterval = parse(pollingInterval, 1);
+        configToUpdate.timeout = parse(timeout, 1000); // <<< THÊM LOGIC PARSE CHO TIMEOUT
         configToUpdate.maxSuccess = parse(maxSuccess, 0);
         configToUpdate.maxError = parse(maxError, 0);
 

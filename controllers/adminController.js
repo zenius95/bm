@@ -13,7 +13,7 @@ const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 
 const orderService = new CrudService(Order, {
-    populateFields: ['user'] // <<< SỬA LỖI DUY NHẤT TẠI ĐÂY
+    populateFields: ['user']
 });
 
 const adminOrderController = createCrudController(orderService, 'orders', {
@@ -280,12 +280,13 @@ adminOrderController.handleGetById = async (req, res) => {
         }
         
         const items = await Item.find({ orderId: order._id }).lean();
-        order.items = items;
+        order.items = items; // Gán items vào order để dùng nếu cần
 
         const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 }).lean();
 
         res.render('admin/order-detail', { 
             order, 
+            items, // <-- THÊM DÒNG NÀY ĐỂ SỬA LỖI
             logs, 
             currentQuery: req.query,
             title: `Order #${order.shortId}`,

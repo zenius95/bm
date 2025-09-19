@@ -10,6 +10,48 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const expressLayouts = require('express-ejs-layouts');
 
+const settingsService = require('./utils/settingsService');
+
+// === START: LOGIC KIỂM SOÁT LOG HỆ THỐNG ===
+// Đảm bảo dotenv được gọi trước mọi thứ khác để nạp biến môi trường
+require('dotenv').config();
+
+const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const LOG_LEVELS = {
+  silent: 0,
+  error: 1,
+  warn: 2,
+  info: 3,
+};
+
+const originalConsole = {
+  log: console.log.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+};
+
+const currentLogLevel = LOG_LEVELS[LOG_LEVEL] || LOG_LEVELS.info;
+
+console.log = (...args) => {
+  if (currentLogLevel >= LOG_LEVELS.info) {
+    originalConsole.log(...args);
+  }
+};
+
+console.warn = (...args) => {
+  if (currentLogLevel >= LOG_LEVELS.warn) {
+    originalConsole.warn(...args);
+  }
+};
+
+console.error = (...args) => {
+  if (currentLogLevel >= LOG_LEVELS.error) {
+    originalConsole.error(...args);
+  }
+};
+// === END: LOGIC KIỂM SOÁT LOG HỆ THỐNG ===
+
+
 const User = require('./models/User');
 const Worker = require('./models/Worker');
 const Account = require('./models/Account');
@@ -25,7 +67,7 @@ const workerApiRoutes = require('./routes/workerApi');
 
 const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
-const settingsService = require('./utils/settingsService');
+// settingsService đã được gọi ở trên
 const workerMonitor = require('./utils/workerMonitor');
 const autoDepositManager = require('./utils/autoDepositManager');
 const autoProxyCheckManager = require('./utils/autoProxyCheckManager');

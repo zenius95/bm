@@ -70,15 +70,12 @@ class ProcessRunner extends EventEmitter {
     _run() {
         if (this.status !== 'running') return;
 
-        // === START: THAY ĐỔI LOGIC maxErrors ===
-        // Chỉ kiểm tra maxErrors nếu nó lớn hơn 0 (tính năng được bật)
         if (this.options.maxErrors > 0 && this.errors >= this.options.maxErrors) {
             this.status = 'stopped';
             this.emit('error', new Error(`Dừng tiến trình do vượt quá số lỗi tối đa (${this.options.maxErrors}).`));
             this.emit('end', { message: 'Đã dừng do quá nhiều lỗi.' });
             return;
         }
-        // === END: THAY ĐỔI LOGIC maxErrors ===
 
         while (this.activeTasks < this.options.concurrency && this.queue.length > 0) {
             this.activeTasks++;
@@ -100,18 +97,17 @@ class ProcessRunner extends EventEmitter {
             this.completedTasks++;
             this.emit('task:complete', { result, taskWrapper });
         } catch (error) {
-            // === START: THAY ĐỔI LOGIC retries ===
-            // Thay đổi từ < thành <= để retries: 1 có nghĩa là "thử lại 1 lần"
             if (attempt <= this.options.retries) {
-            // === END: THAY ĐỔI LOGIC retries ===
-                this.emit('task:retry', { error: error.message, taskWrapper, attempt: attempt + 1 });
+                this.emit('task:retry', { error: error, taskWrapper, attempt: attempt + 1 });
                 await this._delay(1000);
                 this._executeTask(taskWrapper, attempt + 1);
                 return;
             } else {
                 this.errors++;
                 this.failedTasks++;
-                this.emit('task:error', { error: error.message, taskWrapper });
+                // <<< START: SỬA ĐỔI - GỬI ĐI TOÀN BỘ OBJECT LỖI >>>
+                this.emit('task:error', { error: error, taskWrapper });
+                // <<< END: SỬA ĐỔI >>>
             }
         }
         
@@ -133,7 +129,11 @@ class ProcessRunner extends EventEmitter {
     _runWithTimeout(taskFunc) {
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
-                reject(new Error(`Task timed out sau ${this.options.timeout}ms`));
+                // <<< START: SỬA ĐỔI - TẠO LỖI TIMEOUT CÓ MÃ LỖI RIÊNG >>>
+                const timeoutError = new Error(`Task timed out sau ${this.options.timeout}ms`);
+                timeoutError.code = 'ETIMEOUT'; // Thêm mã lỗi chuẩn
+                reject(timeoutError);
+                // <<< END: SỬA ĐỔI >>>
             }, this.options.timeout);
 
             Promise.resolve(taskFunc())

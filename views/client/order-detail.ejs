@@ -153,34 +153,28 @@ completedItems - failedItems;
                              <span>Tổng chi phí ban đầu</span>
                             <span class="font-semibold font-mono text-yellow-400 text-base"><%= (order.pricePerItem * order.totalItems).toLocaleString('vi-VN') %>đ</span>
                         </div>
+                        <% if (order.status === 'completed' || order.status === 'failed') { %> <% const initialCost = order.pricePerItem * order.totalItems; const finalCost = order.totalCost;
+                const refundAmount = initialCost - finalCost; %>
+                            <h4 class="text-base font-semibold text-white pt-3">Quyết toán & Chi phí</h4>
+                            <div class="space-y-2 text-sm max-w-md">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
+                                    <strong class="font-mono text-yellow-400 text-lg"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
+                                </div>
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
+                                    <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ? (finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
+                                </div>
+                                <% if (refundAmount > 0) { %>
+                                <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
+                                    <strong class="text-green-400">Đã hoàn lại vào số dư</strong>
+                                    <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
+                                </div>
+                                <% } %>
+                            </div>
+                        <% } %>
                     </div>
                  </div>
-            </div>
-
-            <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-
-                <% if (order.status === 'completed' || order.status === 'failed') { %> <% const initialCost = order.pricePerItem * order.totalItems; const finalCost = order.totalCost;
-                const refundAmount = initialCost - finalCost; %>
-                    <div class="border-white/10">
-                        <h4 class="text-base font-semibold text-white mb-3">Quyết toán & Chi phí</h4>
-                        <div class="space-y-2 text-sm max-w-md">
-                             <div class="flex justify-between items-center">
-                                <span class="text-gray-400">Chi phí cuối cùng (<%= order.completedItems %> items thành công)</span>
-                                <strong class="font-mono text-yellow-400 text-lg"><%= finalCost.toLocaleString('vi-VN') %>đ</strong>
-                             </div>
-                            <div class="flex justify-between items-center text-xs">
-                                <span class="text-gray-500 pl-2">└─ Đơn giá áp dụng</span>
-                                 <span class="font-mono text-gray-500"><%= (order.completedItems > 0 ? (finalCost / order.completedItems).toLocaleString('vi-VN') : 0) %>đ / item</span>
-                            </div>
-                            <% if (refundAmount > 0) { %>
-                            <div class="flex justify-between items-center pt-2 border-t border-dashed border-white/10">
-                                <strong class="text-green-400">Đã hoàn lại vào số dư</strong>
-                                 <strong class="font-mono text-green-400">+ <%= refundAmount.toLocaleString('vi-VN') %>đ</strong>
-                            </div>
-                            <% } %>
-                        </div>
-                     </div>
-                <% } %>
             </div>
         </div>
     </div>
