@@ -231,6 +231,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- Generic Log Handler ---
+    function setupLogHandler(logContainerId, initialLogs, eventName) {
+        const logsContainer = document.getElementById(logContainerId);
+        if (!logsContainer) return;
+
+        function addLogMessage(logEntry, prepend = true) {
+            const firstChild = logsContainer.querySelector('div:first-child');
+            if(firstChild && (firstChild.textContent.includes('Đang chờ') || firstChild.textContent.includes('Chưa có'))) {
+                logsContainer.innerHTML = '';
+            }
+            if (logsContainer.childElementCount > 100) logsContainer.removeChild(logsContainer.lastChild);
+            
+            const logLine = document.createElement('div');
+            const timestamp = logEntry.timestamp instanceof Date ? logEntry.timestamp.toLocaleTimeString('vi-VN') : new Date(logEntry.timestamp).toLocaleTimeString('vi-VN');
+            logLine.innerHTML = `<span class="text-gray-500 mr-3">[${timestamp}]</span> ${logEntry.message}`;
+            
+            if(prepend) {
+                 logsContainer.insertBefore(logLine, logsContainer.firstChild);
+            } else {
+                 logsContainer.appendChild(logLine);
+            }
+        }
+        
+        // Load initial logs
+        logsContainer.innerHTML = '';
+        if (initialLogs && initialLogs.length > 0) {
+            initialLogs.forEach(log => addLogMessage({ timestamp: log.timestamp, message: log.message.replace(/<[^>]*>/g, '') }, false));
+        } else {
+            logsContainer.innerHTML = '<div class="text-gray-500">Chưa có log nào.</div>';
+        }
+
+        socket.on(eventName, (logEntry) => addLogMessage(logEntry, true));
+    }
     
     // --- Auto Deposit ---
     const autoDepositForm = document.getElementById('autodeposit-settings-form');
@@ -243,19 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const statusBadge = document.getElementById('ad-status-badge');
         const nextRunContainer = document.getElementById('ad-next-run-container');
         const nextRunTime = document.getElementById('ad-next-run-time');
-        const logsContainer = document.getElementById('autodeposit-logs');
-
-        function addLogMessage(logEntry) {
-            if(!logsContainer) return;
-            const firstChild = logsContainer.querySelector('div:first-child');
-            if(firstChild && firstChild.textContent.includes('Đang chờ')) {
-                logsContainer.innerHTML = '';
-            }
-            if (logsContainer.childElementCount > 100) logsContainer.removeChild(logsContainer.lastChild);
-            const logLine = document.createElement('div');
-            logLine.innerHTML = `<span class="text-gray-500 mr-3">[${new Date(logEntry.timestamp).toLocaleTimeString('vi-VN')}]</span> ${logEntry.message}`;
-            logsContainer.insertBefore(logLine, logsContainer.firstChild);
-        }
 
         function updateAutoDepositUI(state) {
             if (!state) return;
@@ -320,20 +341,20 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateAutoDepositUI(initialState.autoDeposit);
         socket.on('autoDeposit:statusUpdate', (state) => updateAutoDepositUI(state));
-        socket.on('autoDeposit:log', (logEntry) => addLogMessage(logEntry));
+        setupLogHandler('autodeposit-logs', initialState.autoDeposit?.logs, 'autoDeposit:log');
     }
     
     // --- Auto Check Live ---
     const autoCheckForm = document.getElementById('autocheck-settings-form');
     if (autoCheckForm) {
-        const intervalInput = document.getElementById('intervalMinutes');
-        const concurrencyInput = document.getElementById('concurrency');
-        const delayInput = document.getElementById('delay');
-        const timeoutInput = document.getElementById('timeout');
-        const batchSizeInput = document.getElementById('batchSize'); 
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const statusBadge = document.getElementById('status-badge');
+        const intervalInput = document.getElementById('ac-intervalMinutes');
+        const concurrencyInput = document.getElementById('ac-concurrency');
+        const delayInput = document.getElementById('ac-delay');
+        const timeoutInput = document.getElementById('ac-timeout');
+        const batchSizeInput = document.getElementById('ac-batchSize'); 
+        const startBtn = document.getElementById('ac-start-btn');
+        const stopBtn = document.getElementById('ac-stop-btn');
+        const statusBadge = document.getElementById('ac-status-badge');
 
         function updateAutoCheckUI(state) {
             if (!state) return;
@@ -357,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         async function updateAutoCheckConfig(payload) {
-            try {
+             try {
                 const response = await fetch('/admin/settings/auto-check/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -365,10 +386,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (result.success) {
-                    showToast(result.message, 'Thành công', 'success');
+                    showToast(result.message, 'Thành công!', 'success');
                     updateAutoCheckUI(result.data);
                 } else {
-                    showToast(result.message, 'Lỗi', 'error');
+                    showToast(result.message, 'Lỗi!', 'error');
                 }
             } catch (error) {
                 showToast('Lỗi kết nối server', 'Lỗi', 'error');
@@ -390,21 +411,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateAutoCheckUI(initialState.autoCheck);
         socket.on('autoCheck:statusUpdate', (state) => updateAutoCheckUI(state));
+        setupLogHandler('autocheck-logs', initialState.autoCheck?.logs, 'autoCheck:log');
+
     }
     
     // --- Auto Proxy Check ---
     const autoProxyCheckForm = document.getElementById('autoproxycheck-settings-form');
     if (autoProxyCheckForm) {
-        const intervalInput = document.getElementById('proxy-intervalMinutes');
-        const concurrencyInput = document.getElementById('proxy-concurrency');
-        const delayInput = document.getElementById('proxy-delay');
-        const timeoutInput = document.getElementById('proxy-timeout');
-        const batchSizeInput = document.getElementById('proxy-batchSize'); 
-        const startBtn = document.getElementById('proxy-start-btn');
-        const stopBtn = document.getElementById('proxy-stop-btn');
-        const statusBadge = document.getElementById('proxy-status-badge');
-        const nextRunContainer = document.getElementById('proxy-next-run-container');
-        const nextRunTime = document.getElementById('proxy-next-run-time');
+        const intervalInput = document.getElementById('apc-intervalMinutes');
+        const concurrencyInput = document.getElementById('apc-concurrency');
+        const delayInput = document.getElementById('apc-delay');
+        const timeoutInput = document.getElementById('apc-timeout');
+        const batchSizeInput = document.getElementById('apc-batchSize'); 
+        const startBtn = document.getElementById('apc-start-btn');
+        const stopBtn = document.getElementById('apc-stop-btn');
+        const statusBadge = document.getElementById('apc-status-badge');
+        const nextRunContainer = document.getElementById('apc-next-run-container');
+        const nextRunTime = document.getElementById('apc-next-run-time');
 
         function updateAutoProxyCheckUI(state) {
             if (!state) return;
@@ -442,10 +465,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (result.success) {
-                    showToast(result.message, 'Thành công', 'success');
+                    showToast(result.message, 'Thành công!', 'success');
                     updateAutoProxyCheckUI(result.data);
                 } else {
-                    showToast(result.message, 'Lỗi', 'error');
+                    showToast(result.message, 'Lỗi!', 'error');
                 }
             } catch (error) {
                 showToast('Lỗi kết nối server', 'Lỗi', 'error');
@@ -467,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateAutoProxyCheckUI(initialState.autoProxyCheck);
         socket.on('autoProxyCheck:statusUpdate', (state) => updateAutoProxyCheckUI(state));
+        setupLogHandler('autoproxycheck-logs', initialState.autoProxyCheck?.logs, 'autoProxyCheck:log');
     }
 
     // --- Item Processor ---

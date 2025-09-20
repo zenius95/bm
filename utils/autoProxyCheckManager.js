@@ -3,6 +3,10 @@ const settingsService = require('./settingsService');
 const Proxy = require('../models/Proxy');
 const { runCheckProxy } = require('./checkProxyService');
 const EventEmitter = require('events');
+const fs = require('fs').promises;
+const path = require('path');
+
+const LOG_FILE = path.join(__dirname, '..', 'logs', 'autoproxycheck-log.txt');
 
 class AutoProxyCheckManager extends EventEmitter {
     constructor() {
@@ -13,17 +17,41 @@ class AutoProxyCheckManager extends EventEmitter {
         this.status = 'STOPPED';
         this.nextRun = null;
         this.isJobRunning = false;
+        this.logs = [];
     }
 
-    initialize(io) {
+    async initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Proxy Check Manager...');
         this.config = settingsService.get('autoProxyCheck');
+        await fs.mkdir(path.dirname(LOG_FILE), { recursive: true });
         if (this.config.isEnabled) {
             this.start();
         } else {
             this.emitStatus();
         }
+    }
+
+    addLog(message) {
+        const logEntry = { timestamp: new Date(), message };
+        this.logs.unshift(logEntry);
+        if (this.logs.length > 100) this.logs.pop();
+        if (this.io) this.io.emit('autoProxyCheck:log', logEntry);
+        const fileLogMessage = `[${logEntry.timestamp.toLocaleString('vi-VN')}] ${message.replace(/<[^>]*>/g, '')}\n`;
+        fs.appendFile(LOG_FILE, fileLogMessage).catch(err => console.error('Failed to write to autoproxycheck log file:', err));
+    }
+    
+    async clearLogs() {
+        this.logs = [];
+        try {
+            await fs.writeFile(LOG_FILE, '');
+        } catch (err) {
+            console.error('Failed to clear autoproxycheck log file:', err);
+        }
+    }
+
+    getLogs() {
+        return this.logs;
     }
 
     async updateConfig(newConfig) {
@@ -35,6 +63,8 @@ class AutoProxyCheckManager extends EventEmitter {
         const wasEnabled = oldConfig.isEnabled;
         const isNowEnabled = this.config.isEnabled;
         const settingsChanged = JSON.stringify(oldConfig) !== JSON.stringify(this.config);
+        
+        this.addLog('Cấu hình đã được cập nhật.');
 
         if (wasEnabled && !isNowEnabled) this.stop();
         else if (!wasEnabled && isNowEnabled) this.start();
@@ -46,10 +76,11 @@ class AutoProxyCheckManager extends EventEmitter {
         if (this.timer) clearInterval(this.timer);
         const intervalMs = this.config.intervalMinutes * 60 * 1000;
         this.status = 'RUNNING';
+        this.addLog(`<span class="text-green-400">Dịch vụ đã bắt đầu. Kiểm tra mỗi ${this.config.intervalMinutes} phút.</span>`);
         
         const runJob = async () => {
             if (this.isJobRunning) {
-                console.log('[AutoProxyCheck] Một phiên kiểm tra đang chạy, bỏ qua lần này.');
+                this.addLog('Một phiên kiểm tra đang chạy, bỏ qua lần này.');
                 return;
             }
             try {
@@ -57,6 +88,7 @@ class AutoProxyCheckManager extends EventEmitter {
                 this.emitStatus();
                 await this.executeCheck();
             } catch(e) {
+                this.addLog(`<span class="text-red-400">Lỗi trong quá trình kiểm tra định kỳ: ${e.message}</span>`);
                 console.error('[AutoProxyCheck] Lỗi trong quá trình kiểm tra định kỳ:', e);
             } finally {
                 this.isJobRunning = false;
@@ -76,6 +108,7 @@ class AutoProxyCheckManager extends EventEmitter {
         }
         this.status = 'STOPPED';
         this.nextRun = null;
+        this.addLog('<span class="text-yellow-400">Dịch vụ đã dừng.</span>');
         this.emitStatus();
     }
 
@@ -85,6 +118,8 @@ class AutoProxyCheckManager extends EventEmitter {
     }
     
     async executeCheck() {
+        await this.clearLogs();
+        this.addLog('Bắt đầu chu kỳ kiểm tra proxy...');
         const batchSize = parseInt(this.config.batchSize, 10) || 0;
         let proxiesToCheck = [];
 
@@ -98,23 +133,23 @@ class AutoProxyCheckManager extends EventEmitter {
         const remainingLimit = batchSize > 0 ? batchSize - proxiesToCheck.length : 0;
         
         if (batchSize === 0 || remainingLimit > 0) {
-            // === START: THAY ĐỔI QUAN TRỌNG ===
-            // Chỉ check các proxy AVAILABLE và ASSIGNED, bỏ qua các proxy đã DEAD
-            const otherProxies = await Proxy.find({ status: { $in: ['AVAILABLE', 'ASSIGNED'] } })
+            const otherProxies = await Proxy.find({ status: { $in: ['AVAILABLE'] } }) // Bỏ qua ASSIGNED
                 .sort({ lastCheckedAt: 1, createdAt: 1 }) 
                 .limit(batchSize === 0 ? 0 : remainingLimit)
                 .lean();
-            // === END: THAY ĐỔI QUAN TRỌNG ===
             proxiesToCheck.push(...otherProxies);
         }
 
         if (proxiesToCheck.length > 0) {
+            this.addLog(`Đã xếp hàng <strong class="text-white">${proxiesToCheck.length}</strong> proxy để kiểm tra.`);
             const proxyIds = proxiesToCheck.map(p => p._id.toString());
             await runCheckProxy(proxyIds, this.io, {
                 concurrency: this.config.concurrency,
                 delay: this.config.delay,
                 timeout: this.config.timeout
             });
+        } else {
+            this.addLog('Không có proxy nào cần kiểm tra trong chu kỳ này.');
         }
     }
     

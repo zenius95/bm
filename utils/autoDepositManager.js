@@ -5,6 +5,10 @@ const ActivityLog = require('../models/ActivityLog');
 const fetch = require('node-fetch');
 const { logActivity } = require('./activityLogService');
 const EventEmitter = require('events');
+const fs = require('fs').promises;
+const path = require('path');
+
+const LOG_FILE = path.join(__dirname, '..', 'logs', 'autodeposit-log.txt');
 
 class AutoDepositManager extends EventEmitter {
     constructor() {
@@ -18,11 +22,42 @@ class AutoDepositManager extends EventEmitter {
         this.logs = [];
     }
 
-    initialize(io) {
+    async initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Deposit Manager...');
         this.config = settingsService.get('autoDeposit');
+        await fs.mkdir(path.dirname(LOG_FILE), { recursive: true }); // Tạo thư mục logs nếu chưa có
         this.emitStatus();
+    }
+    
+    addLog(message) {
+        const logEntry = {
+            timestamp: new Date(),
+            message: message
+        };
+        this.logs.unshift(logEntry);
+        if (this.logs.length > 100) {
+            this.logs.pop();
+        }
+        if (this.io) {
+            this.io.emit('autoDeposit:log', logEntry);
+        }
+        // Ghi vào file
+        const fileLogMessage = `[${logEntry.timestamp.toLocaleString('vi-VN')}] ${message.replace(/<[^>]*>/g, '')}\n`;
+        fs.appendFile(LOG_FILE, fileLogMessage).catch(err => console.error('Failed to write to autodeposit log file:', err));
+    }
+    
+    async clearLogs() {
+        this.logs = [];
+        try {
+            await fs.writeFile(LOG_FILE, ''); // Ghi đè file
+        } catch (err) {
+            console.error('Failed to clear autodeposit log file:', err);
+        }
+    }
+    
+    getLogs() {
+        return this.logs;
     }
 
     async updateConfig(newConfig) {
@@ -97,6 +132,7 @@ class AutoDepositManager extends EventEmitter {
     }
     
     async executeCheck() {
+        await this.clearLogs();
         this.addLog('Bắt đầu quét lịch sử giao dịch...');
         try {
             const response = await fetch(`https://api.web2m.com/historyapiopenbidvv3/${this.config.apiKey}`);
@@ -106,20 +142,6 @@ class AutoDepositManager extends EventEmitter {
             }
             
             const result = await response.json();
-
-            // const result = {
-            // "status": true,
-            // "message": "Thành công",
-            //     "transactions": [
-            //         {
-            //             "transactionID": "000cEOM-7nmZE7xHI",
-            //             "amount": "10000",
-            //             "description": "NAPTIEN admin",
-            //             "transactionDate": "28/12/2023",
-            //             "type": "IN"
-            //         }
-            //     ]
-            // }
 
             if (!result || !result.transactions || !Array.isArray(result.transactions)) {
                 this.addLog('<span class="text-yellow-400">API không trả về dữ liệu giao dịch hợp lệ.</span>');
@@ -193,24 +215,6 @@ class AutoDepositManager extends EventEmitter {
         }
     }
     
-    addLog(message) {
-        const logEntry = {
-            timestamp: new Date(),
-            message: message
-        };
-        this.logs.unshift(logEntry);
-        if (this.logs.length > 100) {
-            this.logs.pop();
-        }
-        if (this.io) {
-            this.io.emit('autoDeposit:log', logEntry);
-        }
-    }
-
-    getLogs() {
-        return this.logs;
-    }
-
     updateNextRunTime() { 
         if (this.status === 'RUNNING' && this.timer) {
             const intervalMs = this.config.intervalMinutes * 60 * 1000;
