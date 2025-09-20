@@ -71,14 +71,18 @@ class CrudService {
     }
 
     async findAllIds(filters) {
-        const inTrash = filters.inTrash === 'true';
-        let dbQuery = { isDeleted: inTrash };
-
+        const dbQuery = { ...filters };
+        const inTrash = dbQuery.inTrash === 'true';
+        delete dbQuery.inTrash;
+        dbQuery.isDeleted = inTrash;
+        
         if (filters.search && this.searchableFields.length > 0) {
             dbQuery.$or = this.searchableFields.map(field => ({
                 [field]: { $regex: filters.search, $options: 'i' }
             }));
         }
+        delete dbQuery.search;
+
         if (filters.status) {
             dbQuery.status = filters.status;
         }
@@ -100,37 +104,37 @@ class CrudService {
         return this.Model.findByIdAndUpdate(id, updateData);
     }
 
-    // === START: THÊM HÀM MỚI ===
     async softDeleteMany(filters) {
-        const dbQuery = { ...filters, isDeleted: false };
+        const dbQuery = { ...filters };
+        delete dbQuery.inTrash;
+        dbQuery.isDeleted = false;
         const updateData = { isDeleted: true, deletedAt: new Date(), ...this.additionalSoftDeleteFields };
         return this.Model.updateMany(dbQuery, { $set: updateData });
     }
-    // === END: THÊM HÀM MỚI ===
 
     async restore(id) {
         const updateData = { isDeleted: false, deletedAt: null };
         return this.Model.findByIdAndUpdate(id, updateData);
     }
 
-    // === START: THÊM HÀM MỚI ===
     async restoreMany(filters) {
-        const dbQuery = { ...filters, isDeleted: true };
+        const dbQuery = { ...filters };
+        delete dbQuery.inTrash;
+        dbQuery.isDeleted = true;
         const updateData = { isDeleted: false, deletedAt: null };
         return this.Model.updateMany(dbQuery, { $set: updateData });
     }
-    // === END: THÊM HÀM MỚI ===
 
     async hardDelete(id) {
         return this.Model.findByIdAndDelete(id);
     }
 
-    // === START: THÊM HÀM MỚI ===
     async hardDeleteMany(filters) {
-        const dbQuery = { ...filters, isDeleted: true };
+        const dbQuery = { ...filters };
+        delete dbQuery.inTrash;
+        dbQuery.isDeleted = true;
         return this.Model.deleteMany(dbQuery);
     }
-    // === END: THÊM HÀM MỚI ===
 }
 
 module.exports = CrudService;
