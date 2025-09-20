@@ -71,44 +71,8 @@
     <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const socket = io();
-
-    // === START: THAY ĐỔI QUAN TRỌNG ===
-    // Tham gia một phòng chung cho user này để nhận cập nhật về các đơn hàng của họ
-    socket.on('connect', () => {
-        const userRoom = 'user_<%= user._id %>';
-        socket.emit('join_room', userRoom);
-        console.log(`Connected to socket and joined room: ${userRoom}`);
-    });
-    // === END: THAY ĐỔI QUAN TRỌNG ===
-
-    socket.on('order:update', (data) => {
-        const { id, status } = data;
-        const statusBadge = document.getElementById(`status-badge-${id}`);
-        if (!statusBadge) return;
-
-        let statusConfig = { text: 'Pending', color: 'gray' };
-        if (status === 'processing') statusConfig = { text: 'Processing', color: 'yellow' };
-        if (status === 'completed') statusConfig = { text: 'Completed', color: 'green' };
-        if (status === 'failed') statusConfig = { text: 'Failed', color: 'red' };
-
-        statusBadge.textContent = statusConfig.text;
-        statusBadge.className = `px-2.5 py-1 text-xs font-semibold rounded-full bg-${statusConfig.color}-500/20 text-${statusConfig.color}-300`;
-    });
-    
-    socket.on('order:item_update', (data) => {
-        const { id, completedItems, failedItems } = data;
-        const orderCard = document.getElementById(`order-card-${id}`);
-        if (!orderCard) return;
-
-        const completedEl = orderCard.querySelector('.item-completed-count');
-        const failedEl = orderCard.querySelector('.item-failed-count');
-
-        if (completedEl) completedEl.textContent = completedItems;
-        if (failedEl) failedEl.textContent = failedItems;
-    });
-});
+    document.body.dataset.userId = "<%= user._id %>";
 </script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/client/orders.js"></script>
