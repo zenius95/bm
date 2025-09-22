@@ -6,12 +6,12 @@ const settingsService = require('../utils/settingsService');
 async function runTest() {
     // ---- THAY ĐỔI THÔNG TIN CỦA BRO VÀO ĐÂY ----
     const account = {
-        username: 'compressedpuncture97624',
-        password: 'qKDWbqbqGjaK',
-        twofa_secret: 'JLZAGGXQVOSKRU3BRSBWDDAB3PRTGYA7', // Để trống nếu không có
-        proxy_string: '' // Để trống nếu không dùng proxy
+        username: 'orionlopez92663521',
+        password: 'Vvenphm926635',
+        twofa_secret: 'VZAYC2QR4DE3NNSYAK3FDHFC5DOK76K3', // Để trống nếu không có
+        proxy_string: 'http://uvxFpf:yYqARA@171.236.167.179:32561' // Để trống nếu không dùng proxy
     };
-    const bmIdToAppeal = '1028941262541135';
+    const bmIdToAppeal = '1279558656957344';
     // ------------------------------------------
 
     console.log(`Bắt đầu test với account: ${account.username} và BM ID: ${bmIdToAppeal}`);
