@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pricePerItemEl = document.getElementById('price-per-item');
         const pricingTiers = JSON.parse(document.body.dataset.pricingTiers || '[]').sort((a, b) => b.quantity - a.quantity);
         const adminBalance = parseInt(document.body.dataset.adminBalance, 10);
+        const maxItems = parseInt(document.body.dataset.maxItems, 10);
         
         const getPriceForQuantity = (count) => {
             if (pricingTiers.length === 0) return 0;
@@ -23,6 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentPrice = getPriceForQuantity(count);
             const total = count * currentPrice;
             
+            let isOverLimit = false;
+            if (maxItems > 0 && count > maxItems) {
+                isOverLimit = true;
+            }
+
             itemCountEl.textContent = count;
             pricePerItemEl.textContent = currentPrice.toLocaleString('vi-VN') + 'đ';
             totalCostEl.textContent = total.toLocaleString('vi-VN') + 'đ';
@@ -30,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectedOption = userSelect.options[userSelect.selectedIndex];
             const userBalance = selectedOption.value ? parseInt(selectedOption.dataset.balance, 10) : adminBalance;
             userBalanceEl.textContent = userBalance.toLocaleString('vi-VN') + 'đ';
+
+            createOrderBtn.disabled = count === 0 || isOverLimit || total > userBalance;
 
             if (total > userBalance) {
                 totalCostEl.classList.remove('text-yellow-400');

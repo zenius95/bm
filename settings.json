@@ -31,6 +31,7 @@
                 "price": 5000
             }
         ],
+        "maxItemsPerOrder": 1,
         "pricePerItem": 100
     },
     "deposit": {

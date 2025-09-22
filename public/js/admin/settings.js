@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (orderSettingsForm) {
         const container = document.getElementById('pricing-tiers-container');
         const addBtn = document.getElementById('add-tier-btn');
+        const maxItemsInput = document.getElementById('maxItemsPerOrder'); // Lấy element input
         let initialTiers = settings.order.pricingTiers || [];
 
         const createTierRow = (tier = { quantity: 1, price: 100 }) => {
@@ -129,11 +130,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // === START: SỬA LỖI ===
+            const payload = {
+                pricingTiers: tiers,
+                maxItemsPerOrder: maxItemsInput.value 
+            };
+            // === END: SỬA LỖI ===
+
             try {
                 const response = await fetch('/admin/settings/order/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pricingTiers: tiers })
+                    body: JSON.stringify(payload) // Gửi payload đã có đủ dữ liệu
                 });
                 const result = await response.json();
                 if (result.success) {

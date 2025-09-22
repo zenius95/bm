@@ -127,11 +127,14 @@ clientController.getCreateOrderPage = (req, res) => {
     res.render('client/create-order', {
         page: 'create-order',
         title: 'Tạo Đơn Hàng Mới',
+        // === START: SỬA LỖI ===
+        // Gửi toàn bộ object settings thay vì chỉ pricingTiers
+        settings: settingsService.getAll(), 
         pricingTiers: settingsService.get('order').pricingTiers,
+        // === END: SỬA LỖI ===
         error: req.query.error
     });
 };
-
 clientController.postCreateOrder = async (req, res) => {
     try {
         const { itemsData } = req.body;
@@ -147,6 +150,11 @@ clientController.postCreateOrder = async (req, res) => {
             return res.redirect('/create-order?error=' + encodeURIComponent('Không có item nào hợp lệ.'));
         }
         
+        const { maxItemsPerOrder } = settingsService.get('order');
+        if (maxItemsPerOrder > 0 && itemLines.length > maxItemsPerOrder) {
+            return res.redirect('/create-order?error=' + encodeURIComponent(`Số lượng items vượt quá giới hạn cho phép (${maxItemsPerOrder}).`));
+        }
+
         const pricePerItem = settingsService.calculatePricePerItem(itemLines.length);
         const totalCost = itemLines.length * pricePerItem;
 

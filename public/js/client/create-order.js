@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryCard = document.getElementById('summary-card');
     const pricingTiersForCalc = JSON.parse(document.body.dataset.pricingTiers || '[]').sort((a, b) => b.quantity - a.quantity);
     const userBalance = parseInt(document.body.dataset.userBalance, 10);
+    const maxItems = parseInt(document.body.dataset.maxItems, 10);
+    const itemLimitWarning = document.getElementById('item-limit-warning');
+
+
     userBalanceEl.textContent = userBalance.toLocaleString('vi-VN') + 'đ';
 
     const sortedRenderTiers = [...pricingTiersForCalc].sort((a, b) => a.quantity - b.quantity);
@@ -59,9 +63,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentPrice = getPriceForQuantity(count);
         const totalCost = count * currentPrice;
 
+        let isOverLimit = false;
+        if (maxItems > 0 && count > maxItems) {
+            isOverLimit = true;
+            if (itemLimitWarning) {
+                itemLimitWarning.textContent = `Số lượng items vượt quá giới hạn cho phép (${maxItems}).`;
+                itemLimitWarning.classList.remove('hidden');
+            }
+        } else {
+            if (itemLimitWarning) itemLimitWarning.classList.add('hidden');
+        }
+
         itemCountEl.textContent = count;
         pricePerItemEl.textContent = currentPrice.toLocaleString('vi-VN') + 'đ';
         totalCostEl.textContent = totalCost.toLocaleString('vi-VN') + 'đ';
+
         if (totalCost > userBalance) {
             totalCostEl.classList.add('text-red-400');
             totalCostEl.classList.remove('text-yellow-400');
@@ -73,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             totalCostEl.classList.remove('text-red-400');
             totalCostEl.classList.add('text-yellow-400');
             balanceWarning.classList.add('hidden');
-            createOrderBtn.disabled = count === 0;
+            createOrderBtn.disabled = count === 0 || isOverLimit;
             summaryCard.classList.remove('border-red-500/50');
             summaryCard.classList.add('border-slate-800');
         }

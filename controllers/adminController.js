@@ -261,6 +261,7 @@ adminOrderController.handleGetAll = async (req, res) => {
             trashCount,
             users: usersForForm,
             pricingTiers: settingsService.get('order').pricingTiers,
+            maxItemsPerOrder: settingsService.get('order').maxItemsPerOrder,
             title,
             page: 'orders',
             currentQuery: res.locals.currentQuery
@@ -321,6 +322,11 @@ adminOrderController.handleCreate = async (req, res) => {
         const itemLines = itemsData.trim().split('\n').filter(line => line.trim() !== '');
         if (itemLines.length === 0) {
             return res.status(400).json({ success: false, message: "Không có item nào hợp lệ." });
+        }
+
+        const { maxItemsPerOrder } = settingsService.get('order');
+        if (maxItemsPerOrder > 0 && itemLines.length > maxItemsPerOrder) {
+            return res.status(400).json({ success: false, message: `Số lượng items vượt quá giới hạn cho phép (${maxItemsPerOrder}).` });
         }
 
         const targetUserId = userId || adminUserId;

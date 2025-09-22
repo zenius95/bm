@@ -13,7 +13,8 @@ const DEFAULT_SETTINGS = {
             { quantity: 50, price: 10000 },
             { quantity: 20, price: 13000 },
             { quantity: 1, price: 15000 }
-        ]
+        ],
+        maxItemsPerOrder: 0 // <<< THÊM DÒNG NÀY
     },
     deposit: {
         bankName: "TCB",
@@ -41,19 +42,19 @@ const DEFAULT_SETTINGS = {
         delay: 500,
         timeout: 20000,
         batchSize: 100,
-        retries: 2 // <<< THÊM DÒNG NÀY
+        retries: 2
     },
     itemProcessor: {
         isEnabled: false,
         concurrency: 10,
         pollingInterval: 5,
-        timeout: 180000, 
+        timeout: 180000,
         maxSuccess: 4,
         maxError: 5
     },
     services: {
-        selectedImageCaptchaService: 'omocaptcha_image.json', 
-        selectedRecaptchaService: '', 
+        selectedImageCaptchaService: 'omocaptcha_image.json',
+        selectedRecaptchaService: '',
         selectedPhoneService: '',
         apiKeys: {
             captcha: {},
@@ -84,8 +85,8 @@ class SettingsService extends EventEmitter {
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) },
-                services: { 
-                    ...DEFAULT_SETTINGS.services, 
+                services: {
+                    ...DEFAULT_SETTINGS.services,
                     ...(fileData.services || {}),
                     apiKeys: {
                         ...DEFAULT_SETTINGS.services.apiKeys,
@@ -130,11 +131,11 @@ class SettingsService extends EventEmitter {
         }
         return defaultValue;
     }
-    
+
     getAll() {
         return this._data;
     }
-    
+
     async update(key, value) {
         if (this._data[key] && typeof this._data[key] === 'object' && !Array.isArray(value) && value !== null) {
             this._data[key] = { ...this._data[key], ...value };
@@ -151,7 +152,7 @@ class SettingsService extends EventEmitter {
 
     calculatePricePerItem(itemCount) {
         const sortedTiers = this.getSortedTiers();
-        
+
         if (sortedTiers.length === 0) {
             return 0;
         }

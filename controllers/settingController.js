@@ -148,11 +148,16 @@ settingController.updateMasterApiKey = async (req, res) => {
 
 settingController.updateOrderConfig = async (req, res) => {
     try {
-        const { pricingTiers } = req.body;
+        const { pricingTiers, maxItemsPerOrder } = req.body;
         
         if (!Array.isArray(pricingTiers) || pricingTiers.length === 0) {
             return res.status(400).json({ success: false, message: 'Dữ liệu bậc giá không hợp lệ.' });
         }
+        const maxItems = parseInt(maxItemsPerOrder, 10);
+        if (isNaN(maxItems) || maxItems < 0) {
+            return res.status(400).json({ success: false, message: 'Số items tối đa không hợp lệ.' });
+        }
+
 
         const cleanedTiers = pricingTiers.map(tier => ({
             quantity: parseInt(tier.quantity, 10),
@@ -165,8 +170,8 @@ settingController.updateOrderConfig = async (req, res) => {
         
         cleanedTiers.sort((a, b) => a.quantity - b.quantity);
 
-        await settingsService.update('order', { pricingTiers: cleanedTiers });
-        res.json({ success: true, message: 'Cập nhật cài đặt bậc giá thành công.' });
+        await settingsService.update('order', { pricingTiers: cleanedTiers, maxItemsPerOrder: maxItems });
+        res.json({ success: true, message: 'Cập nhật cài đặt đơn hàng thành công.' });
     } catch (error) {
         console.error("Error updating order config:", error.message);
         res.status(500).json({ success: false, message: error.message });
