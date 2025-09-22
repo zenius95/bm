@@ -117,12 +117,6 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
         apiKey: serviceSettings.apiKeys.captcha[serviceSettings.selectedImageCaptchaService] || null
     };
 
-    // (Tương lai) Xác định dịch vụ reCAPTCHA sẽ sử dụng
-    const recaptchaService = {
-        name: serviceSettings.selectedRecaptchaService,
-        apiKey: serviceSettings.apiKeys.captcha[serviceSettings.selectedRecaptchaService] || null
-    };
-    
     // (Tương lai) Xác định dịch vụ SĐT sẽ sử dụng
     const phoneService = {
         name: serviceSettings.selectedPhoneService,
@@ -216,9 +210,65 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
         await flow.wait_between_requests(3);
     }
     
+    // === START: LOGIC MỚI CHO VIỆC THÊM SĐT ===
     if (state.includes('phone number')) {
-        log("Yêu cầu xác minh số điện thoại... (Chức năng này đang được bỏ qua, sẽ cập nhật sau)");
+        log("Yêu cầu xác minh số điện thoại...");
+        if (!phoneService.name || !phoneService.apiKey) {
+            throw new Error("Dịch vụ thuê số điện thoại chưa được cấu hình hoặc thiếu API Key.");
+        }
+
+        let phoneVerified = false;
+        for (let i = 0; i < 3; i++) {
+            log(`Bắt đầu lấy SĐT (lần thử ${i + 1}/3)...`);
+            try {
+                // Tạo một instance mới của service mỗi lần thử
+                const phoneServiceProvider = await createService(phoneService.name, 'phone', { apiKey: phoneService.apiKey }, path.resolve(__dirname, '../insta/configs'));
+                
+                // Lấy số điện thoại và ID request
+                const { phone, id } = await phoneServiceProvider.getPhoneNumber();
+                log(`Đã lấy SĐT: ${phone} (Request ID: ${id})`);
+
+                // Gửi SĐT lên Instagram
+                await flow.api4_set_contact_point_phone(phone);
+                log("Đã gửi SĐT lên Instagram, đang chờ mã xác nhận...");
+
+                // Lấy mã xác nhận
+                const phoneCode = await phoneServiceProvider.getCode(id);
+                log(`Đã nhận được mã: ${phoneCode}`);
+
+                // Gửi mã xác nhận
+                state = await flow.api5_submit_phone_code(phoneCode);
+
+                if (state.includes('this email')) { // Kiểm tra xem bước tiếp theo có phải là email không
+                    log("Xác minh số điện thoại thành công.");
+                    phoneVerified = true;
+                    break;
+                } else {
+                    log(`Xác minh SĐT lần ${i + 1} thất bại, thử lại...`);
+                     try {
+                        log("Thử gỡ SĐT cũ...");
+                        await flow.delete_old_phone();
+                        log("Gỡ SĐT cũ thành công.");
+                    } catch (e) {
+                        log(`Gỡ SĐT cũ thất bại: ${e.message}`);
+                    }
+                }
+            } catch (err) {
+                log(`Thêm SĐT lần ${i + 1} thất bại. Lỗi: ${err.message}`);
+                try {
+                    log("Thử gỡ SĐT cũ...");
+                    await flow.delete_old_phone();
+                    log("Gỡ SĐT cũ thành công.");
+                } catch (e) {
+                    log(`Gỡ SĐT cũ thất bại: ${e.message}`);
+                }
+            }
+        }
+        if (!phoneVerified) throw new Error("Xác minh số điện thoại thất bại sau 3 lần thử.");
+        await flow.wait_between_requests(3);
     }
+
+    // === END: LOGIC MỚI CHO VIỆC THÊM SĐT ===
     
     if (state.includes('email') && state.includes('Enter confirmation code')) {
         log("Phát hiện email cũ còn tồn tại. Đang gỡ bỏ...");
@@ -246,9 +296,28 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                      break;
                 } else {
                     log(`Xác minh email lần ${i + 1} thất bại, thử lại...`);
+                    // Thử gỡ email cũ khi thất bại
+                    try {
+                        log("Thử gỡ email cũ...");
+                        await flow.delete_old_email();
+                        log("Gỡ email cũ thành công.");
+                    } catch (e) {
+                        log(`Gỡ email cũ thất bại: ${e.message}`);
+                    }
+
+                    await flow.wait_between_requests(3);
+                    
                 }
             } catch (err) {
                 log(`Thêm email lần ${i + 1} thất bại. Lỗi: ${err.message}`);
+                // Thử gỡ email cũ khi có lỗi
+                try {
+                    log("Thử gỡ email cũ...");
+                    await flow.delete_old_email();
+                    log("Gỡ email cũ thành công.");
+                } catch (e) {
+                    log(`Gỡ email cũ thất bại: ${e.message}`);
+                }
             }
         }
         if (!emailVerified) throw new Error("Xác minh email thất bại sau 3 lần thử.");

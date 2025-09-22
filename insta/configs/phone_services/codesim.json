@@ -1,0 +1,19 @@
+{
+    "name": "CodeSim.net",
+    "apiKey": "",
+    "service": "9",
+    "delay": 5000,
+    "getPhone": {
+        "url": "https://apisim.codesim.net/sim/get_sim?service_id={service}&api_key={apiKey}",
+        "retry": 3,
+        "phonePath": "data.phone",
+        "idPath": "data.otpId",
+        "prefix": "84",
+        "subString": 1
+    },
+    "getCode": {
+        "url": "https://apisim.codesim.net/otp/get_otp_by_phone_api_key?otp_id={id}&api_key={apiKey}",
+        "retry": 12,
+        "codePath": "data.code"
+    }
+}

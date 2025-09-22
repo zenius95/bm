@@ -64,11 +64,16 @@ class PhoneService extends ExternalService {
             this.log(`Đang lấy SĐT (Lần thử ${i}/${phoneConfig.retry})...`);
             try {
                 const data = await this._makeRequest(url);
-                const phoneNumber = this._getValueFromPath(data, phoneConfig.phonePath);
+                let phoneNumber = this._getValueFromPath(data, phoneConfig.phonePath);
                 const id = this._getValueFromPath(data, phoneConfig.idPath);
                 let prefix = phoneConfig.prefix || '';
+                let subString = phoneConfig.subString || '';
                 if (prefix && prefix.startsWith('{') && prefix.endsWith('}')) {
                     prefix = this._getValueFromPath(data, prefix.slice(1, -1)) || '';
+                }
+
+                if (subString) {
+                    phoneNumber = phoneNumber.substring(subString)
                 }
                 if (phoneNumber && id) {
                     const fullPhoneNumber = `${prefix}${phoneNumber}`;
