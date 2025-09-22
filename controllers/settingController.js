@@ -89,9 +89,7 @@ settingController.updateServicesConfig = async (req, res) => {
             selectedImageCaptchaService, imageCaptchaApiKey,
             selectedRecaptchaService, recaptchaApiKey,
             selectedPhoneService, phoneApiKey,
-            // === START: LẤY THÊM userAgents TỪ REQUEST ===
             userAgents 
-            // === END: LẤY THÊM userAgents TỪ REQUEST ===
         } = req.body;
         
         const currentServices = settingsService.get('services');
@@ -112,18 +110,16 @@ settingController.updateServicesConfig = async (req, res) => {
             newApiKeys.phone[selectedPhoneService] = phoneApiKey;
         }
 
-        // === START: XỬ LÝ VÀ LƯU DANH SÁCH USER AGENT ===
         const userAgentList = typeof userAgents === 'string' 
             ? userAgents.split('\n').map(ua => ua.trim()).filter(ua => ua)
             : [];
-        // === END: XỬ LÝ VÀ LƯU DANH SÁCH USER AGENT ===
 
         const newConfig = {
             selectedImageCaptchaService: selectedImageCaptchaService || currentServices.selectedImageCaptchaService,
             selectedRecaptchaService: selectedRecaptchaService || currentServices.selectedRecaptchaService,
             selectedPhoneService: selectedPhoneService || currentServices.selectedPhoneService,
             apiKeys: newApiKeys,
-            userAgents: userAgentList // Thêm vào object config
+            userAgents: userAgentList
         };
 
         await settingsService.update('services', newConfig);
@@ -235,7 +231,7 @@ settingController.updateAutoCheckConfig = async (req, res) => {
 
 settingController.updateAutoProxyCheckConfig = async (req, res) => {
     try {
-        const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize } = req.body;
+        const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize, retries } = req.body; // <<< THÊM `retries`
         const configToUpdate = {};
         if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
         const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
@@ -244,6 +240,7 @@ settingController.updateAutoProxyCheckConfig = async (req, res) => {
         configToUpdate.delay = parse(delay, 0);
         configToUpdate.timeout = parse(timeout, 1000);
         configToUpdate.batchSize = parse(batchSize, 0);
+        configToUpdate.retries = parse(retries, 0); // <<< THÊM DÒNG NÀY
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
         await autoProxyCheckManager.updateConfig(configToUpdate);

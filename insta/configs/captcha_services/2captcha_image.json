@@ -1,0 +1,37 @@
+{
+    "name": "2Captcha (Image)",
+    "apiKey": "",
+    "delay": 10000,
+    "createImageTask": {
+        "url": "https://api.2captcha.com/createTask",
+        "method": "POST",
+        "body": {
+            "clientKey": "{apiKey}",
+            "task": {
+                "type": "ImageToTextTask",
+                "body": "{imageBase64}"
+            }
+        },
+        "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        "taskIdPath": "taskId"
+    },
+    "getResult": {
+        "url": "https://api.2captcha.com/getTaskResult",
+        "method": "POST",
+        "retry": 10,
+        "body": {
+            "clientKey": "{apiKey}",
+            "taskId": "{taskId}"
+        },
+        "headers": {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        "successStatus": "ready",
+        "statusPath": "status",
+        "resultPath": "solution.text"
+    }
+}

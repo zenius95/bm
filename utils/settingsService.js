@@ -40,7 +40,8 @@ const DEFAULT_SETTINGS = {
         concurrency: 10,
         delay: 500,
         timeout: 20000,
-        batchSize: 100
+        batchSize: 100,
+        retries: 2 // <<< THÊM DÒNG NÀY
     },
     itemProcessor: {
         isEnabled: false,
@@ -58,11 +59,9 @@ const DEFAULT_SETTINGS = {
             captcha: {},
             phone: {}
         },
-        // === START: THÊM MỚI ===
         userAgents: [
             "Instagram 361.0.0.46.88 Android (29/10; 560dpi; 1440x2792; samsung; SM-G960N; starlteks; samsungexynos9810; en_US; 674675098)"
         ]
-        // === END: THÊM MỚI ===
     }
 };
 
@@ -92,9 +91,7 @@ class SettingsService extends EventEmitter {
                         ...DEFAULT_SETTINGS.services.apiKeys,
                         ...(fileData.services?.apiKeys || {})
                     },
-                    // === START: THÊM LOGIC MERGE CHO USER AGENTS ===
                     userAgents: fileData.services?.userAgents || DEFAULT_SETTINGS.services.userAgents
-                    // === END: THÊM LOGIC MERGE CHO USER AGENTS ===
                 }
             };
             console.log('[SettingsService] Loaded config from settings.json');

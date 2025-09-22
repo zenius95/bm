@@ -2,7 +2,7 @@
 const Proxy = require('../models/Proxy');
 const Account = require('../models/Account');
 const ProcessRunner = require('./processRunner');
-const fetch = require('node-fetch'); // <<< SỬA LỖI: THÊM DÒNG NÀY
+const fetch = require('node-fetch');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const PROXY_CHECK_APIS = [
@@ -45,7 +45,7 @@ async function runCheckProxy(proxyIds, io, options) {
         concurrency: options.concurrency || 5,
         delay: options.delay || 200,
         timeout: options.timeout || 20000,
-        retries: 0,
+        retries: options.retries || 0, // <<< THÊM DÒNG NÀY
     });
 
     const tasks = proxyIds.map(proxyId => ({

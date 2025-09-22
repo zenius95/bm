@@ -237,30 +237,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const logsContainer = document.getElementById(logContainerId);
         if (!logsContainer) return;
 
-        function addLogMessage(logEntry, prepend = true) {
+        function addLogMessage(logEntry, isRealtime = false) {
             const firstChild = logsContainer.querySelector('div:first-child');
-            if(firstChild && (firstChild.textContent.includes('Đang chờ') || firstChild.textContent.includes('Chưa có'))) {
+            if(firstChild && (firstChild.textContent.includes('Connecting') || firstChild.textContent.includes('Chưa có'))) {
                 logsContainer.innerHTML = '';
             }
-            if (logsContainer.childElementCount > 100) logsContainer.removeChild(logsContainer.lastChild);
+            if (logsContainer.childElementCount > 150) {
+                 logsContainer.removeChild(logsContainer.firstChild);
+            }
+
+            const shouldAutoScroll = Math.abs(logsContainer.scrollHeight - logsContainer.clientHeight - logsContainer.scrollTop) < 50;
             
             const logLine = document.createElement('div');
-            const timestamp = logEntry.timestamp instanceof Date ? logEntry.timestamp.toLocaleTimeString('vi-VN') : new Date(logEntry.timestamp).toLocaleTimeString('vi-VN');
-            logLine.innerHTML = `<span class="text-gray-500 mr-3">[${timestamp}]</span> ${logEntry.message}`;
+            const timestamp = new Date(logEntry.timestamp).toLocaleTimeString('vi-VN');
+            logLine.innerHTML = `
+                <span class="text-gray-600 flex-shrink-0">[${timestamp}]</span>
+                <span class="text-cyan-400 flex-shrink-0 ml-2">~</span>
+                <p class="ml-2 whitespace-pre-wrap break-words">${logEntry.message}</p>
+            `;
+            logLine.className = 'flex items-start';
+            logsContainer.appendChild(logLine);
             
-            if(prepend) {
-                 logsContainer.insertBefore(logLine, logsContainer.firstChild);
-            } else {
-                 logsContainer.appendChild(logLine);
+            if (isRealtime && shouldAutoScroll) {
+                logsContainer.scrollTop = logsContainer.scrollHeight;
             }
         }
         
-        // Load initial logs
         logsContainer.innerHTML = '';
         if (initialLogs && initialLogs.length > 0) {
-            initialLogs.forEach(log => addLogMessage({ timestamp: log.timestamp, message: log.message.replace(/<[^>]*>/g, '') }, false));
+            initialLogs.reverse().forEach(log => addLogMessage({ 
+                timestamp: log.timestamp, 
+                message: log.message.replace(/<[^>]*>/g, '') 
+            }, false));
         } else {
-            logsContainer.innerHTML = '<div class="text-gray-500">Chưa có log nào.</div>';
+            logsContainer.innerHTML = '';
         }
 
         socket.on(eventName, (logEntry) => addLogMessage(logEntry, true));
@@ -313,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (result.success) {
-                    showToast(result.message, 'Thành công', 'success');
+                    showToast(result.message, 'Thành công!', 'success');
                     updateAutoDepositUI(result.data);
                 } else {
                     showToast(result.message, 'Lỗi', 'error');
@@ -423,6 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const delayInput = document.getElementById('apc-delay');
         const timeoutInput = document.getElementById('apc-timeout');
         const batchSizeInput = document.getElementById('apc-batchSize'); 
+        const retriesInput = document.getElementById('apc-retries');
         const startBtn = document.getElementById('apc-start-btn');
         const stopBtn = document.getElementById('apc-stop-btn');
         const statusBadge = document.getElementById('apc-status-badge');
@@ -448,6 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
             delayInput.value = state.config.delay;
             timeoutInput.value = state.config.timeout;
             batchSizeInput.value = state.config.batchSize;
+            retriesInput.value = state.config.retries;
             if (state.nextRun && !state.isJobRunning) {
                 nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
                 nextRunContainer.style.display = 'block';
@@ -482,7 +494,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 concurrency: concurrencyInput.value,
                 delay: delayInput.value,
                 timeout: timeoutInput.value,
-                batchSize: batchSizeInput.value
+                batchSize: batchSizeInput.value,
+                retries: retriesInput.value
             });
         });
         startBtn.addEventListener('click', () => updateAutoProxyCheckConfig({ isEnabled: true }));

@@ -58,7 +58,8 @@
         "concurrency": 10,
         "delay": 500,
         "timeout": 20000,
-        "batchSize": 0
+        "batchSize": 0,
+        "retries": 2
     },
     "itemProcessor": {
         "isEnabled": false,
@@ -69,12 +70,13 @@
         "maxError": 5
     },
     "services": {
-        "selectedImageCaptchaService": "omocaptcha_image.json",
+        "selectedImageCaptchaService": "2captcha_image.json",
         "selectedRecaptchaService": "",
         "selectedPhoneService": "",
         "apiKeys": {
             "captcha": {
-                "omocaptcha_image.json": "OMO_7GNHWXNX7H3YMSF72JMRZRDNME1OLJ2NV7UV3H8U2J2C6EB2SKBFXYEBURLUKV1757170914"
+                "omocaptcha_image.json": "OMO_7GNHWXNX7H3YMSF72JMRZRDNME1OLJ2NV7UV3H8U2J2C6EB2SKBFXYEBURLUKV1757170914",
+                "2captcha_image.json": "59cab26bbaac7e8789fdf52474a4fdfa"
             },
             "phone": {}
         },

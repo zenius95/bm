@@ -189,6 +189,8 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                 log(`Dịch vụ trả về kết quả: "${captchaSolution}"`);
                 state = await flow.api3_submit_captcha(captchaSolution);
 
+                console.log(state)
+
                 if (state.includes('phone number') || state.includes('this email')) {
                     log(`Gửi captcha thành công ở lần thử ${attempt}.`);
                     captchaPassed = true;
