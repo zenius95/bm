@@ -19,12 +19,34 @@ class AutoProxyCheckManager extends EventEmitter {
         this.isJobRunning = false;
         this.logs = [];
     }
+    
+    async readLogFile() {
+        try {
+            const data = await fs.readFile(LOG_FILE, 'utf8');
+            const lines = data.split('\n').filter(line => line.trim() !== '');
+            return lines.map(line => {
+                const match = line.match(/^\[(.*?)\]\s*(.*)$/);
+                if (match) {
+                    const [datePart, timePart] = match[1].split(', ');
+                    const [day, month, year] = datePart.split('/');
+                    const isoTimestamp = `${year}-${month}-${day}T${timePart}`;
+                    return { timestamp: new Date(isoTimestamp), message: match[2] };
+                }
+                return { timestamp: new Date(), message: line };
+            }).reverse();
+        } catch (error) {
+            if (error.code === 'ENOENT') return [];
+            console.error('Lỗi khi đọc file autoproxycheck log:', error);
+            return [];
+        }
+    }
 
     async initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Proxy Check Manager...');
         this.config = settingsService.get('autoProxyCheck');
         await fs.mkdir(path.dirname(LOG_FILE), { recursive: true });
+        this.logs = await this.readLogFile();
         if (this.config.isEnabled) {
             this.start();
         } else {
@@ -35,7 +57,6 @@ class AutoProxyCheckManager extends EventEmitter {
     addLog(message) {
         const logEntry = { timestamp: new Date(), message };
         this.logs.unshift(logEntry);
-        if (this.logs.length > 100) this.logs.pop();
         if (this.io) this.io.emit('autoProxyCheck:log', logEntry);
         const fileLogMessage = `[${logEntry.timestamp.toLocaleString('vi-VN')}] ${message.replace(/<[^>]*>/g, '')}\n`;
         fs.appendFile(LOG_FILE, fileLogMessage).catch(err => console.error('Failed to write to autoproxycheck log file:', err));
@@ -169,6 +190,7 @@ class AutoProxyCheckManager extends EventEmitter {
             config: this.config,
             nextRun: this.nextRun ? this.nextRun.toISOString() : null,
             isJobRunning: this.isJobRunning,
+            logs: this.getLogs()
         };
     }
 

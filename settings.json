@@ -42,7 +42,7 @@
     "autoDeposit": {
         "isEnabled": false,
         "intervalMinutes": 1,
-        "apiKey": "1BF493CB-ED54-264B-3C5D-C5DF48AD3BD7",
+        "apiKey": "0DCB6463-A8C3-9D7D-BA29-A290352B5845",
         "prefix": "NAPTIEN"
     },
     "autoCheck": {

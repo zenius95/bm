@@ -22,12 +22,39 @@ class AutoDepositManager extends EventEmitter {
         this.logs = [];
     }
 
+    async readLogFile() {
+        try {
+            const data = await fs.readFile(LOG_FILE, 'utf8');
+            const lines = data.split('\n').filter(line => line.trim() !== '');
+            return lines.map(line => {
+                const match = line.match(/^\[(.*?)\]\s*(.*)$/);
+                if (match) {
+                    // Cố gắng chuyển đổi ngày tháng về định dạng chuẩn ISO để new Date() có thể đọc được
+                    const [datePart, timePart] = match[1].split(', ');
+                    const [day, month, year] = datePart.split('/');
+                    const isoTimestamp = `${year}-${month}-${day}T${timePart}`;
+                    return { timestamp: new Date(isoTimestamp), message: match[2] };
+                }
+                return { timestamp: new Date(), message: line }; // Fallback
+            }).reverse(); // Đảo ngược để log mới nhất ở trên
+        } catch (error) {
+            if (error.code === 'ENOENT') return []; // File không tồn tại, trả về mảng rỗng
+            console.error('Lỗi khi đọc file autodeposit log:', error);
+            return [];
+        }
+    }
+
     async initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Deposit Manager...');
         this.config = settingsService.get('autoDeposit');
-        await fs.mkdir(path.dirname(LOG_FILE), { recursive: true }); // Tạo thư mục logs nếu chưa có
-        this.emitStatus();
+        await fs.mkdir(path.dirname(LOG_FILE), { recursive: true });
+        this.logs = await this.readLogFile();
+        if (this.config.isEnabled) {
+            this.start();
+        } else {
+            this.emitStatus();
+        }
     }
     
     addLog(message) {
@@ -36,9 +63,6 @@ class AutoDepositManager extends EventEmitter {
             message: message
         };
         this.logs.unshift(logEntry);
-        if (this.logs.length > 100) {
-            this.logs.pop();
-        }
         if (this.io) {
             this.io.emit('autoDeposit:log', logEntry);
         }
@@ -135,7 +159,7 @@ class AutoDepositManager extends EventEmitter {
         await this.clearLogs();
         this.addLog('Bắt đầu quét lịch sử giao dịch...');
         try {
-            const response = await fetch(`https://api.web2m.com/historyapiopenbidvv3/${this.config.apiKey}`);
+            const response = await fetch(`https://api.web2m.com/historyapibidvv3/25092000Son@@/2206819100/${this.config.apiKey}`);
             
             if (!response.ok) {
                 throw new Error(`API trả về lỗi: ${response.status} ${response.statusText}`);
@@ -164,17 +188,16 @@ class AutoDepositManager extends EventEmitter {
     async processTransaction(transaction) {
         const { transactionID, description, amount } = transaction;
         const prefix = this.config.prefix.toUpperCase();
+        
+        const usernameRegex = new RegExp(`${prefix}\\s+([a-zA-Z0-9_]+)`, 'i');
+        const match = description.match(usernameRegex);
 
-        if (!description.toUpperCase().startsWith(prefix)) {
-            this.addLog(`<span class="text-yellow-400">Giao dịch #${transactionID} bị bỏ qua: Không chứa tiền tố "${prefix}".</span>`);
+        if (!match || !match[1]) {
+            this.addLog(`<span class="text-yellow-400">Giao dịch #${transactionID} bị bỏ qua: Nội dung "${description}" không khớp định dạng.</span>`);
             return;
         }
 
-        const username = description.substring(prefix.length).trim().toLowerCase();
-        if (!username) {
-            this.addLog(`<span class="text-yellow-400">Giao dịch #${transactionID} bị bỏ qua: Không tìm thấy username sau tiền tố.</span>`);
-            return;
-        }
+        const username = match[1].toLowerCase();
 
         const existingLog = await ActivityLog.findOne({ 'metadata.tid': transactionID });
         if (existingLog) return;
@@ -198,7 +221,7 @@ class AutoDepositManager extends EventEmitter {
             metadata: {
                 balanceBefore: balanceBefore,
                 balanceAfter: user.balance,
-                change: amount,
+                change: depositAmount,
                 tid: transactionID,
                 description: description
             }
@@ -231,6 +254,7 @@ class AutoDepositManager extends EventEmitter {
             config: this.config,
             nextRun: this.nextRun ? this.nextRun.toISOString() : null,
             isJobRunning: this.isJobRunning,
+            logs: this.getLogs()
         };
     }
 

@@ -1,7 +1,7 @@
 <%
 // Helper functions
 const formatNumber = (num) => (num || 0).toLocaleString('vi-VN');
-const formatCurrency = (num) => (num || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+const formatCurrency = (num) => Number(num || 0).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 const getChangeIndicator = (change) => {
     const changeNum = Number(change) || 0;
     if (changeNum > 0) return { icon: 'ri-arrow-up-line', color: 'text-green-400' };
@@ -10,17 +10,17 @@ const getChangeIndicator = (change) => {
 };
 const periodLabels = { day: 'Hôm nay', week: 'Tuần này', month: 'Tháng này', year: 'Năm nay', all: 'Toàn thời gian' };
 const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
+const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
 %>
 
 <div class="space-y-8">
-    <!-- Header and Period Filter -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h1 class="text-3xl font-bold text-white">Dashboard</h1>
             <p class="mt-1 text-gray-400">Tổng quan hệ thống - Dữ liệu cho: <span class="font-semibold text-blue-400"><%= currentPeriodLabel %></span></p>
         </div>
         <div class="relative">
-            <select id="period-filter" class="form-select !pl-10">
+             <select id="period-filter" class="form-select !pl-10">
                 <option value="day" <%= currentPeriod === 'day' ? 'selected' : '' %>>Hôm nay</option>
                 <option value="week" <%= currentPeriod === 'week' ? 'selected' : '' %>>Tuần này</option>
                 <option value="month" <%= currentPeriod === 'month' ? 'selected' : '' %>>Tháng này</option>
@@ -31,9 +31,7 @@ const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
         </div>
     </div>
 
-    <!-- Main Stats Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Revenue Card -->
         <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-green-400/50 hover:shadow-2xl hover:shadow-green-500/10 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-400">Doanh số</span>
@@ -46,20 +44,18 @@ const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
                 <%= stats.revenue.changePercentage %>% so với kỳ trước
             </p>
         </div>
-        <!-- Orders Card -->
         <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-blue-400/50 hover:shadow-2xl hover:shadow-blue-500/10 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-400">Đơn hàng mới</span>
                 <i class="ri-shopping-cart-line text-2xl text-blue-400"></i>
             </div>
             <p class="mt-2 text-3xl font-bold text-white"><%= formatNumber(stats.orders.current) %></p>
-            <% const orderChange = getChangeIndicator(stats.orders.changePercentage); %>
+             <% const orderChange = getChangeIndicator(stats.orders.changePercentage); %>
             <p class="text-xs text-gray-400 mt-1 flex items-center <%= orderChange.color %>">
                  <i class="<%= orderChange.icon %> mr-1"></i>
                  <%= stats.orders.changePercentage %>% so với kỳ trước
             </p>
         </div>
-        <!-- New Users Card -->
         <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-purple-400/50 hover:shadow-2xl hover:shadow-purple-500/10 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-400">Thành viên mới</span>
@@ -72,7 +68,6 @@ const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
                  <%= stats.newUsers.changePercentage %>% so với kỳ trước
             </p>
         </div>
-        <!-- Costs Card -->
         <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 transition-all duration-300 hover:border-yellow-400/50 hover:shadow-2xl hover:shadow-yellow-500/10 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-400">Chi phí đơn hàng</span>
@@ -87,19 +82,38 @@ const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
         </div>
     </div>
 
-    <!-- Revenue and Orders Chart -->
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6">
-        <h2 class="text-lg font-semibold text-white mb-4">Biểu đồ Doanh thu & Đơn hàng</h2>
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-white">Biểu đồ Doanh số</h2>
+                <p class="text-xs text-gray-400">Hiển thị dữ liệu từ 29/<%= selectedMonth === 1 ? 12 : selectedMonth - 1 %>/<%= selectedMonth === 1 ? selectedYear - 1 : selectedYear %> đến 28/<%= selectedMonth %>/<%= selectedYear %></p>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-400">Tổng Doanh Thu</p>
+                    <p class="text-2xl font-bold text-green-400"><%= formatCurrency(chartTotalRevenue) %></p>
+                </div>
+            </div>
+            <form id="chart-filter-form" class="flex items-center gap-2 flex-shrink-0">
+                <select name="chart_month" id="chart-month-select" class="form-select !py-2">
+                    <% for (let i = 1; i <= 12; i++) { %>
+                        <option value="<%= i %>" <%= selectedMonth === i ? 'selected' : '' %>><%= monthNames[i-1] %></option>
+                    <% } %>
+                </select>
+                <select name="chart_year" id="chart-year-select" class="form-select !py-2">
+                     <% yearList.forEach(year => { %>
+                        <option value="<%= year %>" <%= selectedYear === year ? 'selected' : '' %>><%= year %></option>
+                    <% }); %>
+                </select>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Xem</button>
+            </form>
+        </div>
         <div class="h-80">
             <canvas id="revenueChart"></canvas>
         </div>
     </div>
     
-    <!-- Detailed Stats -->
     <div>
         <h2 class="text-xl font-semibold text-white mb-4">Thống kê chi tiết (Toàn thời gian)</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Accounts Stats -->
             <div class="bg-white/5 border border-white/10 rounded-xl p-5">
                 <h3 class="font-semibold text-white mb-4 flex items-center gap-2"><i class="ri-group-line text-blue-400"></i> Accounts</h3>
                 <div class="space-y-3 text-sm">
@@ -107,19 +121,17 @@ const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
                     <div class="flex justify-between"><span class="text-gray-400">Live</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.accounts.live) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Die</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.accounts.die) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Chưa check</span><strong class="font-mono text-gray-500"><%= formatNumber(detailedStats.accounts.unchecked) %></strong></div>
-                </div>
+                 </div>
             </div>
-            <!-- Proxies Stats -->
             <div class="bg-white/5 border border-white/10 rounded-xl p-5">
                  <h3 class="font-semibold text-white mb-4 flex items-center gap-2"><i class="ri-swap-box-line text-purple-400"></i> Proxies</h3>
                 <div class="space-y-3 text-sm">
-                    <div class="flex justify-between"><span class="text-gray-400">Tổng</span><strong class="font-mono text-white"><%= formatNumber(detailedStats.proxies.total) %></strong></div>
+                     <div class="flex justify-between"><span class="text-gray-400">Tổng</span><strong class="font-mono text-white"><%= formatNumber(detailedStats.proxies.total) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Available</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.proxies.available) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Assigned</span><strong class="font-mono text-yellow-400"><%= formatNumber(detailedStats.proxies.assigned) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Dead</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.proxies.dead) %></strong></div>
-                </div>
+                 </div>
             </div>
-            <!-- Workers Stats -->
             <div class="bg-white/5 border border-white/10 rounded-xl p-5">
                  <h3 class="font-semibold text-white mb-4 flex items-center gap-2"><i class="ri-cpu-line text-yellow-400"></i> Workers</h3>
                 <div class="space-y-3 text-sm">
@@ -127,15 +139,14 @@ const currentPeriodLabel = periodLabels[currentPeriod] || 'Tùy chỉnh';
                     <div class="flex justify-between"><span class="text-gray-400">Online</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.workers.online) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Offline</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.workers.offline) %></strong></div>
                 </div>
-            </div>
+             </div>
         </div>
     </div>
 </div>
 
 <script id="chartData" type="application/json">
-    <%- JSON.stringify(chartData || { labels: [], revenues: [], orders: [], timeUnit: 'day' }) %>
+    <%- JSON.stringify(chartData || { labels: [], revenues: [] }) %>
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script src="/js/admin/dashboard.js"></script>
-

@@ -90,12 +90,35 @@ const getAggregationData = async (Model, dateRange, sumField, actionFilter = nul
         matchCriteria.action = actionFilter;
     }
 
+    let sumExpression;
+    if (sumField === '$metadata.change') {
+        sumExpression = {
+            $sum: {
+                $cond: {
+                    if: { $isNumber: "$metadata.change" },
+                    then: "$metadata.change",
+                    else: { $toDouble: { $ifNull: [ "$metadata.change", 0 ] } }
+                }
+            }
+        };
+    } else {
+        sumExpression = { $sum: sumField };
+    }
+
     const result = await Model.aggregate([
         { $match: matchCriteria },
-        { $group: { _id: null, total: { $sum: sumField } } }
+        { $group: { _id: null, total: sumExpression } }
     ]);
-    return result.length > 0 ? result[0].total : 0;
+    
+    if (result.length > 0 && result[0].total) {
+        if (typeof result[0].total === 'object' && result[0].total.toString) {
+            return parseFloat(result[0].total.toString());
+        }
+        return result[0].total;
+    }
+    return 0;
 };
+
 
 // Helper for chart data aggregation
 const getChartAggregation = async (Model, start, end, sumField, groupByFormat, actionFilter = null) => {
@@ -103,27 +126,54 @@ const getChartAggregation = async (Model, start, end, sumField, groupByFormat, a
      if (actionFilter) {
         matchCriteria.action = actionFilter;
     }
+    
+    let valueExpression;
+    if (sumField === '$metadata.change') {
+         valueExpression = {
+            $sum: {
+                $cond: {
+                    if: { $isNumber: "$metadata.change" },
+                    then: "$metadata.change",
+                    else: { $toDouble: { $ifNull: [ "$metadata.change", 0 ] } }
+                }
+            }
+        };
+    } else {
+        valueExpression = { $sum: sumField };
+    }
 
-    return Model.aggregate([
+    const aggregationResult = await Model.aggregate([
         { $match: matchCriteria },
         {
             $group: {
                 _id: { $dateToString: { format: groupByFormat, date: "$createdAt", timezone: "Asia/Ho_Chi_Minh" } },
-                value: { $sum: sumField }
+                value: valueExpression
             }
         },
         { $sort: { _id: 1 } }
     ]);
+
+    return aggregationResult.map(item => {
+        let finalValue = 0;
+        if (item.value) {
+            if (typeof item.value === 'object' && item.value.toString) {
+                finalValue = parseFloat(item.value.toString());
+            } else {
+                finalValue = item.value;
+            }
+        }
+        return { ...item, value: finalValue };
+    });
 };
 
 adminOrderController.getDashboard = async (req, res) => {
     try {
-        const currentPeriod = req.query.period || 'day';
-        const { currentRange, previousRange, startOfPeriod, endOfPeriod } = getDatesForPeriod(currentPeriod);
+        const { period = 'day', chart_month, chart_year } = req.query;
         
+        // --- Logic for Top Stat Cards ---
+        const { currentRange, previousRange } = getDatesForPeriod(period);
         const depositActions = { $in: ['CLIENT_DEPOSIT', 'CLIENT_DEPOSIT_AUTO'] };
 
-        // --- Main Stats ---
         const [
             currentRevenue, previousRevenue,
             currentOrders, previousOrders,
@@ -147,44 +197,35 @@ adminOrderController.getDashboard = async (req, res) => {
             costs: { current: currentCosts, changePercentage: calculateChange(currentCosts, previousCosts) }
         };
 
-        // --- Chart Data ---
-        let chartData = { labels: [], revenues: [], orders: [], timeUnit: 'day' };
-        if (currentPeriod !== 'all') {
-             let groupByFormat = "%Y-%m-%d";
-             let timeUnit = 'day';
-             
-             if (currentPeriod === 'year') { 
-                groupByFormat = "%Y-%m";
-                timeUnit = 'month';
-             } else if (currentPeriod === 'month' || currentPeriod === 'week') {
-                 groupByFormat = "%Y-%m-%d";
-                 timeUnit = 'day';
-             }
+        // --- Logic for Chart Data (with month/year selector) ---
+        const now = new Date();
+        const selectedYear = parseInt(chart_year, 10) || now.getFullYear();
+        const selectedMonth = parseInt(chart_month, 10) || now.getMonth() + 1;
 
-            const [revenueData, orderData] = await Promise.all([
-                getChartAggregation(ActivityLog, startOfPeriod, endOfPeriod, '$metadata.change', groupByFormat, depositActions),
-                getChartAggregation(Order, startOfPeriod, endOfPeriod, 1, groupByFormat)
-            ]);
+        const chartStart = new Date(selectedYear, selectedMonth - 2, 29, 0, 0, 0, 0);
+        const chartEnd = new Date(selectedYear, selectedMonth - 1, 28, 23, 59, 59, 999);
 
-            const dataMap = new Map();
-            revenueData.forEach(item => {
-                if (!dataMap.has(item._id)) dataMap.set(item._id, { revenue: 0, orders: 0 });
-                dataMap.get(item._id).revenue = item.value;
-            });
-            orderData.forEach(item => {
-                if (!dataMap.has(item._id)) dataMap.set(item._id, { revenue: 0, orders: 0 });
-                dataMap.get(item._id).orders = item.value;
-            });
+        const revenueData = await getChartAggregation(ActivityLog, chartStart, chartEnd, '$metadata.change', "%Y-%m-%d", depositActions);
+        
+        const chartTotalRevenue = revenueData.reduce((sum, item) => sum + item.value, 0);
 
-            const sortedLabels = Array.from(dataMap.keys()).sort();
-
-            chartData.labels = sortedLabels;
-            chartData.revenues = sortedLabels.map(label => dataMap.get(label).revenue);
-            chartData.orders = sortedLabels.map(label => dataMap.get(label).orders);
-            chartData.timeUnit = timeUnit;
+        const dataMap = new Map();
+        revenueData.forEach(item => {
+            dataMap.set(item._id, { revenue: item.value });
+        });
+        
+        const fullDateRange = [];
+        let currentDate = new Date(chartStart);
+        while (currentDate <= chartEnd) {
+            fullDateRange.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-
-        // --- Detailed Stats (All time) ---
+        
+        let chartData = {
+            labels: fullDateRange,
+            revenues: fullDateRange.map(date => dataMap.get(date)?.revenue || 0)
+        };
+        
         const [
             totalAccounts, liveAccounts, dieAccounts, uncheckedAccounts,
             totalProxies, availableProxies, assignedProxies, deadProxies,
@@ -202,12 +243,18 @@ adminOrderController.getDashboard = async (req, res) => {
             proxies: { total: totalProxies, available: availableProxies, assigned: assignedProxies, dead: deadProxies },
             workers: { total: totalWorkers, online: onlineWorkers, offline: totalWorkers - onlineWorkers }
         };
+        
+        const yearList = [now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2];
 
         res.render('admin/dashboard', { 
             stats,
             chartData,
             detailedStats,
             currentPeriod,
+            selectedMonth,
+            selectedYear,
+            yearList,
+            chartTotalRevenue,
             title: 'Admin Dashboard',
             page: 'dashboard'
         });
@@ -281,13 +328,13 @@ adminOrderController.handleGetById = async (req, res) => {
         }
         
         const items = await Item.find({ orderId: order._id }).lean();
-        order.items = items; // Gán items vào order để dùng nếu cần
+        order.items = items;
 
         const logs = await Log.find({ orderId: orderId }).sort({ timestamp: 1 }).lean();
 
         res.render('admin/order-detail', { 
             order, 
-            items, // <-- THÊM DÒNG NÀY ĐỂ SỬA LỖI
+            items,
             logs, 
             currentQuery: req.query,
             title: `Order #${order.shortId}`,

@@ -22,12 +22,34 @@ class AutoCheckManager extends EventEmitter {
         this.lastRun = null;
         this.logs = [];
     }
+    
+    async readLogFile() {
+        try {
+            const data = await fs.readFile(LOG_FILE, 'utf8');
+            const lines = data.split('\n').filter(line => line.trim() !== '');
+            return lines.map(line => {
+                const match = line.match(/^\[(.*?)\]\s*(.*)$/);
+                if (match) {
+                    const [datePart, timePart] = match[1].split(', ');
+                    const [day, month, year] = datePart.split('/');
+                    const isoTimestamp = `${year}-${month}-${day}T${timePart}`;
+                    return { timestamp: new Date(isoTimestamp), message: match[2] };
+                }
+                return { timestamp: new Date(), message: line };
+            }).reverse();
+        } catch (error) {
+            if (error.code === 'ENOENT') return [];
+            console.error('Lỗi khi đọc file autocheck log:', error);
+            return [];
+        }
+    }
 
     async initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Auto Check Manager...');
         this.config = settingsService.get('autoCheck');
-        await fs.mkdir(path.dirname(LOG_FILE), { recursive: true }); // Tạo thư mục logs nếu chưa có
+        await fs.mkdir(path.dirname(LOG_FILE), { recursive: true });
+        this.logs = await this.readLogFile();
         if (this.config.isEnabled) {
             this.start();
         } else {
@@ -41,7 +63,6 @@ class AutoCheckManager extends EventEmitter {
             message: message
         };
         this.logs.unshift(logEntry);
-        if (this.logs.length > 100) this.logs.pop();
         if (this.io) this.io.emit('autoCheck:log', logEntry);
         // Ghi vào file
         const fileLogMessage = `[${logEntry.timestamp.toLocaleString('vi-VN')}] ${message.replace(/<[^>]*>/g, '')}\n`;
@@ -186,7 +207,8 @@ class AutoCheckManager extends EventEmitter {
             status: this.status,
             config: this.config,
             lastRun: this.lastRun,
-            nextRun: null
+            nextRun: null,
+            logs: this.getLogs()
         };
     }
 
