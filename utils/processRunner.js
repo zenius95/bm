@@ -92,7 +92,8 @@ class ProcessRunner extends EventEmitter {
                 return;
             }
             
-            // An toàn hơn khi emit sự kiện
+            // === START: SỬA LỖI - Bọc emit trong try...catch ===
+            // An toàn hơn khi emit sự kiện, tránh lỗi từ listener làm sập tiến trình
             try { this.emit('task:start', { taskWrapper, attempt }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:start:', e); }
 
             const result = await this._runWithTimeout(taskWrapper.task);
@@ -100,23 +101,26 @@ class ProcessRunner extends EventEmitter {
             
             // An toàn hơn khi emit sự kiện
             try { this.emit('task:complete', { result, taskWrapper }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:complete:', e); }
+            // === END: SỬA LỖI ===
 
         } catch (error) {
             if (this.options.retries > 0 && attempt <= this.options.retries) {
+                // === START: SỬA LỖI - Bọc emit trong try...catch ===
                 try { this.emit('task:retry', { error: error, taskWrapper, attempt: attempt + 1 }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:retry:', e); }
-                await this._delay(1000);
-                // Giảm activeTasks trước khi gọi đệ quy và không chờ nó
+                // === END: SỬA LỖI ===
+                await this._delay(1000); 
                 this.activeTasks--; 
                 this._executeTask(taskWrapper, attempt + 1);
-                return; // Quan trọng: thoát khỏi hàm để không chạy finally
+                return; 
             } else {
                 this.errors++;
                 this.failedTasks++;
+                // === START: SỬA LỖI - Bọc emit trong try...catch ===
                 // An toàn hơn khi emit sự kiện
                 try { this.emit('task:error', { error: error, taskWrapper }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:error:', e); }
+                // === END: SỬA LỖI ===
             }
         } finally {
-             // Đảm bảo khối này chỉ chạy một lần cho mỗi task (trừ trường hợp retry)
             if (!(this.options.retries > 0 && attempt <= this.options.retries)) {
                 this.activeTasks--;
                 
@@ -136,7 +140,6 @@ class ProcessRunner extends EventEmitter {
     }
 
     _runWithTimeout(taskFunc) {
-        // Bọc hàm taskFunc trong một Promise để bắt cả lỗi đồng bộ và bất đồng bộ
         return new Promise((resolve, reject) => {
             if (this.options.timeout > 0) {
                 const timer = setTimeout(() => {
@@ -145,7 +148,6 @@ class ProcessRunner extends EventEmitter {
                     reject(timeoutError);
                 }, this.options.timeout);
 
-                // Gói logic thực thi để có thể dọn dẹp timeout
                 const execute = async () => {
                     try {
                         const result = await taskFunc();
@@ -158,7 +160,6 @@ class ProcessRunner extends EventEmitter {
                 };
                 execute();
             } else {
-                 // Gói logic thực thi khi không có timeout
                  const execute = async () => {
                     try {
                         const result = await taskFunc();

@@ -218,23 +218,23 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
         let phoneVerified = false;
 
         // BƯỚC 1: Thử sử dụng lại SĐT & OTP đã lưu trong DB
-        if (fullAccount.lastUsedPhone && fullAccount.lastUsedPhoneCode) {
-            log(`Thử sử dụng lại SĐT đã lưu trong DB: ${fullAccount.lastUsedPhone}`);
+        if (account.lastUsedPhone && account.lastUsedPhoneCode) {
+            log(`Thử sử dụng lại SĐT đã lưu trong DB: ${account.lastUsedPhone}`);
             try {
-                await flow.api4_set_contact_point_phone(fullAccount.lastUsedPhone);
+                await flow.api4_set_contact_point_phone(account.lastUsedPhone);
                 log("Đã gửi SĐT cũ, đang thử gửi lại mã OTP...");
-                state = await flow.api5_submit_phone_code(fullAccount.lastUsedPhoneCode);
+                state = await flow.api5_submit_phone_code(account.lastUsedPhoneCode);
 
                 if (state.includes('this email') || state.includes('selfie')) {
                     log("Sử dụng lại SĐT và mã OTP đã lưu thành công!");
                     phoneVerified = true;
                 } else {
                     log("Sử dụng lại SĐT/OTP đã lưu thất bại. Sẽ tiến hành lấy số mới.");
-                    await Account.findByIdAndUpdate(fullAccount._id, { $set: { lastUsedPhone: null, lastUsedPhoneId: null, lastUsedPhoneCode: null } });
+                    await Account.findByIdAndUpdate(account.id, { $set: { lastUsedPhone: null, lastUsedPhoneId: null, lastUsedPhoneCode: null } });
                 }
             } catch (err) {
                 log(`Lỗi khi sử dụng lại SĐT/OTP đã lưu: ${err.message}. Sẽ tiến hành lấy số mới.`);
-                await Account.findByIdAndUpdate(fullAccount._id, { $set: { lastUsedPhone: null, lastUsedPhoneId: null, lastUsedPhoneCode: null } });
+                await Account.findByIdAndUpdate(account.id, { $set: { lastUsedPhone: null, lastUsedPhoneId: null, lastUsedPhoneCode: null } });
             }
         }
 

@@ -196,9 +196,13 @@ class ItemProcessorManager extends EventEmitter {
 
             try {
                 const result = await runAppealProcess({
-                    username: account.uid, password: account.password,
-                    twofa_secret: account.twofa, proxy_string: account.proxy,
-                    id: account._id.toString()
+                    username: account.uid, 
+                    password: account.password,
+                    twofa_secret: account.twofa, 
+                    proxy_string: account.proxy,
+                    id: account._id.toString(),
+                    lastUsedPhone: account.lastUsedPhone,
+                    lastUsedPhoneCode: account.lastUsedPhoneCode,
                 }, item.data, logCallback);
                 
                 if (result === true) {
@@ -227,7 +231,7 @@ class ItemProcessorManager extends EventEmitter {
         return Account.findOneAndUpdate(
             { status: 'LIVE', isDeleted: false, _id: { $nin: excludeIds } },
             { $set: { status: 'IN_USE' } },
-            { new: true, sort: { lastUsedAt: 1 } }
+            { new: true, sort: { lastCheckedAt: 1 } }
         );
     }
     
