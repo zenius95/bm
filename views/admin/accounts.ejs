@@ -153,5 +153,13 @@
     
     <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
 </div>
+
+<%# === PHẦN SỬA LỖI QUAN TRỌNG === %>
+<script>
+    document.body.dataset.currentQuery = JSON.stringify(<%- JSON.stringify(currentQuery) %>);
+    document.body.dataset.totalItems = "<%= pagination.totalItems %>";
+</script>
+<%# === KẾT THÚC PHẦN SỬA LỖI === %>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/admin/accounts.js"></script>
