@@ -926,11 +926,6 @@ class InstagramAPIFlow {
  
         console.log(`🔐 Using captcha response: ${captcha_response}`);
  
-        if (!this.challenge_root_id) this.challenge_root_id = 197913082500000;
-        if (!this.enrollment_id) this.enrollment_id = 17849551134550958;
-        if (!this.persisted_data) this.persisted_data = "AZkYmffDqumadotk4OowVTdz_LZ6EP92xxxdFdAadUurpGzeLSG0Y8gr3zJIlqhCbhfBTclBzbWx0ofQu5_556eAywZ4p-IsTUh7hOJNUYEQIi0nGBCnHhiJEeAHQ4K8HyEo3ifI6Si_lm1rqgIuuIJT2NXD50mcar3l5ISAvexTQFW4k5cRk6f36RVVTaCovED_Z16bZ9A001M8agzqcT4Nl2mxj4s1WhpzHk2LwdwfJpQmMBD2brdtKIkOKSssAlF1PRTXnrt0qmdLPDkq2Y43YD_-dni0hB8Fuz4ggcC244vDL6f_ht3GMgdpwnB_cbyEWCEfcr_Bo9UbOdR5wSxn2TulgRuieF6Qy9RHtnej4ss_n0HM0RXwYgYpcDXgu1tc0zSw4FMsTiOohqJkwPWmrB_LNUyXTA8__pLYmGMVbkDwmRmtz-fTOAH6rFs1eu4tJgNDXoiu3zeP9ALJlnzKiUmcqdZxL18ICYy79iQwVw";
-        if (!this.latency_qpl_instance_id) this.latency_qpl_instance_id = 1.08604267300007E14;
- 
         const data = new URLSearchParams({
             "params": JSON.stringify({
                 "client_input_params": { "captcha_response": captcha_response },

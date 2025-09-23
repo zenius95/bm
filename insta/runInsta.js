@@ -5,6 +5,7 @@ const path = require('path');
 const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const settingsService = require('../utils/settingsService'); // <<< THÊM DÒNG NÀY
+const Account = require('../models/Account.js')
 
 // --- Helper Functions (No changes) ---
 function makeid(length) {
@@ -261,7 +262,7 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                         phoneVerified = true;
                         // Lưu lại thông tin SĐT và mã vào DB cho account này
                         log(`Lưu SĐT ${phone} vào DB cho tài khoản ${account.username}`);
-                        await Account.findByIdAndUpdate(fullAccount._id, {
+                        await Account.findByIdAndUpdate(account.id, {
                             $set: {
                                 lastUsedPhone: phone,
                                 lastUsedPhoneId: id,
@@ -271,7 +272,12 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                         break; 
                     } else {
                         log(`Xác minh SĐT mới lần ${i + 1} thất bại, thử lại...`);
-                         try {
+
+                        if (phoneRequestId) {
+                            await phoneServiceProvider.cancelPhoneNumber(phoneRequestId);
+                        }
+
+                        try {
                             log("Thử gỡ SĐT cũ...");
                             await flow.delete_old_phone();
                             log("Gỡ SĐT cũ thành công.");

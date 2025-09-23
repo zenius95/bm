@@ -110,6 +110,26 @@ class PhoneService extends ExternalService {
         throw new Error(`Không thể lấy Code cho ID ${id} sau ${codeConfig.retry} lần thử.`);
     }
 
+    async cancelPhoneNumber(id) {
+        const { cancelPhone: cancelConfig, apiKey } = this.config;
+        // Kiểm tra xem dịch vụ có hỗ trợ hủy không
+        if (!cancelConfig) {
+            this.log("Chức năng hủy số không được cấu hình cho dịch vụ này.");
+            return;
+        }
+
+        const url = this._formatTemplate(cancelConfig.url, { apiKey, id });
+        this.log(`Đang gửi yêu cầu hủy cho SĐT có ID: ${id}...`);
+        try {
+            // Hàm _makeRequest sẽ tự động kiểm tra response.ok
+            await this._makeRequest(url, { method: 'GET' });
+            this.log(`Đã hủy thành công yêu cầu cho ID: ${id}`);
+        } catch (error) {
+            // Ghi lại lỗi nhưng không dừng tiến trình, vì hủy lỗi không phải là lỗi nghiêm trọng
+            this.log(`⚠️ Lỗi khi hủy yêu cầu cho ID ${id}: ${error.message}`);
+        }
+    }
+
     async execute() {
         const { phone, id } = await this.getPhoneNumber();
         const code = await this.getCode(id);

@@ -205,7 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (copySelectedBtn) {
         copySelectedBtn.addEventListener('click', async () => {
-            let accountIdsToCopy = [];
+            let accountsToFormat = [];
+
             if (isSelectAllAcrossPages) {
                 try {
                     const response = await fetch('/admin/accounts/all', {
@@ -215,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     const result = await response.json();
                     if (result.success) {
-                        accountIdsToCopy = result.accountIds;
+                        accountsToFormat = result.accounts;
                     } else {
                         throw new Error(result.message);
                     }
@@ -224,40 +225,48 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
             } else {
-                accountIdsToCopy = [...itemCheckboxes]
+                const accountIdsToCopy = [...itemCheckboxes]
                     .filter(cb => cb.checked)
                     .map(cb => cb.value);
-            }
 
-            if (accountIdsToCopy.length === 0) {
-                showToast('Vui lòng chọn ít nhất một account để copy.', 'Cảnh báo!', 'warning');
-                return;
-            }
-
-            try {
-                const response = await fetch('/admin/accounts/details', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids: accountIdsToCopy })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    const accountText = result.accounts.map(acc => {
-                        const parts = [acc.uid, acc.password, acc.twofa];
-                        if (acc.email) parts.push(acc.email);
-                        return parts.join('|');
-                    }).join('\n');
-                    navigator.clipboard.writeText(accountText).then(() => {
-                        showToast(`Đã copy ${result.accounts.length} account vào clipboard.`, 'Thành công!', 'success');
-                    }, () => {
-                        showToast('Không thể copy vào clipboard.', 'Lỗi!', 'error');
-                    });
-                } else {
-                    throw new Error(result.message);
+                if (accountIdsToCopy.length === 0) {
+                    showToast('Vui lòng chọn ít nhất một account để copy.', 'Cảnh báo!', 'warning');
+                    return;
                 }
-            } catch (error) {
-                showToast('Không thể lấy chi tiết account để copy.', 'Lỗi!', 'error');
+
+                try {
+                    const response = await fetch('/admin/accounts/details', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: accountIdsToCopy })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        accountsToFormat = result.accounts;
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    showToast('Không thể lấy chi tiết account để copy.', 'Lỗi!', 'error');
+                }
             }
+            
+            if (accountsToFormat.length === 0) {
+                 showToast('Không có account nào để copy.', 'Thông báo', 'info');
+                 return;
+            }
+            
+            const accountText = accountsToFormat.map(acc => {
+                const parts = [acc.uid, acc.password, acc.twofa];
+                if (acc.email) parts.push(acc.email);
+                return parts.join('|');
+            }).join('\n');
+
+            navigator.clipboard.writeText(accountText).then(() => {
+                showToast(`Đã copy ${accountsToFormat.length} account vào clipboard.`, 'Thành công!', 'success');
+            }, () => {
+                showToast('Không thể copy vào clipboard.', 'Lỗi!', 'error');
+            });
         });
     }
 

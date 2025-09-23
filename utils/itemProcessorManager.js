@@ -119,27 +119,37 @@ class ItemProcessorManager extends EventEmitter {
             runner.addTasks(tasks);
 
             runner.on('task:complete', async ({ result, taskWrapper }) => {
-                const { account, item } = result;
-                await this.updateAccountOnFinish(account, true);
-                await this.updateOrderProgress(item.orderId, 'completed', item);
+                try {
+                    const { account, item } = result;
+                    await this.updateAccountOnFinish(account, true);
+                    await this.updateOrderProgress(item.orderId, 'completed', item);
+                } catch (e) {
+                    console.error(`[ItemProcessor] CRITICAL ERROR while handling 'task:complete' for item ${taskWrapper.id}: ${e.message}`, e.stack);
+                }
             });
 
             runner.on('task:error', async ({ error, taskWrapper }) => {
-                const itemData = taskWrapper.itemData;
-                console.error(`[ItemProcessor] Task for item ${itemData._id} failed: ${error.message}`);
+                try {
+                    const itemData = taskWrapper.itemData;
+                    if (error.lastUsedAccount) {
+                        await this.updateAccountOnFinish(error.lastUsedAccount, false);
+                    }
+                    
+                    console.error(`[ItemProcessor] Task for item ${itemData._id} failed: ${error.message}`);
 
-                // <<< START: LOGIC BẮT LỖI TIMEOUT BẰNG MÃ LỖI >>>
-                let logMessage;
-                if (error.code === 'ETIMEOUT') {
-                    logMessage = `Xử lý item quá thời gian cho phép (${itemProcessingTimeout / 1000}s).`;
-                } else {
-                    logMessage = `Xử lý item thất bại (lỗi nghiêm trọng): ${error.message}`;
+                    let logMessage;
+                    if (error.code === 'ETIMEOUT') {
+                        logMessage = `Xử lý item quá thời gian cho phép (${itemProcessingTimeout / 1000}s).`;
+                    } else {
+                        logMessage = `Xử lý item thất bại (lỗi nghiêm trọng): ${error.message}`;
+                    }
+                    
+                    await this.writeLog(itemData.orderId, itemData._id, 'ERROR', logMessage);
+                    await Item.findByIdAndUpdate(itemData._id, { status: 'failed' });
+                    await this.updateOrderProgress(itemData.orderId, 'failed', itemData);
+                } catch (e) {
+                    console.error(`[ItemProcessor] CRITICAL ERROR while handling 'task:error' for item ${taskWrapper.id}: ${e.message}`, e.stack);
                 }
-                // <<< END: LOGIC BẮT LỖI TIMEOUT BẰNG MÃ LỖI >>>
-
-                await this.writeLog(itemData.orderId, itemData._id, 'ERROR', logMessage);
-                await Item.findByIdAndUpdate(itemData._id, { status: 'failed' });
-                await this.updateOrderProgress(itemData.orderId, 'failed', itemData);
             });
             
             runner.start();
@@ -160,6 +170,15 @@ class ItemProcessorManager extends EventEmitter {
             this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
         }
         
+        if (!item.data || !/^\d+$/.test(item.data.trim())) {
+            const errorMessage = `Xử lý thất bại: BM ID "${item.data}" không hợp lệ. Vui lòng chỉ nhập ID là số.`;
+            console.error(`[ItemProcessor] Invalid BM ID for item ${item._id}: ${item.data}`);
+            await this.writeLog(item.orderId, item._id, 'ERROR', errorMessage);
+            await Item.findByIdAndUpdate(item._id, { status: 'failed' });
+            await this.updateOrderProgress(item.orderId, 'failed', item);
+            throw new Error(errorMessage);
+        }
+
         const itemDataLowerCase = item.data.toLowerCase().trim();
         if (SIMULATION_KEYWORDS.includes(itemDataLowerCase)) {
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -176,10 +195,13 @@ class ItemProcessorManager extends EventEmitter {
         let attemptCount = 0;
         const usedAccountIds = [];
         let finalAccount = null;
+        let lastUsedAccount = null;
 
         while (attemptCount < MAX_ITEM_RETRIES && !success) {
             attemptCount++;
             const account = await this.acquireAccount(usedAccountIds);
+            lastUsedAccount = account;
+            
             if (!account) {
                 await this.writeLog(item.orderId, item._id, 'ERROR', `Không tìm thấy account khả dụng (lần thử ${attemptCount}).`);
                 await new Promise(resolve => setTimeout(resolve, 5000));
@@ -195,15 +217,7 @@ class ItemProcessorManager extends EventEmitter {
             };
 
             try {
-                const result = await runAppealProcess({
-                    username: account.uid, 
-                    password: account.password,
-                    twofa_secret: account.twofa, 
-                    proxy_string: account.proxy,
-                    id: account._id.toString(),
-                    lastUsedPhone: account.lastUsedPhone,
-                    lastUsedPhoneCode: account.lastUsedPhoneCode,
-                }, item.data, logCallback);
+                const result = await runAppealProcess(account, item.data, logCallback);
                 
                 if (result === true) {
                     await Item.findByIdAndUpdate(item._id, { status: 'completed', processedWith: account._id });
@@ -215,7 +229,11 @@ class ItemProcessorManager extends EventEmitter {
 
             } catch (error) {
                 await this.writeLog(item.orderId, item._id, 'ERROR', `Thất bại với account ${account.uid}. Lý do: ${error.message}`);
-                await this.updateAccountOnFinish(account, false);
+                try {
+                    await this.updateAccountOnFinish(account, false);
+                } catch (releaseError) {
+                    console.error(`[ItemProcessor] Lỗi nghiêm trọng khi giải phóng account ${account.uid} sau thất bại: ${releaseError.message}`);
+                }
                 await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ACCOUNTS));
             }
         }
@@ -223,7 +241,9 @@ class ItemProcessorManager extends EventEmitter {
         if (success) {
             return { item, account: finalAccount };
         } else {
-            throw new Error(`Item thất bại sau ${MAX_ITEM_RETRIES} lần thử.`);
+            const finalError = new Error(`Item thất bại sau ${MAX_ITEM_RETRIES} lần thử.`);
+            finalError.lastUsedAccount = lastUsedAccount;
+            throw finalError;
         }
     }
 
@@ -231,7 +251,7 @@ class ItemProcessorManager extends EventEmitter {
         return Account.findOneAndUpdate(
             { status: 'LIVE', isDeleted: false, _id: { $nin: excludeIds } },
             { $set: { status: 'IN_USE' } },
-            { new: true, sort: { lastCheckedAt: 1 } }
+            { new: true, sort: { lastUsedAt: 1 } }
         );
     }
     

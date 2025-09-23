@@ -15,5 +15,9 @@
         "url": "https://apisim.codesim.net/otp/get_otp_by_phone_api_key?otp_id={id}&api_key={apiKey}",
         "retry": 12,
         "codePath": "data.code"
+    },
+    "cancelPhone": {
+        "url": "https://apisim.codesim.net/sim/cancel_api_key/{id}?api_key={apiKey}",
+        "method": "GET"
     }
 }
