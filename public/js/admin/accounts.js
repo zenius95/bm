@@ -52,9 +52,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSelectAllAcrossPages = false;
     let isCheckLiveRunning = false;
 
-    function updateBanners() {
+    // --- START: SỬA LỖI ---
+    // Hợp nhất logic cập nhật giao diện vào một hàm duy nhất
+    function updateSelectionState() {
+        // Xác định xem có mục nào được chọn không (trên trang hoặc trên tất cả các trang)
+        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
+
+        // Cập nhật trạng thái các nút hành động
+        if (checkSelectedBtn) {
+            if (isCheckLiveRunning) {
+                checkSelectedBtn.disabled = true;
+                if (checkSelectedIcon) checkSelectedIcon.classList.add('animate-spin');
+            } else {
+                checkSelectedBtn.disabled = !anyChecked;
+                if (checkSelectedIcon) checkSelectedIcon.classList.remove('animate-spin');
+            }
+        }
+        if (softDeleteSelectedBtn) softDeleteSelectedBtn.disabled = !anyChecked;
+        if (restoreSelectedBtn) restoreSelectedBtn.disabled = !anyChecked;
+        if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
+        if (copySelectedBtn) copySelectedBtn.disabled = !anyChecked;
+
+        // Cập nhật trạng thái các banner thông báo
         if (!selectAllBanner) return;
         const allCheckedOnPage = itemCheckboxes.length > 0 && [...itemCheckboxes].every(cb => cb.checked);
+
         if (isSelectAllAcrossPages) {
             selectAllBanner.classList.add('hidden');
             clearSelectionBanner.classList.remove('hidden');
@@ -68,33 +90,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateCheckLiveButtonState() {
-        if (!checkSelectedBtn) return;
-        if (isCheckLiveRunning) {
-            checkSelectedBtn.disabled = true;
-            if (checkSelectedIcon) checkSelectedIcon.classList.add('animate-spin');
-        } else {
-            const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
-            checkSelectedBtn.disabled = !anyChecked;
-            if (checkSelectedIcon) checkSelectedIcon.classList.remove('animate-spin');
-        }
-    }
-
-    function toggleActionButtons() {
-        const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
-        updateCheckLiveButtonState();
-        if (softDeleteSelectedBtn) softDeleteSelectedBtn.disabled = !anyChecked;
-        if (restoreSelectedBtn) restoreSelectedBtn.disabled = !anyChecked;
-        if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
-        if (copySelectedBtn) copySelectedBtn.disabled = !anyChecked;
-    }
-
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', (e) => {
             isSelectAllAcrossPages = false;
             itemCheckboxes.forEach(cb => cb.checked = e.target.checked);
-            toggleActionButtons();
-            updateBanners();
+            updateSelectionState(); // Luôn gọi hàm cập nhật chung
         });
     }
 
@@ -102,8 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cb.addEventListener('change', () => {
             isSelectAllAcrossPages = false;
             if (selectAllCheckbox) selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
-            toggleActionButtons();
-            updateBanners();
+            updateSelectionState(); // Luôn gọi hàm cập nhật chung
         });
     });
 
@@ -111,8 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectAllMatchingItemsLink.addEventListener('click', (e) => {
             e.preventDefault();
             isSelectAllAcrossPages = true;
-            toggleActionButtons();
-            updateBanners();
+            updateSelectionState(); // Luôn gọi hàm cập nhật chung
         });
     }
 
@@ -122,10 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
             isSelectAllAcrossPages = false;
             if (selectAllCheckbox) selectAllCheckbox.checked = false;
             itemCheckboxes.forEach(cb => cb.checked = false);
-            toggleActionButtons();
-            updateBanners();
+            updateSelectionState(); // Luôn gọi hàm cập nhật chung
         });
     }
+    // --- END: SỬA LỖI ---
+
 
     async function handleAction(url, confirmMessage, confirmType = 'warning') {
         let payload = {};
@@ -146,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirmed) {
             if (url.includes('check-selected')) {
                 isCheckLiveRunning = true;
-                updateCheckLiveButtonState();
+                updateSelectionState();
             }
             try {
                 const response = await fetch(url, {
@@ -169,14 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(result.message || 'Có lỗi xảy ra từ server.', 'Lỗi!', 'error');
                     if (url.includes('check-selected')) {
                         isCheckLiveRunning = false;
-                        updateCheckLiveButtonState();
+                        updateSelectionState();
                     }
                 }
             } catch (error) {
                 showToast('Lỗi kết nối hoặc phản hồi không hợp lệ.', 'Lỗi!', 'error');
                 if (url.includes('check-selected')) {
                     isCheckLiveRunning = false;
-                    updateCheckLiveButtonState();
+                    updateSelectionState();
                 }
             }
         }
@@ -319,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     socket.on('checklive:end', () => {
         isCheckLiveRunning = false;
-        updateCheckLiveButtonState();
+        updateSelectionState();
         showToast('Tiến trình Check Live đã hoàn tất!', 'Hoàn thành', 'success');
     });
     socket.on('accounts:trash:update', (data) => {
@@ -328,5 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
             trashCountSpan.textContent = data.newTrashCount;
         }
     });
-    toggleActionButtons();
+    
+    // Khởi tạo trạng thái ban đầu khi tải trang
+    updateSelectionState();
 });
