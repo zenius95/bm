@@ -183,8 +183,6 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                 log(`Dịch vụ trả về kết quả: "${captchaSolution}"`);
                 state = await flow.api3_submit_captcha(captchaSolution);
 
-                console.log(state)
-
                 if (state.includes('phone number') || state.includes('this email')) {
                     log(`Gửi captcha thành công ở lần thử ${attempt}.`);
                     captchaPassed = true;
@@ -218,34 +216,72 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
         }
 
         let phoneVerified = false;
-        for (let i = 0; i < 3; i++) {
-            log(`Bắt đầu lấy SĐT (lần thử ${i + 1}/3)...`);
+
+        // BƯỚC 1: Thử sử dụng lại SĐT & OTP đã lưu trong DB
+        if (fullAccount.lastUsedPhone && fullAccount.lastUsedPhoneCode) {
+            log(`Thử sử dụng lại SĐT đã lưu trong DB: ${fullAccount.lastUsedPhone}`);
             try {
-                // Tạo một instance mới của service mỗi lần thử
-                const phoneServiceProvider = await createService(phoneService.name, 'phone', { apiKey: phoneService.apiKey }, path.resolve(__dirname, '../insta/configs'));
-                
-                // Lấy số điện thoại và ID request
-                const { phone, id } = await phoneServiceProvider.getPhoneNumber();
-                log(`Đã lấy SĐT: ${phone} (Request ID: ${id})`);
+                await flow.api4_set_contact_point_phone(fullAccount.lastUsedPhone);
+                log("Đã gửi SĐT cũ, đang thử gửi lại mã OTP...");
+                state = await flow.api5_submit_phone_code(fullAccount.lastUsedPhoneCode);
 
-                // Gửi SĐT lên Instagram
-                await flow.api4_set_contact_point_phone(phone);
-                log("Đã gửi SĐT lên Instagram, đang chờ mã xác nhận...");
-
-                // Lấy mã xác nhận
-                const phoneCode = await phoneServiceProvider.getCode(id);
-                log(`Đã nhận được mã: ${phoneCode}`);
-
-                // Gửi mã xác nhận
-                state = await flow.api5_submit_phone_code(phoneCode);
-
-                if (state.includes('this email')) { // Kiểm tra xem bước tiếp theo có phải là email không
-                    log("Xác minh số điện thoại thành công.");
+                if (state.includes('this email') || state.includes('selfie')) {
+                    log("Sử dụng lại SĐT và mã OTP đã lưu thành công!");
                     phoneVerified = true;
-                    break;
                 } else {
-                    log(`Xác minh SĐT lần ${i + 1} thất bại, thử lại...`);
-                     try {
+                    log("Sử dụng lại SĐT/OTP đã lưu thất bại. Sẽ tiến hành lấy số mới.");
+                    await Account.findByIdAndUpdate(fullAccount._id, { $set: { lastUsedPhone: null, lastUsedPhoneId: null, lastUsedPhoneCode: null } });
+                }
+            } catch (err) {
+                log(`Lỗi khi sử dụng lại SĐT/OTP đã lưu: ${err.message}. Sẽ tiến hành lấy số mới.`);
+                await Account.findByIdAndUpdate(fullAccount._id, { $set: { lastUsedPhone: null, lastUsedPhoneId: null, lastUsedPhoneCode: null } });
+            }
+        }
+
+        // BƯỚC 2: Nếu dùng lại thất bại, lấy số mới (với cơ chế thử lại 3 lần)
+        if (!phoneVerified) {
+            for (let i = 0; i < 3; i++) {
+                log(`Bắt đầu lấy SĐT mới (lần thử ${i + 1}/3)...`);
+                try {
+                    const phoneServiceProvider = await createService(phoneService.name, 'phone', { apiKey: phoneService.apiKey }, path.resolve(__dirname, 'configs'));
+                    
+                    const { phone, id } = await phoneServiceProvider.getPhoneNumber();
+                    log(`Đã lấy SĐT mới: ${phone} (Request ID: ${id})`);
+
+                    await flow.api4_set_contact_point_phone(phone);
+                    log("Đã gửi SĐT mới lên Instagram, đang chờ mã xác nhận...");
+
+                    const phoneCode = await phoneServiceProvider.getCode(id);
+                    log(`Đã nhận được mã mới: ${phoneCode}`);
+
+                    state = await flow.api5_submit_phone_code(phoneCode);
+
+                    if (state.includes('this email') || state.includes('selfie')) {
+                        log("Xác minh SĐT mới thành công.");
+                        phoneVerified = true;
+                        // Lưu lại thông tin SĐT và mã vào DB cho account này
+                        log(`Lưu SĐT ${phone} vào DB cho tài khoản ${account.username}`);
+                        await Account.findByIdAndUpdate(fullAccount._id, {
+                            $set: {
+                                lastUsedPhone: phone,
+                                lastUsedPhoneId: id,
+                                lastUsedPhoneCode: phoneCode
+                            }
+                        });
+                        break; 
+                    } else {
+                        log(`Xác minh SĐT mới lần ${i + 1} thất bại, thử lại...`);
+                         try {
+                            log("Thử gỡ SĐT cũ...");
+                            await flow.delete_old_phone();
+                            log("Gỡ SĐT cũ thành công.");
+                        } catch (e) {
+                            log(`Gỡ SĐT cũ thất bại: ${e.message}`);
+                        }
+                    }
+                } catch (err) {
+                    log(`Thêm SĐT mới lần ${i + 1} thất bại. Lỗi: ${err.message}`);
+                    try {
                         log("Thử gỡ SĐT cũ...");
                         await flow.delete_old_phone();
                         log("Gỡ SĐT cũ thành công.");
@@ -253,18 +289,10 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                         log(`Gỡ SĐT cũ thất bại: ${e.message}`);
                     }
                 }
-            } catch (err) {
-                log(`Thêm SĐT lần ${i + 1} thất bại. Lỗi: ${err.message}`);
-                try {
-                    log("Thử gỡ SĐT cũ...");
-                    await flow.delete_old_phone();
-                    log("Gỡ SĐT cũ thành công.");
-                } catch (e) {
-                    log(`Gỡ SĐT cũ thất bại: ${e.message}`);
-                }
             }
         }
-        if (!phoneVerified) throw new Error("Xác minh số điện thoại thất bại sau 3 lần thử.");
+
+        if (!phoneVerified) throw new Error("Xác minh số điện thoại thất bại sau tất cả các lần thử.");
         await flow.wait_between_requests(3);
     }
 

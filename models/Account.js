@@ -51,6 +51,20 @@ const AccountSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    // === START: THÊM CÁC TRƯỜNG MỚI ĐỂ LƯU SĐT ===
+    lastUsedPhone: {
+        type: String,
+        default: null
+    },
+    lastUsedPhoneId: {
+        type: String,
+        default: null
+    },
+    lastUsedPhoneCode: {
+        type: String,
+        default: null
+    },
+    // === END: THÊM CÁC TRƯỜNG MỚI ĐỂ LƯU SĐT ===
     isDeleted: { type: Boolean, default: false, index: true },
     lastCheckedAt: {
         type: Date,
