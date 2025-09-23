@@ -6,16 +6,16 @@ const settingsService = require('../utils/settingsService');
 async function runTest() {
     // ---- THAY ĐỔI THÔNG TIN CỦA BRO VÀO ĐÂY ----
     const account = {
-        username: 'alistairhayes26007499',
-        password: 'Eeoyyqi260074',
-        twofa_secret: 'Z2AGNVZ6HV4VYLA2IQA7QAKJ4QD34X75', // Để trống nếu không có
-        proxy_string: '' // Để trống nếu không dùng proxy
+        uid: 'charlotterodriguez61362395',
+        password: 'Nnagoch613623',
+        twofa: '5HZNC7SI7PQWFLDHMCMDIDZRUQG3Q4IS',
+        proxy: 'http://KoykSf:IiZXHY@171.224.206.229:22042'
     };
     const bmIdToAppeal = '666884172481179';
 
     // ------------------------------------------
 
-    console.log(`Bắt đầu test với account: ${account.username} và BM ID: ${bmIdToAppeal}`);
+    console.log(`Bắt đầu test với account: ${account.uid} và BM ID: ${bmIdToAppeal}`);
 
     // Hàm callback để log tiến trình ra console
     const logCallback = (message) => {

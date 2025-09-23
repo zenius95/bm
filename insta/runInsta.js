@@ -129,7 +129,7 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
     
     log("Bắt đầu quy trình kháng nghị...");
     
-    const flow = new InstagramAPIFlow(account.username, account.password, account.twofa_secret, account.proxy_string);
+    const flow = new InstagramAPIFlow(account.uid, account.password, account.twofa, account.proxy);
     
     log("Đang đăng nhập IG...");
     const loginResult = await flow.login(message => log(message));

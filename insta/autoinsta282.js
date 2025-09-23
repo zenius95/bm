@@ -16,6 +16,7 @@ class InstagramAPIFlow {
         this.base_url = "https://i.instagram.com/api/v1";
 
         this.agent = null;
+        
         if (proxy_string) {
             console.log(`[INFO] Đang sử dụng proxy: ${proxy_string.split('@')[1] || proxy_string}`);
             this.agent = new HttpsProxyAgent(proxy_string);

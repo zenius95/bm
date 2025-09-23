@@ -7,19 +7,19 @@ const ProxySchema = new mongoose.Schema({
         required: [true, 'Proxy string is required.'],
         unique: true,
         trim: true,
-        match: [/^(http|https|socks4|socks5):\/\/(?:[^:]+:[^@]+@)?([^:]+):(\d+)$/, 'Invalid proxy format after conversion.']
+        // Sửa lỗi: Cập nhật Regex để hỗ trợ cả Hostname, IPv4, và IPv6 literal
+        match: [/^(http|https|socks4|socks5):\/\/(?:[^:]+:[^@]+@)?(\[[a-fA-F0-9:]+\]|[^:]+):(\d+)$/, 'Invalid proxy format after conversion.']
     },
     status: {
         type: String,
-        enum: ['AVAILABLE', 'DEAD', 'CHECKING', 'UNCHECKED'], // Đã xóa 'ASSIGNED'
+        enum: ['AVAILABLE', 'DEAD', 'CHECKING', 'UNCHECKED'],
         default: 'UNCHECKED'
     },
     previousStatus: {
         type: String,
-        enum: ['AVAILABLE', 'DEAD', 'UNCHECKED', null], // Đã xóa 'ASSIGNED'
+        enum: ['AVAILABLE', 'DEAD', 'UNCHECKED', null],
         default: null
     },
-    // Đã xóa trường assignedTo
     notes: {
         type: String,
         trim: true
@@ -28,7 +28,6 @@ const ProxySchema = new mongoose.Schema({
         type: Date,
         default: null
     },
-    // Thêm trường mới để theo dõi lần sử dụng cuối
     lastUsedAt: {
         type: Date,
         default: null

@@ -152,12 +152,28 @@ accountController.getAccountDetails = async (req, res) => {
     }
 };
 
-// Lấy tất cả account ID theo bộ lọc
+// Lấy tất cả account THEO BỘ LỌC để copy (FIXED)
 accountController.getAllAccounts = async (req, res) => {
     const { filters } = req.body;
     try {
-        const accountIds = await accountService.findAllIds(filters);
-        res.json({ success: true, accountIds });
+        const dbQuery = { ...filters };
+        const inTrash = dbQuery.inTrash === 'true';
+        delete dbQuery.inTrash;
+        dbQuery.isDeleted = inTrash;
+        
+        if (filters.search && accountService.searchableFields.length > 0) {
+            dbQuery.$or = accountService.searchableFields.map(field => ({
+                [field]: { $regex: filters.search, $options: 'i' }
+            }));
+        }
+        delete dbQuery.search;
+        if (filters.status) dbQuery.status = filters.status;
+
+        // Sửa lỗi: Lấy đầy đủ thông tin account thay vì chỉ ID
+        const accounts = await Account.find(dbQuery).select('uid password twofa email').lean();
+        
+        // Sửa lỗi: Trả về với key là 'accounts' thay vì 'accountIds'
+        res.json({ success: true, accounts });
     } catch (error) {
         console.error("Lỗi khi lấy tất cả account:", error);
         res.status(500).json({ success: false, message: 'Lỗi server.' });

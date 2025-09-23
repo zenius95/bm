@@ -36,7 +36,7 @@ proxyController.handleGetAll = async (req, res) => {
     }
 };
 
-// Ghi đè phương thức handleCreate để xử lý việc thêm hàng loạt và trả về JSON
+// Sửa lỗi: Ghi đè handleCreate để hỗ trợ nhiều định dạng proxy
 proxyController.handleCreate = async (req, res) => {
     try {
         const { proxyData } = req.body;
@@ -46,24 +46,55 @@ proxyController.handleCreate = async (req, res) => {
         
         const lines = proxyData.trim().split('\n').filter(line => line.trim() !== '');
         const proxiesToInsert = [];
-        const protocol = 'http'; // Mặc định protocol là http
-
+        
         lines.forEach(line => {
-            const parts = line.trim().split(':');
-            if (parts.length >= 2) { // Yêu cầu tối thiểu phải có ip:port
-                const [host, port, user, pass] = parts;
-                let proxyString = '';
-                if (user && pass) {
-                    proxyString = `${protocol}://${user}:${pass}@${host}:${port}`;
+            line = line.trim();
+            if (!line) return;
+
+            // Trường hợp 1: Người dùng dán nguyên một URL proxy đầy đủ
+            if (line.startsWith('http://') || line.startsWith('https://') || line.startsWith('socks4://') || line.startsWith('socks5://')) {
+                // Chuỗi đã đúng định dạng, chỉ cần thêm vào danh sách
+                proxiesToInsert.push({ proxyString: line });
+            } 
+            // Trường hợp 2: Người dùng dán theo định dạng host:port:user:pass hoặc các biến thể khác
+            else {
+                const parts = line.split(':');
+                let host, port, user, pass;
+                const protocol = 'http'; // Mặc định protocol là http khi không được chỉ định
+
+                if (parts.length >= 4) { // Ưu tiên cho định dạng có user:pass
+                    pass = parts.pop();
+                    user = parts.pop();
+                    port = parts.pop();
+                    host = parts.join(':'); // Ghép lại các phần còn lại để hỗ trợ IPv6
+                } else if (parts.length === 2) { // Định dạng host:port
+                    host = parts[0];
+                    port = parts[1];
                 } else {
-                    proxyString = `${protocol}://${host}:${port}`;
+                    return; // Bỏ qua dòng có định dạng không hợp lệ
                 }
+
+                if (!host || !port || isNaN(parseInt(port, 10))) {
+                    return; // Bỏ qua nếu thiếu host, port hoặc port không phải là số
+                }
+                
+                // Tự động bao địa chỉ IPv6 literal trong ngoặc vuông
+                if (host.includes(':') && !host.startsWith('[')) {
+                    host = `[${host}]`;
+                }
+
+                let proxyString = `${protocol}://`;
+                if (user && pass) {
+                    proxyString += `${user}:${pass}@`;
+                }
+                proxyString += `${host}:${port}`;
+                
                 proxiesToInsert.push({ proxyString });
             }
         });
         
         if (proxiesToInsert.length === 0) {
-            return res.status(400).json({ success: false, message: 'Không có proxy nào hợp lệ để thêm. Vui lòng kiểm tra định dạng ip:port:user:password.' });
+            return res.status(400).json({ success: false, message: 'Không có proxy nào hợp lệ để thêm. Vui lòng kiểm tra lại định dạng.' });
         }
         
         let addedCount = 0;
@@ -71,9 +102,9 @@ proxyController.handleCreate = async (req, res) => {
             const result = await Proxy.insertMany(proxiesToInsert, { ordered: false });
             addedCount = result.length;
         } catch (error) {
-             // Xử lý lỗi trùng lặp, chỉ đếm những mục đã được thêm thành công
             if (error.code === 11000) {
-                addedCount = error.result.nInserted;
+                // Xử lý lỗi trùng lặp, đếm số lượng đã chèn thành công
+                addedCount = error.result.nInserted || (error.insertedIds ? error.insertedIds.length : 0);
             } else {
                 throw error; // Ném các lỗi khác
             }
@@ -93,6 +124,7 @@ proxyController.handleCreate = async (req, res) => {
         return res.status(500).json({ success: false, message: errorMessage });
     }
 };
+
 
 // Ghi đè phương thức handleUpdate để trả về JSON cho modal
 proxyController.handleUpdate = async (req, res) => {
