@@ -16,7 +16,6 @@ class InstagramAPIFlow {
         this.base_url = "https://i.instagram.com/api/v1";
 
         this.agent = null;
-        
         if (proxy_string) {
             console.log(`[INFO] Đang sử dụng proxy: ${proxy_string.split('@')[1] || proxy_string}`);
             this.agent = new HttpsProxyAgent(proxy_string);
@@ -95,7 +94,7 @@ class InstagramAPIFlow {
         const headers = { "User-Agent": this.user_agent };
         const resp = await this.session(url, { headers });
  
-        const publicKeyId = parseInt(resp.headers.get("ig-set-password-encryption-key-id") || "1", 10);
+        const publicKeyId = resp.headers.get("ig-set-password-encryption-key-id") || "1";
         const publicKey = resp.headers.get("ig-set-password-encryption-pub-key") || "";
         return { publicKeyId, publicKey };
     }
@@ -1464,7 +1463,7 @@ class InstagramAPIFlow {
             for (const pattern of challenge_patterns) {
                 const challenge_match = response_str.match(pattern);
                 if (challenge_match) {
-                    found_challenge_root_id = parseInt(challenge_match[1], 10);
+                    found_challenge_root_id = challenge_match[1];
                     console.log(`✅ Found challenge_root_id using pattern: ${challenge_match[0]}`);
                     break;
                 }
@@ -1479,7 +1478,7 @@ class InstagramAPIFlow {
             for (const pattern of enrollment_patterns) {
                 const enrollment_match = response_str.match(pattern);
                 if (enrollment_match) {
-                    found_enrollment_id = parseInt(enrollment_match[1], 10);
+                    found_enrollment_id = enrollment_match[1];
                     console.log(`✅ Found enrollment_id using pattern: ${enrollment_match[0]}`);
                     break;
                 }
@@ -1493,7 +1492,7 @@ class InstagramAPIFlow {
             for (const pattern of appeal_patterns) {
                 const appeal_match = response_str.match(pattern);
                 if (appeal_match) {
-                    found_appeal_id = parseInt(appeal_match[1], 10);
+                    found_appeal_id = appeal_match[1];
                     break;
                 }
             }
@@ -1651,8 +1650,8 @@ class InstagramAPIFlow {
  
  
             if (combined_match) {
-                found_challenge_root_id = parseInt(combined_match[1], 10);
-                found_enrollment_id = parseInt(combined_match[2], 10);
+                found_challenge_root_id = combined_match[1];
+                found_enrollment_id = combined_match[2];
                 console.log("✅ Found both IDs from combined pattern:");
             } else {
  
@@ -1664,7 +1663,7 @@ class InstagramAPIFlow {
                 for (const pattern of challenge_patterns) {
                     const challenge_match = response_data.match(pattern);
                     if (challenge_match) {
-                        found_challenge_root_id = parseInt(challenge_match[1], 10);
+                        found_challenge_root_id = challenge_match[1];
                         break;
                     }
                 }
@@ -1677,7 +1676,7 @@ class InstagramAPIFlow {
                 for (const pattern of enrollment_patterns) {
                     const enrollment_match = response_data.match(pattern);
                     if (enrollment_match) {
-                        found_enrollment_id = parseInt(enrollment_match[1], 10);
+                        found_enrollment_id = enrollment_match[1];
                         break;
                     }
                 }

@@ -250,7 +250,7 @@ adminOrderController.getDashboard = async (req, res) => {
             stats,
             chartData,
             detailedStats,
-            currentPeriod,
+            currentPeriod: period,
             selectedMonth,
             selectedYear,
             yearList,

@@ -151,7 +151,7 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
     await flow.wait_between_requests(3);
     
     let state = appeal_flow_response;
-    
+        
     if (state.includes('persisted_data')) {
         log("Phát hiện yêu cầu Captcha.");
         flow.extract_persisted_data(state);
@@ -320,6 +320,7 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                 const email = await getMoAktMail();
                 log(`Đang nhập email: ${email.address}`);
                 await flow.api6_set_contact_point_email(email.address);
+
                 const emailCode = await getMoAktMailInboxCode(email.cookie);
                 log(`Đang nhập code: ${emailCode}`);
                 state = await flow.api7_submit_email_code(emailCode);

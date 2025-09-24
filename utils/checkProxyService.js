@@ -118,9 +118,11 @@ async function runCheckProxy(proxyIds, io, options) {
         };
         await Proxy.findByIdAndUpdate(taskWrapper.id, updateData);
 
+        const proxyIdString = taskWrapper.id.toString(); 
+
         const newTrashCount = await Proxy.countDocuments({ isDeleted: true });
         io.emit('proxies:trash:update', { newTrashCount });
-        io.emit('proxy:trashed', { id: taskWrapper.id, message: `Proxy ${taskWrapper.id.slice(-6)} bị lỗi và đã được chuyển vào thùng rác.` });
+        io.emit('proxy:trashed', { id: taskWrapper.id, message: `Proxy ${proxyIdString.slice(-6)} bị lỗi và đã được chuyển vào thùng rác.` });
     });
     
     checkProxyRunner.on('end', () => {

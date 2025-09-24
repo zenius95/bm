@@ -93,12 +93,12 @@ const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", 
                 </div>
             </div>
             <form id="chart-filter-form" class="flex items-center gap-2 flex-shrink-0">
-                <select name="chart_month" id="chart-month-select" class="form-select !py-2">
+                <select name="chart_month" id="chart-month-select" class="form-select !py-2 w-[150px]">
                     <% for (let i = 1; i <= 12; i++) { %>
                         <option value="<%= i %>" <%= selectedMonth === i ? 'selected' : '' %>><%= monthNames[i-1] %></option>
                     <% } %>
                 </select>
-                <select name="chart_year" id="chart-year-select" class="form-select !py-2">
+                <select name="chart_year" id="chart-year-select" class="form-select !py-2 w-[150px]">
                      <% yearList.forEach(year => { %>
                         <option value="<%= year %>" <%= selectedYear === year ? 'selected' : '' %>><%= year %></option>
                     <% }); %>
