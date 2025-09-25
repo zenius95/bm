@@ -11,7 +11,7 @@ class InstagramAPIFlow {
         this.username = username;
         this.password = password;
         this.actor_id = null;
-        this.secret_2fa = secret_2fa;
+        this.secret_2fa = secret_2fa.replaceAll(' ', '');
  
         this.base_url = "https://i.instagram.com/api/v1";
 
