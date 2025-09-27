@@ -1,0 +1,127 @@
+<% const inTrash = currentQuery.inTrash === 'true' %>
+<div class="space-y-8">
+    <div>
+        <h1 class="text-3xl font-bold text-white"><%= inTrash ? 'Thùng rác - Whatsapp' : 'Quản Lý Whatsapp' %></h1>
+        <p class="mt-1 text-gray-400">Quản lý các phiên đăng nhập Whatsapp của bạn.</p>
+    </div>
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <form method="GET" action="/admin/whatsapp" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <% if (inTrash) { %><input type="hidden" name="inTrash" value="true"><% } %>
+            <input type="text" name="search" class="form-input" placeholder="Tìm theo Session ID, SĐT..." value="<%= currentQuery.search || '' %>">
+            <select name="status" class="form-select">
+                <option value="">-- Lọc theo trạng thái --</option>
+                <option value="CONNECTED" <%= currentQuery.status === 'CONNECTED' ? 'selected' : '' %>>Connected</option>
+                <option value="DISCONNECTED" <%= currentQuery.status === 'DISCONNECTED' ? 'selected' : '' %>>Disconnected</option>
+                <option value="SCAN_QR" <%= currentQuery.status === 'SCAN_QR' ? 'selected' : '' %>>Scan QR</option>
+            </select>
+            <div class="flex items-center gap-2">
+                 <button type="submit" class="w-full md:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Lọc</button>
+                 <a href="/admin/whatsapp<%= inTrash ? '?inTrash=true' : '' %>" class="w-full md:w-auto text-center px-4 py-2.5 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-gray-300 transition whitespace-nowrap">Reset</a>
+            </div>
+        </form>
+        <% if (!inTrash) { %>
+        <button type="button" id="add-whatsapp-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-950 transition-transform duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span class="btn-text"><i class="ri-add-line -ml-1 mr-2"></i>Thêm Whatsapp</span>
+            <span class="spinner hidden"><i class="ri-loader-4-line animate-spin mr-2"></i>Đang chờ...</span>
+        </button>
+        <% } %>
+    </div>
+    <div class="flex items-center justify-end gap-3">
+         <% if (inTrash) { %>
+            <a href="/admin/whatsapp" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
+            <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
+            <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
+        <% } else { %>
+            <a href="/admin/whatsapp?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
+            <button id="checkSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-green-600/80 border border-green-500 rounded-md font-semibold text-sm text-white hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i id="checkSelectedIcon" class="ri-refresh-line mr-2"></i> Check Live</button>
+            <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
+        <% } %>
+    </div>
+    <% if (pagination.totalPages > 1) { %>
+        <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+        </div>
+        <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+        </div>
+    <% } %>
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-400 uppercase bg-white/5">
+                    <tr>
+                        <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
+                        <th scope="col" class="px-6 py-3">Session ID</th>
+                        <th scope="col" class="px-6 py-3">Số điện thoại</th>
+                        <th scope="col" class="px-6 py-3">Trạng thái</th>
+                        <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Check Lần Cuối' %></th>
+                    </tr>
+                </thead>
+                <tbody id="whatsapp-table-body">
+                    <% if (whatsapp && whatsapp.length > 0) { %>
+                        <% whatsapp.forEach(session => { %>
+                            <tr id="wa-row-<%= session._id %>" data-session-id="<%= session.sessionId %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                                <td class="p-4"><input type="checkbox" value="<%= session._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
+                                <td class="px-6 py-4 font-mono text-gray-400"><%= session.sessionId %></td>
+                                <td id="wa-phone-<%= session._id %>" class="px-6 py-4 font-mono text-white"><%= session.phoneNumber || 'N/A' %></td>
+                                <td class="px-6 py-4">
+                                     <%
+                                        let statusConfig = { text: 'DISCONNECTED', color: 'red', icon: 'ri-close-circle-line' };
+                                        if (session.status === 'CONNECTED') statusConfig = { text: 'CONNECTED', color: 'green', icon: 'ri-checkbox-circle-line' };
+                                        if (session.status === 'SCAN_QR') statusConfig = { text: 'SCAN QR', color: 'yellow', icon: 'ri-qr-scan-2-line' };
+                                        if (session.status === 'LOADING') statusConfig = { text: 'LOADING', color: 'blue', icon: 'ri-loader-4-line animate-spin' };
+                                    %>
+                                    <div id="wa-status-container-<%= session._id %>" class="flex items-center">
+                                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-<%= statusConfig.color %>-500/20 text-<%= statusConfig.color %>-400 flex items-center gap-2">
+                                            <i class="<%= statusConfig.icon %>"></i>
+                                            <span id="wa-status-<%= session._id %>"><%= statusConfig.text %></span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td id="wa-last-checked-<%= session._id %>" class="px-6 py-4 text-gray-400">
+                                    <% if (inTrash && session.deletedAt) { %>
+                                        <%= new Date(session.deletedAt).toLocaleString('vi-VN') %>
+                                    <% } else if (!inTrash && session.lastCheckedAt) { %>
+                                        <%= new Date(session.lastCheckedAt).toLocaleString('vi-VN') %>
+                                    <% } else if (!inTrash) { %>
+                                        Chưa check
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr id="no-whatsapp-row">
+                            <td colspan="5" class="text-center py-16 px-6">
+                                <i class="ri-whatsapp-line text-6xl text-gray-700"></i>
+                                <h4 class="mt-4 text-xl font-semibold text-white">Chưa có phiên Whatsapp nào</h4>
+                                <p class="mt-2 text-gray-400"><%= inTrash ? 'Thùng rác trống.' : 'Hãy thêm phiên Whatsapp đầu tiên.' %></p>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
+</div>
+<div id="qr-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-sm p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
+    <div class="bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white">Quét mã QR để đăng nhập</h3>
+            <button class="btn-cancel p-2 -mr-2 rounded-md hover:bg-white/10 text-gray-400 transition"><i class="ri-close-line ri-lg"></i></button>
+        </div>
+        <div class="p-6 flex flex-col items-center justify-center">
+            <div id="qr-code-container" class="bg-white p-4 rounded-lg">
+                <p class="text-gray-800">Đang tải mã QR...</p>
+            </div>
+            <p class="text-gray-400 text-sm mt-4 text-center">Mở ứng dụng Whatsapp trên điện thoại của bạn, vào phần **Thiết bị đã liên kết** và quét mã này.</p>
+        </div>
+    </div>
+</div>
+<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
+<script>
+    document.body.dataset.currentQuery = JSON.stringify(<%- JSON.stringify(currentQuery) %>);
+    document.body.dataset.totalItems = "<%= pagination.totalItems %>";
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/admin/whatsapp.js"></script>

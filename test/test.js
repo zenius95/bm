@@ -6,12 +6,12 @@ const settingsService = require('../utils/settingsService');
 async function runTest() {
     // ---- THAY ĐỔI THÔNG TIN CỦA BRO VÀO ĐÂY ----
     const account = {
-        uid: 'bzbfodgsn2',
-        password: 'wisnR9tc7vXS',
-        twofa: 'D4IA QGA2 MOIW PK5O 2C2J MMUE 6UHVLTA6',
-        proxy: 'http://KoykSf:IiZXHY@171.224.206.184:18775'
+        uid: 'naim.44296',
+        password: '0qEEaleNdYbI',
+        twofa: '5KGOFBSOJ4VT2BHMV4MZZ3AMEYA7Y7M2',
+        proxy: ''
     };
-    const bmIdToAppeal = '1025522572375581';
+    const bmIdToAppeal = '1097740089003054';
 
     // ------------------------------------------
 
