@@ -9,12 +9,27 @@ puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 const BASE_URL = 'https://www.receive-sms-free.cc';
 
+// === START: HÀM ĐƯỢC NÂNG CẤP ===
+/**
+ * Chuyển đổi chuỗi thời gian tương đối (vd: "2 min ago", "5 seconds ago") thành số giây.
+ * @param {string} timeString - Chuỗi thời gian từ trang web.
+ * @returns {number|null} - Số giây đã trôi qua, hoặc null nếu không parse được.
+ */
 function parseRelativeTime(timeString) {
     if (!timeString) return null;
-    const match = timeString.toLowerCase().match(/(\d+)\s+(second|minute|hour|day|month|year)s?/);
+    
+    // Regex được nâng cấp để hiểu cả "min" và "minute", "sec" và "second",...
+    const match = timeString.toLowerCase().match(/(\d+)\s+(sec(?:ond)?|min(?:ute)?|hou?r|day|month|year)s?/);
     if (!match) return null;
+
     const value = parseInt(match[1], 10);
-    const unit = match[2];
+    let unit = match[2];
+
+    // Chuẩn hóa đơn vị để xử lý nhất quán
+    if (unit.startsWith('sec')) unit = 'second';
+    if (unit.startsWith('min')) unit = 'minute';
+    if (unit.startsWith('h')) unit = 'hour';
+
     switch (unit) {
         case 'second': return value;
         case 'minute': return value * 60;
@@ -25,8 +40,8 @@ function parseRelativeTime(timeString) {
         default: return null;
     }
 }
+// === END: HÀM ĐƯỢC NÂNG CẤP ===
 
-// ... (Các hàm scrapeAllPhoneData, _getAllCountryLinks, _getPhonesFromCountryPage, getMessages giữ nguyên)
 async function scrapeAllPhoneData(configuredCountries = [], logCallback = console.log) {
     let page = null;
     try {
@@ -264,7 +279,6 @@ async function getMessages(countrySlug, phoneNumber, logCallback = console.log) 
     }
 }
 
-// === START: HÀM ĐƯỢC NÂNG CẤP ===
 async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagram', maxAgeInSeconds = 300, logCallback = console.log) {
     const messages = await getMessages(countrySlug, phoneNumber, logCallback);
     
@@ -276,10 +290,8 @@ async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagr
         if (message.from.toLowerCase().includes(service.toLowerCase())) {
             relevantMessages.push({ text: message.text, time: message.time });
 
-            // Phân tích "tuổi" của tin nhắn, không quan trọng đơn vị
             const messageAgeInSeconds = parseRelativeTime(message.time);
             
-            // Nếu chưa tìm thấy code và tin nhắn đủ mới
             if (!foundCode && messageAgeInSeconds !== null && messageAgeInSeconds <= maxAgeInSeconds) {
                 const codeMatch = message.text.match(/\b(\d{6})\b/);
                 
@@ -299,6 +311,5 @@ async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagr
     logCallback(`[CodeNotFound] Không tìm thấy code MỚI nào (dưới ${maxAgeInSeconds}s) cho dịch vụ '${service}' của SĐT ${phoneNumber}.`);
     return { code: null, allMessages: relevantMessages }; 
 }
-// === END: HÀM ĐƯỢC NÂNG CẤP ===
 
 module.exports = { scrapeAllPhoneData, getCodeFromPhonePage, getMessages };

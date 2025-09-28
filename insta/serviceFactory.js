@@ -2,6 +2,7 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
+const config = require('../config');
 
 /**
  * Lớp cơ sở chứa các hàm tiện ích chung.
@@ -59,20 +60,22 @@ class ExternalService {
 class PhoneService extends ExternalService {
     constructor(config) {
         super(config);
-        // Tự động nhận diện và cấu hình baseUrl cho dịch vụ nội bộ
-        if (this.config.name === 'Local System API') {
-            const port = process.env.PORT || '3000';
+        // === START: LOGIC TỰ ĐỘNG NHẬN DIỆN VÀ CẤU HÌNH baseUrl ===
+        const configString = JSON.stringify(this.config);
+        if (configString.includes('{baseUrl}')) {
+            const port = process.env.PORT || require('../config').server.port;
             const domain = process.env.API_DOMAIN || `http://localhost:${port}`;
             this.config.baseUrl = `${domain}/api/phone`;
-            this.log(`Đã tự động cấu hình baseUrl cho dịch vụ nội bộ: ${this.config.baseUrl}`);
+            this.log(`Phát hiện placeholder {baseUrl}. Đã tự động cấu hình thành: ${this.config.baseUrl}`);
         }
+        // === END: LOGIC TỰ ĐỘNG ===
     }
 
     _buildUrl(pathTemplate, replacements) {
         const { baseUrl } = this.config;
-        const relativePath = this._formatTemplate(pathTemplate, replacements);
-        // Nếu là dịch vụ nội bộ, ghép baseUrl vào. Nếu không, URL đã đầy đủ sẵn.
-        return baseUrl ? `${baseUrl}${relativePath}` : relativePath;
+        // Thêm baseUrl vào danh sách các biến để thay thế
+        const allReplacements = { ...replacements, baseUrl };
+        return this._formatTemplate(pathTemplate, allReplacements);
     }
 
     async getPhoneNumber() {
@@ -101,7 +104,7 @@ class PhoneService extends ExternalService {
     async getCode(id) {
         const { getCode: codeConfig, apiKey, delay } = this.config;
         const url = this._buildUrl(codeConfig.url, { apiKey, id });
-
+        
         for (let i = 1; i <= codeConfig.retry; i++) {
             this.log(`Đang lấy Code cho ID: ${id} (Lần thử ${i}/${codeConfig.retry})...`);
             try {
@@ -149,7 +152,7 @@ class BaseCaptchaService extends ExternalService {
     async _getResult(taskId) {
         const { getResult: resultConfig, apiKey, delay } = this.config;
         for (let i = 1; i <= resultConfig.retry; i++) {
-            this.log(`Đang lấy kết quả cho Task ID: ${taskId} (Lần ${i}/${resultConfig.retry})...`);
+            this.log(`Đang lấy kết quả cho Task ID: ${taskId} (Lần thử ${i}/${resultConfig.retry})...`);
             try {
                 const url = this._formatTemplate(resultConfig.url, { apiKey, taskId });
                 const body = this._formatBody(resultConfig.body, { apiKey, taskId });
@@ -218,6 +221,7 @@ class RecaptchaService extends BaseCaptchaService {
     }
 }
 
+
 /**
  * Factory để tạo ra các đối tượng dịch vụ dựa trên cấu hình.
  */
@@ -235,6 +239,7 @@ async function createService(serviceId, serviceType, options = {}, configDir = n
 
     const finalConfig = { ...configData, ...options };
 
+    // Dựa vào cấu trúc của config để quyết định class sẽ tạo
     if (finalConfig.getPhone) {
         return new PhoneService(finalConfig);
     }
