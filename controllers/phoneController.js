@@ -12,13 +12,13 @@ const phoneController = createCrudController(phoneService, 'phones', {
     plural: 'phones'
 });
 
-// Override the getAll handler to render the correct view and get necessary info
+// Ghi đè lại hàm getAll để render đúng view và lấy các thông tin cần thiết
 phoneController.handleGetAll = async (req, res) => {
     try {
         const { data, pagination } = await phoneService.find(req.query);
         const trashCount = await phoneService.Model.countDocuments({ isDeleted: true });
         
-        // Get lists of countries and sources from the DB for filtering
+        // Lấy danh sách các quốc gia và nguồn từ DB để đưa vào bộ lọc
         const countries = await PhoneNumber.distinct('country');
         const sources = await PhoneNumber.distinct('source');
 

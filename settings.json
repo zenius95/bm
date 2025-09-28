@@ -62,6 +62,12 @@
         "batchSize": 0,
         "retries": 2
     },
+    "autoPhone": {
+        "isEnabled": false,
+        "intervalMinutes": 60,
+        "countries": [],
+        "sources": []
+    },
     "itemProcessor": {
         "isEnabled": false,
         "concurrency": 10,

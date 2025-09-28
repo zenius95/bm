@@ -49,20 +49,22 @@ class AutoPhoneManager extends EventEmitter {
 
     start() {
         if (this.timer) clearInterval(this.timer);
-        const intervalMs = this.config.intervalMinutes * 60 * 1000;
+        const intervalMs = (this.config.intervalMinutes || 60) * 60 * 1000;
         this.status = 'RUNNING';
         this.addLog(`<span class="text-green-400">Dịch vụ đã bắt đầu. Lấy số mỗi ${this.config.intervalMinutes} phút.</span>`);
+        
         const runJob = async () => {
             if (this.isJobRunning) return;
             this.isJobRunning = true;
             this.emitStatus();
             await this.executeFetch();
             this.isJobRunning = false;
-            this.nextRun = new Date(Date.now() + intervalMs);
-            this.emitStatus();
+            this.updateNextRunTime();
         };
+        
         runJob();
         this.timer = setInterval(runJob, intervalMs);
+        this.updateNextRunTime();
     }
 
     stop() {
@@ -111,7 +113,17 @@ class AutoPhoneManager extends EventEmitter {
         }
         this.addLog('Hoàn thành chu kỳ lấy số.');
     }
-    
+
+    updateNextRunTime() {
+        if (this.status === 'RUNNING' && this.timer) {
+            const intervalMs = (this.config.intervalMinutes || 60) * 60 * 1000;
+            this.nextRun = new Date(Date.now() + intervalMs);
+        } else {
+            this.nextRun = null;
+        }
+        this.emitStatus();
+    }
+
     getStatus() {
         return {
             status: this.status,

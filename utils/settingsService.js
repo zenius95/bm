@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS = {
             { quantity: 20, price: 13000 },
             { quantity: 1, price: 15000 }
         ],
-        maxItemsPerOrder: 0 // <<< THÊM DÒNG NÀY
+        maxItemsPerOrder: 0
     },
     deposit: {
         bankName: "TCB",
@@ -44,6 +44,14 @@ const DEFAULT_SETTINGS = {
         batchSize: 100,
         retries: 2
     },
+    // <<< THÊM KHỐI NÀY
+    autoPhone: {
+        isEnabled: false,
+        intervalMinutes: 60,
+        countries: [],
+        sources: []
+    },
+    // >>>>>>>>>>>>>>>>>>>>
     itemProcessor: {
         isEnabled: false,
         concurrency: 10,
@@ -84,6 +92,7 @@ class SettingsService extends EventEmitter {
                 autoDeposit: { ...DEFAULT_SETTINGS.autoDeposit, ...(fileData.autoDeposit || {}) },
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
+                autoPhone: { ...DEFAULT_SETTINGS.autoPhone, ...(fileData.autoPhone || {}) }, // <<< THÊM DÒNG NÀY
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) },
                 services: {
                     ...DEFAULT_SETTINGS.services,

@@ -6,6 +6,7 @@ const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
 const autoDepositManager = require('../utils/autoDepositManager');
 const autoProxyCheckManager = require('../utils/autoProxyCheckManager');
+const autoPhoneManager = require('../utils/autoPhoneManager'); // Mới thêm
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -69,7 +70,8 @@ settingController.getSettingsPage = async (req, res) => {
                 autoCheck: autoCheckManager.getStatus(),
                 autoProxyCheck: autoProxyCheckManager.getStatus(),
                 itemProcessor: itemProcessorManager.getStatus(),
-                autoDeposit: autoDepositManager.getStatus() 
+                autoDeposit: autoDepositManager.getStatus(),
+                autoPhone: autoPhoneManager.getStatus() // Cập nhật
             },
             availableImageCaptchaServices,
             availableRecaptchaServices,
@@ -236,7 +238,7 @@ settingController.updateAutoCheckConfig = async (req, res) => {
 
 settingController.updateAutoProxyCheckConfig = async (req, res) => {
     try {
-        const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize, retries } = req.body; // <<< THÊM `retries`
+        const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize, retries } = req.body;
         const configToUpdate = {};
         if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
         const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
@@ -245,7 +247,7 @@ settingController.updateAutoProxyCheckConfig = async (req, res) => {
         configToUpdate.delay = parse(delay, 0);
         configToUpdate.timeout = parse(timeout, 1000);
         configToUpdate.batchSize = parse(batchSize, 0);
-        configToUpdate.retries = parse(retries, 0); // <<< THÊM DÒNG NÀY
+        configToUpdate.retries = parse(retries, 0);
         Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
         
         await autoProxyCheckManager.updateConfig(configToUpdate);
@@ -282,6 +284,28 @@ settingController.updateItemProcessorConfig = async (req, res) => {
 
 settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
+};
+
+// Hàm mới để cập nhật cấu hình Auto Phone
+settingController.updateAutoPhoneConfig = async (req, res) => {
+    try {
+        const { isEnabled, intervalMinutes, countries, sources } = req.body;
+        const configToUpdate = {};
+        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
+        const parse = (val, min = 1) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
+        
+        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
+        configToUpdate.countries = Array.isArray(countries) ? countries : [];
+        configToUpdate.sources = Array.isArray(sources) ? sources : [];
+        
+        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+
+        await autoPhoneManager.updateConfig(configToUpdate);
+        res.json({ success: true, message: 'Cập nhật cài đặt Tự động lấy SĐT thành công.', data: autoPhoneManager.getStatus() });
+    } catch (error) {
+        console.error("Error updating auto phone config:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
 
 module.exports = settingController;

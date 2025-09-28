@@ -2,9 +2,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
     const softDeleteSelectedBtn = document.getElementById('softDeleteSelectedBtn');
     const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
-    const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
     const selectAllBanner = document.getElementById('select-all-banner');
     const clearSelectionBanner = document.getElementById('clear-selection-banner');
     const selectAllMatchingItemsLink = document.getElementById('select-all-matching-items');
@@ -30,9 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function toggleActionButtons() {
         const anyChecked = [...itemCheckboxes].some(cb => cb.checked) || isSelectAllAcrossPages;
+        if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
         if (softDeleteSelectedBtn) softDeleteSelectedBtn.disabled = !anyChecked;
         if (restoreSelectedBtn) restoreSelectedBtn.disabled = !anyChecked;
-        if (hardDeleteSelectedBtn) hardDeleteSelectedBtn.disabled = !anyChecked;
     }
 
     if (selectAllCheckbox) {
@@ -47,12 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
     itemCheckboxes.forEach(cb => {
         cb.addEventListener('change', () => {
             isSelectAllAcrossPages = false;
-            if(selectAllCheckbox) selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
+            if (selectAllCheckbox) selectAllCheckbox.checked = [...itemCheckboxes].every(c => c.checked);
             toggleActionButtons();
             updateBanners();
         });
     });
-    
+
     if (selectAllMatchingItemsLink) {
         selectAllMatchingItemsLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if(clearSelectionLink) {
+    if (clearSelectionLink) {
         clearSelectionLink.addEventListener('click', (e) => {
             e.preventDefault();
             isSelectAllAcrossPages = false;
@@ -72,11 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBanners();
         });
     }
-
-    async function handleAction(url, confirmMessage, confirmType = 'warning') {
+    
+    toggleActionButtons();
+    
+    async function handleBulkAction(url, confirmMessage, confirmType = 'warning') {
         let payload = {};
         const selectedIdsOnPage = [...itemCheckboxes].filter(cb => cb.checked).map(cb => cb.value);
-
         if (isSelectAllAcrossPages) {
             payload = { selectAll: true, filters: JSON.parse(document.body.dataset.currentQuery) };
         } else {
@@ -100,31 +101,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(result.message, 'Thành công!', 'success');
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
-                    showToast(result.message, 'Lỗi!', 'error');
+                    showToast(result.message || 'Có lỗi xảy ra.', 'Lỗi!', 'error');
                 }
             } catch (error) {
-                showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
+                showToast('Lỗi kết nối.', 'Lỗi mạng!', 'error');
             }
         }
     }
 
+    if (hardDeleteSelectedBtn) {
+        hardDeleteSelectedBtn.addEventListener('click', () => {
+            handleBulkAction('/admin/phones/hard-delete', (count) => `Bạn có chắc muốn XÓA VĨNH VIỄN ${count} SĐT?`, 'danger');
+        });
+    }
+
     if (softDeleteSelectedBtn) {
         softDeleteSelectedBtn.addEventListener('click', () => {
-            handleAction('/admin/phones/soft-delete', (count) => `Bạn có chắc muốn chuyển ${count} SĐT vào thùng rác?`);
+            handleBulkAction('/admin/phones/soft-delete', (count) => `Bạn có chắc muốn chuyển ${count} SĐT vào thùng rác?`);
         });
     }
 
     if (restoreSelectedBtn) {
         restoreSelectedBtn.addEventListener('click', () => {
-            handleAction('/admin/phones/restore', (count) => `Bạn có chắc muốn khôi phục ${count} SĐT?`, 'info');
+            handleBulkAction('/admin/phones/restore', (count) => `Bạn có chắc muốn khôi phục ${count} SĐT?`, 'info');
         });
     }
-
-    if (hardDeleteSelectedBtn) {
-        hardDeleteSelectedBtn.addEventListener('click', () => {
-            handleAction('/admin/phones/hard-delete', (count) => `XÓA VĨNH VIỄN ${count} SĐT? Hành động này không thể hoàn tác.`, 'danger');
-        });
-    }
-    
-    toggleActionButtons();
 });

@@ -8,14 +8,15 @@ const workerController = require('../controllers/workerController');
 const userController = require('../controllers/userController');
 const activityLogController = require('../controllers/activityLogController');
 const proxyController = require('../controllers/proxyController');
+const phoneController = require('../controllers/phoneController'); // <<< THÊM DÒNG NÀY
 
 router.use(accountController.parseQueryMiddleware);
 router.use(adminController.parseQueryMiddleware);
 router.use(userController.parseQueryMiddleware);
 router.use(proxyController.parseQueryMiddleware);
+router.use(phoneController.parseQueryMiddleware); // <<< THÊM DÒNG NÀY
 
 router.get('/', adminController.getDashboard);
-router.get('/dashboard/revenue-details', adminController.getRevenueDetails);
 
 // --- Account Routes ---
 router.get('/accounts', accountController.handleGetAll);
@@ -36,6 +37,12 @@ router.post('/proxies/restore', proxyController.handleRestore);
 router.post('/proxies/hard-delete', proxyController.handleHardDelete);
 router.post('/proxies/check-selected', proxyController.checkSelected);
 router.post('/proxies/all', proxyController.getAllProxies);
+
+// --- Phone Number Routes ---  <<< THÊM KHỐI NÀY
+router.get('/phones', phoneController.handleGetAll);
+router.post('/phones/soft-delete', phoneController.handleSoftDelete);
+router.post('/phones/restore', phoneController.handleRestore);
+router.post('/phones/hard-delete', phoneController.handleHardDelete);
 
 // --- Order Routes ---
 router.get('/orders', adminController.handleGetAll);
@@ -74,6 +81,7 @@ router.post('/settings/deposit/config', settingController.updateDepositConfig);
 router.post('/settings/auto-deposit/config', settingController.updateAutoDepositConfig);
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.post('/settings/auto-proxy-check/config', settingController.updateAutoProxyCheckConfig);
+router.post('/settings/auto-phone/config', settingController.updateAutoPhoneConfig); // <<< THÊM DÒNG NÀY
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
 router.post('/settings/services/config', settingController.updateServicesConfig);

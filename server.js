@@ -28,10 +28,10 @@ const workerApiRoutes = require('./routes/workerApi');
 
 const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
-// settingsService đã được gọi ở trên
 const workerMonitor = require('./utils/workerMonitor');
 const autoDepositManager = require('./utils/autoDepositManager');
 const autoProxyCheckManager = require('./utils/autoProxyCheckManager');
+const autoPhoneManager = require('./utils/autoPhoneManager'); // <<< THÊM DÒNG NÀY
 
 const app = express();
 const server = http.createServer(app);
@@ -43,15 +43,11 @@ io.on('connection', (socket) => {
             socket.join(roomName);
         }
     });
-
-    // === START: THÊM LOGIC RỜI PHÒNG ===
     socket.on('leave_room', (roomName) => {
         if (roomName) {
             socket.leave(roomName);
         }
     });
-    // === END: THÊM LOGIC RỜI PHÒNG ===
-    
 });
 
 app.set('view engine', 'ejs');
@@ -164,6 +160,7 @@ async function startServer() {
     await settingsService.update('autoCheck', { isEnabled: false });
     await settingsService.update('autoProxyCheck', { isEnabled: false });
     await settingsService.update('autoDeposit', { isEnabled: false });
+    await settingsService.update('autoPhone', { isEnabled: false }); // <<< THÊM DÒNG NÀY
     console.log('✅ All auto-services have been disabled.');
     
     const adminCount = await User.countDocuments({ role: 'admin' });
@@ -195,6 +192,7 @@ async function startServer() {
         workerMonitor.initialize(io);
         autoDepositManager.initialize(io);
         autoProxyCheckManager.initialize(io);
+        autoPhoneManager.initialize(io); // <<< THÊM DÒNG NÀY
     });
 }
 
