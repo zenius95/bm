@@ -37,10 +37,10 @@ duration-200
    
                       <i class="ri-chat-check-line w-5 h-5 mr-3"></i> Tự Động Check Whatsapp
                     </a>
-					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autophone" role="tab">
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autophone" role="tab">
 						<i class="ri-phone-find-line w-5 h-5 mr-3"></i> Tự Động Lấy SĐT
 					</a>
-					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all
 						duration-200 cursor-pointer" data-tab-target="#tab-processor" role="tab">
 					<i class="ri-database-2-line w-5 h-5
 						mr-3"></i> Tiến Trình Xử Lý
@@ -664,20 +664,20 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
 								<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 									<div>
 										<label for="proc-concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời (tổng)</label>
-										<input type="number" id="proc-concurrency" class="form-input text-sm" value="<%= settings.itemProcessor.concurrency %>" min="1">
+										<input type="number" id="proc-concurrency" name="concurrency" class="form-input text-sm" value="<%= settings.itemProcessor.concurrency %>" min="1">
 									</div>
 									<div>
 										<label for="proc-pollingInterval" class="block text-sm text-gray-300 mb-1">Quét đơn hàng mới mỗi (giây)</label>
-										<input type="number" id="proc-pollingInterval" class="form-input text-sm" value="<%= settings.itemProcessor.pollingInterval %>" min="1">
+										<input type="number" id="proc-pollingInterval" name="pollingInterval" class="form-input text-sm" value="<%= settings.itemProcessor.pollingInterval %>" min="1">
 									</div>
 									<div>
 										<label for="proc-timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi item (ms)</label>
-										<input type="number" id="proc-timeout" class="form-input text-sm" value="<%= settings.itemProcessor.timeout %>" min="1000">
+										<input type="number" id="proc-timeout" name="timeout" class="form-input text-sm" value="<%= settings.itemProcessor.timeout %>" min="1000">
 										<p class="text-xs text-gray-500 mt-1">Thời gian tối đa để xử lý 1 item.</p>
 									</div>
 									<div>
 										<label for="proc-maxSuccess" class="block text-sm text-gray-300 mb-1">Max Success / Account</label>
-										<input type="number" id="proc-maxSuccess" class="form-input text-sm" value="<%= settings.itemProcessor.maxSuccess %>" min="0">
+										<input type="number" id="proc-maxSuccess" name="maxSuccess" class="form-input text-sm" value="<%= settings.itemProcessor.maxSuccess %>" min="0">
 										<p class="text-xs text-gray-500 mt-1">Số item thành công tối đa trước khi account
 "nghỉ".
  Nhập 0 để không giới hạn.
@@ -685,7 +685,7 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
 									</div>
 									<div>
 										<label for="proc-maxError" class="block text-sm text-gray-300 mb-1">Max Error / Account</label>
-										<input type="number" id="proc-maxError" class="form-input text-sm" value="<%= settings.itemProcessor.maxError %>" min="0">
+										<input type="number" id="proc-maxError" name="maxError" class="form-input text-sm" value="<%= settings.itemProcessor.maxError %>" min="0">
 										<p class="text-xs text-gray-500 mt-1">Số item lỗi tối đa trước khi account "nghỉ".
  Nhập 0 để không giới hạn.
 										</p>
