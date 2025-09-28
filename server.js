@@ -21,10 +21,14 @@ const Item = require('./models/Item');
 const authController = require('./controllers/authController');
 const apiKeyAuthController = require('./controllers/apiKeyAuthController');
 
+const phoneStatusManager = require('./utils/phoneStatusManager'); // <<< THÊM DÒNG NÀY
+
 const adminRoutes = require('./routes/admin');
 const clientRoutes = require('./routes/client');
 const orderRoutes = require('./routes/order');
 const workerApiRoutes = require('./routes/workerApi');
+const phoneApiRoutes = require('./routes/phoneApi'); // <<< THÊM DÒNG NÀY
+
 
 const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
@@ -99,10 +103,12 @@ app.get('/register', authController.getRegisterPage);
 app.post('/register', authController.register);
 
 app.use('/worker-api', apiKeyAuthController, workerApiRoutes);
+app.use('/api/phone', phoneApiRoutes);
 
 app.use('/admin', authController.isAuthenticated, authController.isAdmin, adminRoutes);
 app.use('/', authController.isAuthenticated, clientRoutes);
 app.use('/api', authController.isAuthenticated, orderRoutes);
+
 
 async function cleanupOnStartup() {
     try {
@@ -193,6 +199,7 @@ async function startServer() {
         autoDepositManager.initialize(io);
         autoProxyCheckManager.initialize(io);
         autoPhoneManager.initialize(io); // <<< THÊM DÒNG NÀY
+        phoneStatusManager.initialize(); 
     });
 }
 

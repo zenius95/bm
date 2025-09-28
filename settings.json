@@ -65,8 +65,12 @@
     "autoPhone": {
         "isEnabled": false,
         "intervalMinutes": 60,
-        "countries": [],
-        "sources": []
+        "countries": [
+            "USA"
+        ],
+        "sources": [
+            "receive-sms-free.cc"
+        ]
     },
     "itemProcessor": {
         "isEnabled": false,

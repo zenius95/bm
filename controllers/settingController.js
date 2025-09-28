@@ -286,19 +286,28 @@ settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
 };
 
-// Hàm mới để cập nhật cấu hình Auto Phone
+// === START: SỬA LỖI LOGIC ===
 settingController.updateAutoPhoneConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes, countries, sources } = req.body;
         const configToUpdate = {};
-        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
-        const parse = (val, min = 1) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
-        
-        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
-        configToUpdate.countries = Array.isArray(countries) ? countries : [];
-        configToUpdate.sources = Array.isArray(sources) ? sources : [];
-        
-        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+
+        // Chỉ cập nhật những trường có trong request
+        if (isEnabled !== undefined) {
+            configToUpdate.isEnabled = typeof isEnabled === 'boolean' ? isEnabled : (isEnabled === 'true');
+        }
+        if (intervalMinutes !== undefined) {
+            const parsedInterval = parseInt(intervalMinutes, 10);
+            if (!isNaN(parsedInterval) && parsedInterval >= 1) {
+                configToUpdate.intervalMinutes = parsedInterval;
+            }
+        }
+        if (countries !== undefined) {
+            configToUpdate.countries = Array.isArray(countries) ? countries.filter(Boolean) : [];
+        }
+        if (sources !== undefined) {
+            configToUpdate.sources = Array.isArray(sources) ? sources.filter(Boolean) : [];
+        }
 
         await autoPhoneManager.updateConfig(configToUpdate);
         res.json({ success: true, message: 'Cập nhật cài đặt Tự động lấy SĐT thành công.', data: autoPhoneManager.getStatus() });
@@ -307,5 +316,6 @@ settingController.updateAutoPhoneConfig = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+// === END: SỬA LỖI LOGIC ===
 
 module.exports = settingController;

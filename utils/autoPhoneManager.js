@@ -91,11 +91,20 @@ class AutoPhoneManager extends EventEmitter {
                 const response = await fetch(`https://otp-api.shelex.dev/api/list/${country}`);
                 if (!response.ok) throw new Error(`API error for ${country}: ${response.statusText}`);
                 const data = await response.json();
+                // 2. Truy cập vào mảng 'phones' bên trong đối tượng đầu tiên.
+                const phoneList = data.phones;
 
-                const phonesToInsert = data
+                // 3. Kiểm tra xem phoneList có thực sự là một mảng không.
+                if (!Array.isArray(phoneList)) {
+                    throw new Error(`Cấu trúc JSON không chứa mảng 'phones' như mong đợi.`);
+                }
+                // === END: SỬA LỖI LOGIC ===
+
+                const phonesToInsert = phoneList
                     .filter(phone => sources.length === 0 || sources.includes(phone.source))
                     .map(phone => ({
-                        phoneNumber: phone.phone,
+                        // 4. Sử dụng đúng key 'value' cho số điện thoại
+                        phoneNumber: phone.value,
                         country: country,
                         source: phone.source,
                     }));
