@@ -199,13 +199,20 @@ settingController.updateAutoDepositConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes, apiKey, prefix } = req.body;
         const configToUpdate = {};
-        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
-        const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
-        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
-        if(apiKey !== undefined) configToUpdate.apiKey = apiKey;
-        if(prefix !== undefined) configToUpdate.prefix = prefix;
 
-        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+        if (isEnabled !== undefined) {
+            configToUpdate.isEnabled = typeof isEnabled === 'boolean' ? isEnabled : (isEnabled === 'true');
+        }
+        if (intervalMinutes !== undefined) {
+            const parsed = parseInt(intervalMinutes, 10);
+            if (!isNaN(parsed) && parsed >= 1) configToUpdate.intervalMinutes = parsed;
+        }
+        if (apiKey !== undefined) {
+            configToUpdate.apiKey = apiKey;
+        }
+        if (prefix !== undefined) {
+            configToUpdate.prefix = prefix;
+        }
         
         await autoDepositManager.updateConfig(configToUpdate);
         res.json({ success: true, message: 'Cập nhật cài đặt Tự động Nạp tiền thành công.', data: autoDepositManager.getStatus() });
@@ -219,14 +226,25 @@ settingController.updateAutoCheckConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize } = req.body;
         const configToUpdate = {};
-        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
-        const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
-        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
-        configToUpdate.concurrency = parse(concurrency, 1);
-        configToUpdate.delay = parse(delay, 0);
-        configToUpdate.timeout = parse(timeout, 1000);
-        configToUpdate.batchSize = parse(batchSize, 0);
-        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+
+        if (isEnabled !== undefined) {
+            configToUpdate.isEnabled = typeof isEnabled === 'boolean' ? isEnabled : (isEnabled === 'true');
+        }
+
+        const parseAndSet = (key, value, min) => {
+            if (value !== undefined) {
+                const parsed = parseInt(value, 10);
+                if (!isNaN(parsed) && parsed >= min) {
+                    configToUpdate[key] = parsed;
+                }
+            }
+        };
+
+        parseAndSet('intervalMinutes', intervalMinutes, 1);
+        parseAndSet('concurrency', concurrency, 1);
+        parseAndSet('delay', delay, 0);
+        parseAndSet('timeout', timeout, 1000);
+        parseAndSet('batchSize', batchSize, 0);
         
         await autoCheckManager.updateConfig(configToUpdate);
         res.json({ success: true, message: 'Cập nhật cài đặt Auto Check thành công.', data: autoCheckManager.getStatus() });
@@ -240,15 +258,26 @@ settingController.updateAutoProxyCheckConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes, concurrency, delay, timeout, batchSize, retries } = req.body;
         const configToUpdate = {};
-        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
-        const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
-        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
-        configToUpdate.concurrency = parse(concurrency, 1);
-        configToUpdate.delay = parse(delay, 0);
-        configToUpdate.timeout = parse(timeout, 1000);
-        configToUpdate.batchSize = parse(batchSize, 0);
-        configToUpdate.retries = parse(retries, 0);
-        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
+
+        if (isEnabled !== undefined) {
+            configToUpdate.isEnabled = typeof isEnabled === 'boolean' ? isEnabled : (isEnabled === 'true');
+        }
+
+        const parseAndSet = (key, value, min) => {
+            if (value !== undefined) {
+                const parsed = parseInt(value, 10);
+                if (!isNaN(parsed) && parsed >= min) {
+                    configToUpdate[key] = parsed;
+                }
+            }
+        };
+
+        parseAndSet('intervalMinutes', intervalMinutes, 1);
+        parseAndSet('concurrency', concurrency, 1);
+        parseAndSet('delay', delay, 0);
+        parseAndSet('timeout', timeout, 1000);
+        parseAndSet('batchSize', batchSize, 0);
+        parseAndSet('retries', retries, 0);
         
         await autoProxyCheckManager.updateConfig(configToUpdate);
         res.json({ success: true, message: 'Cập nhật cài đặt Auto Proxy Check thành công.', data: autoProxyCheckManager.getStatus() });

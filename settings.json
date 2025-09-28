@@ -1,48 +1,31 @@
 {
-    "masterApiKey": "2b26be39141b87dceccb22b003db6a177e260d353dcddf1e4d9b916b35eee130",
+    "masterApiKey": "4a50e52b66383fd19c8e0264a38c9dc5ef93c87bf493a68e0aa58bf8e3209966",
     "order": {
         "pricingTiers": [
             {
-                "quantity": 1,
-                "price": 15000
+                "quantity": 50,
+                "price": 10000
             },
             {
                 "quantity": 20,
                 "price": 13000
             },
             {
-                "quantity": 50,
-                "price": 10000
-            },
-            {
-                "quantity": 1000,
-                "price": 8000
-            },
-            {
-                "quantity": 2000,
-                "price": 7000
-            },
-            {
-                "quantity": 5000,
-                "price": 6000
-            },
-            {
-                "quantity": 6000,
-                "price": 5000
+                "quantity": 1,
+                "price": 15000
             }
         ],
-        "maxItemsPerOrder": 10,
-        "pricePerItem": 100
+        "maxItemsPerOrder": 0
     },
     "deposit": {
-        "bankName": "BIDV",
-        "accountName": "NGUYEN TIEN HUNG",
-        "accountNumber": "96386910035"
+        "bankName": "TCB",
+        "accountName": "NGUYEN VAN A",
+        "accountNumber": "19036903216011"
     },
     "autoDeposit": {
         "isEnabled": false,
         "intervalMinutes": 1,
-        "apiKey": "0DCB6463-A8C3-9D7D-BA29-A290352B5845",
+        "apiKey": "",
         "prefix": "NAPTIEN"
     },
     "autoCheck": {
@@ -59,18 +42,14 @@
         "concurrency": 10,
         "delay": 500,
         "timeout": 20000,
-        "batchSize": 0,
+        "batchSize": 100,
         "retries": 2
     },
     "autoPhone": {
         "isEnabled": false,
         "intervalMinutes": 60,
-        "countries": [
-            "USA"
-        ],
-        "sources": [
-            "receive-sms-free.cc"
-        ]
+        "countries": [],
+        "sources": []
     },
     "itemProcessor": {
         "isEnabled": false,
@@ -81,22 +60,15 @@
         "maxError": 5
     },
     "services": {
-        "selectedImageCaptchaService": "2captcha_image.json",
+        "selectedImageCaptchaService": "omocaptcha_image.json",
         "selectedRecaptchaService": "",
-        "selectedPhoneService": "default.json",
+        "selectedPhoneService": "",
         "apiKeys": {
-            "captcha": {
-                "omocaptcha_image.json": "OMO_7GNHWXNX7H3YMSF72JMRZRDNME1OLJ2NV7UV3H8U2J2C6EB2SKBFXYEBURLUKV1757170914",
-                "2captcha_image.json": "59cab26bbaac7e8789fdf52474a4fdfa"
-            },
-            "phone": {
-                "codesim.json": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwMzg0MjIwMzQ1IiwianRpIjoiMzMyNDYiLCJpYXQiOjE3MDA3ODQ3MzIsImV4cCI6MTc2Mjk5MjczMn0.fHoaxAS3F6GTv6rVhbiihHGc3uhSDhSW3NeIgKE0o5wdFtCRQ0Tx7ceyVALq76aXBgJIKGC1MFVjswrOeiZOcA",
-                "default.json": "2b26be39141b87dceccb22b003db6a177e260d353dcddf1e4d9b916b35eee130"
-            }
+            "captcha": {},
+            "phone": {}
         },
         "userAgents": [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
-        ],
-        "selectedCaptchaService": "omocaptcha_image.json"
+            "Instagram 361.0.0.46.88 Android (29/10; 560dpi; 1440x2792; samsung; SM-G960N; starlteks; samsungexynos9810; en_US; 674675098)"
+        ]
     }
 }
