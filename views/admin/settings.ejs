@@ -32,9 +32,6 @@ duration-200 cursor-pointer" data-tab-target="#tab-deposit" role="tab">
 						rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autoproxycheck" role="tab">
 					<i class="ri-shield-cross-line w-5 h-5 mr-3"></i> Tự Động Check Proxy
 					</a>
-                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autowhatsappcheck" role="tab">
-                        <i class="ri-chat-check-line w-5 h-5 mr-3"></i> Tự Động Check Whatsapp
-                    </a>
 					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all
 						duration-200 cursor-pointer" data-tab-target="#tab-processor" role="tab">
 					<i class="ri-database-2-line w-5 h-5
@@ -505,60 +502,6 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
 						</div>
 						<div id="autoproxycheck-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px;
 max-height: 400px;">
-							<div class="text-gray-500">Connecting to stream...<span class="blinking-cursor">_</span></div>
-						</div>
-					</div>
-				</div>
-			</div>
-            <div id="tab-autowhatsappcheck" role="tabpanel" class="tab-pane hidden">
-				<div class="grid grid-cols-1 gap-8">
-					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-						<div class="p-6 border-b border-white/10">
-							<h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Check Trạng Thái WhatsApp</h3>
-						</div>
-						<div class="p-6">
-							<form id="autowhatsappcheck-settings-form" class="space-y-6">
-								<div>
-									<h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
-									<div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
-										<div>
-											<strong class="text-sm">Trạng thái: </strong>
-											<span id="awc-status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
-											<div id="awc-next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
-												<i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="awc-next-run-time" class="text-white"></strong>
-											</div>
-										</div>
-										<div class="flex items-center gap-2">
-											<button id="awc-start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
-											<button id="awc-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
-										</div>
-									</div>
-								</div>
-								<div>
-									<h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
-									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-										<div>
-											<label for="awc-intervalMinutes" class="block text-sm text-gray-300 mb-1">Chạy lại sau (phút)</label>
-											<input type="number" id="awc-intervalMinutes" class="form-input text-sm" value="<%= settings.autoWhatsappCheck && settings.autoWhatsappCheck.intervalMinutes %>" min="1">
-										</div>
-										<div>
-											<label for="awc-batchSize" class="block text-sm text-gray-300 mb-1">Số phiên mỗi lượt</label>
-											<input type="number" id="awc-batchSize" class="form-input text-sm" value="<%= settings.autoWhatsappCheck && settings.autoWhatsappCheck.batchSize %>" min="0">
-											<p class="text-xs text-gray-500 mt-1">Nhập 0 để không giới hạn.</p>
-										</div>
-									</div>
-								</div>
-								<div class="pt-6 border-t border-white/10">
-									<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
-								</div>
-							</form>
-						</div>
-					</div>
-					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
-						<div class="p-6 border-b border-white/10">
-							<h3 class="text-lg font-semibold text-white">Logs Tự Động Check WhatsApp</h3>
-						</div>
-						<div id="autowhatsappcheck-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px; max-height: 400px;">
 							<div class="text-gray-500">Connecting to stream...<span class="blinking-cursor">_</span></div>
 						</div>
 					</div>

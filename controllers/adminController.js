@@ -11,6 +11,7 @@ const Worker = require('../models/Worker');
 const ActivityLog = require('../models/ActivityLog');
 const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
+const mongoose = require('mongoose');
 
 const orderService = new CrudService(Order, {
     populateFields: ['user']
@@ -172,7 +173,7 @@ adminOrderController.getDashboard = async (req, res) => {
         
         // --- Logic for Top Stat Cards ---
         const { currentRange, previousRange } = getDatesForPeriod(period);
-        const depositActions = { $in: ['CLIENT_DEPOSIT', 'CLIENT_DEPOSIT_AUTO'] };
+        const depositActions = { $in: ['CLIENT_DEPOSIT', 'CLIENT_DEPOSIT_AUTO', 'ADMIN_ADJUST_BALANCE'] };
 
         const [
             currentRevenue, previousRevenue,
@@ -392,7 +393,7 @@ adminOrderController.handleCreate = async (req, res) => {
 
         const balanceBefore = targetUser.balance;
         targetUser.balance -= totalCost;
-
+        
         const newOrder = new Order({ 
             user: targetUser._id, 
             totalCost, 
@@ -472,6 +473,34 @@ adminOrderController.handleHardDelete = async (req, res, next) => {
         ipAddress: req.ip || req.connection.remoteAddress,
         context: 'Admin'
     });
+};
+
+adminOrderController.getRevenueDetails = async (req, res) => {
+    try {
+        const { chart_month, chart_year } = req.query;
+        const now = new Date();
+        const selectedYear = parseInt(chart_year, 10) || now.getFullYear();
+        const selectedMonth = parseInt(chart_month, 10) || now.getMonth() + 1;
+
+        const chartStart = new Date(selectedYear, selectedMonth - 2, 29, 0, 0, 0, 0);
+        const chartEnd = new Date(selectedYear, selectedMonth - 1, 28, 23, 59, 59, 999);
+        
+        const depositActions = { $in: ['CLIENT_DEPOSIT', 'CLIENT_DEPOSIT_AUTO', 'ADMIN_ADJUST_BALANCE'] };
+
+        const transactions = await ActivityLog.find({
+            createdAt: { $gte: chartStart, $lte: chartEnd },
+            action: depositActions
+        })
+        .populate('user', 'username')
+        .sort({ createdAt: -1 })
+        .lean();
+
+        res.json({ success: true, transactions });
+
+    } catch (error) {
+        console.error("Error fetching revenue details:", error);
+        res.status(500).json({ success: false, message: 'Could not load revenue details.' });
+    }
 };
 
 module.exports = adminOrderController;

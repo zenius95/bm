@@ -45,7 +45,7 @@ async function runCheckProxy(proxyIds, io, options) {
         concurrency: options.concurrency || 5,
         delay: options.delay || 200,
         timeout: options.timeout || 20000,
-        retries: options.retries || 0, // <<< THÊM DÒNG NÀY
+        retries: options.retries || 0,
     });
 
     const tasks = proxyIds.map(proxyId => ({
@@ -91,7 +91,9 @@ async function runCheckProxy(proxyIds, io, options) {
         if (updateData.isDeleted) {
             const newTrashCount = await Proxy.countDocuments({ isDeleted: true });
             io.emit('proxies:trash:update', { newTrashCount });
-            io.emit('proxy:trashed', { id: proxyId, message: `Proxy ${proxyId.slice(-6)} đã bị chuyển vào thùng rác do không hoạt động.` });
+            // SỬA LỖI Ở ĐÂY: Chuyển proxyId sang string trước khi slice
+            const proxyIdString = proxyId.toString();
+            io.emit('proxy:trashed', { id: proxyId, message: `Proxy ${proxyIdString.slice(-6)} đã bị chuyển vào thùng rác do không hoạt động.` });
         } else {
             io.emit('proxy:update', {
                 id: proxyId,
@@ -122,6 +124,7 @@ async function runCheckProxy(proxyIds, io, options) {
 
         const newTrashCount = await Proxy.countDocuments({ isDeleted: true });
         io.emit('proxies:trash:update', { newTrashCount });
+        // SỬA LỖI Ở ĐÂY: Chuyển proxyIdString sang string trước khi slice
         io.emit('proxy:trashed', { id: taskWrapper.id, message: `Proxy ${proxyIdString.slice(-6)} bị lỗi và đã được chuyển vào thùng rác.` });
     });
     

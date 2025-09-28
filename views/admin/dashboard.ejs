@@ -21,7 +21,7 @@ const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", 
         </div>
         <div class="relative">
              <select id="period-filter" class="form-select !pl-10">
-                <option value="day" <%= currentPeriod === 'day' ? 'selected' : '' %>>Hôm nay</option>
+                 <option value="day" <%= currentPeriod === 'day' ? 'selected' : '' %>>Hôm nay</option>
                 <option value="week" <%= currentPeriod === 'week' ? 'selected' : '' %>>Tuần này</option>
                 <option value="month" <%= currentPeriod === 'month' ? 'selected' : '' %>>Tháng này</option>
                 <option value="year" <%= currentPeriod === 'year' ? 'selected' : '' %>>Năm nay</option>
@@ -50,7 +50,7 @@ const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", 
                 <i class="ri-shopping-cart-line text-2xl text-blue-400"></i>
             </div>
             <p class="mt-2 text-3xl font-bold text-white"><%= formatNumber(stats.orders.current) %></p>
-             <% const orderChange = getChangeIndicator(stats.orders.changePercentage); %>
+            <% const orderChange = getChangeIndicator(stats.orders.changePercentage); %>
             <p class="text-xs text-gray-400 mt-1 flex items-center <%= orderChange.color %>">
                  <i class="<%= orderChange.icon %> mr-1"></i>
                  <%= stats.orders.changePercentage %>% so với kỳ trước
@@ -92,19 +92,24 @@ const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", 
                     <p class="text-2xl font-bold text-green-400"><%= formatCurrency(chartTotalRevenue) %></p>
                 </div>
             </div>
-            <form id="chart-filter-form" class="flex items-center gap-2 flex-shrink-0">
-                <select name="chart_month" id="chart-month-select" class="form-select !py-2 w-[150px]">
-                    <% for (let i = 1; i <= 12; i++) { %>
-                        <option value="<%= i %>" <%= selectedMonth === i ? 'selected' : '' %>><%= monthNames[i-1] %></option>
-                    <% } %>
-                </select>
-                <select name="chart_year" id="chart-year-select" class="form-select !py-2 w-[150px]">
-                     <% yearList.forEach(year => { %>
-                        <option value="<%= year %>" <%= selectedYear === year ? 'selected' : '' %>><%= year %></option>
-                    <% }); %>
-                </select>
-                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Xem</button>
-            </form>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button id="view-chart-details-btn" class="px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg font-semibold text-sm text-gray-300 transition whitespace-nowrap">
+                    <i class="ri-eye-line mr-2"></i>Xem chi tiết
+                </button>
+                <form id="chart-filter-form" class="flex items-center gap-2">
+                    <select name="chart_month" id="chart-month-select" class="form-select !py-2 w-[150px]">
+                        <% for (let i = 1; i <= 12; i++) { %>
+                            <option value="<%= i %>" <%= selectedMonth === i ? 'selected' : '' %>><%= monthNames[i-1] %></option>
+                        <% } %>
+                    </select>
+                    <select name="chart_year" id="chart-year-select" class="form-select !py-2 w-[150px]">
+                        <% yearList.forEach(year => { %>
+                            <option value="<%= year %>" <%= selectedYear === year ? 'selected' : '' %>><%= year %></option>
+                        <% }); %>
+                    </select>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Xem</button>
+                </form>
+            </div>
         </div>
         <div class="h-80">
             <canvas id="revenueChart"></canvas>
@@ -126,7 +131,7 @@ const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", 
             <div class="bg-white/5 border border-white/10 rounded-xl p-5">
                  <h3 class="font-semibold text-white mb-4 flex items-center gap-2"><i class="ri-swap-box-line text-purple-400"></i> Proxies</h3>
                 <div class="space-y-3 text-sm">
-                     <div class="flex justify-between"><span class="text-gray-400">Tổng</span><strong class="font-mono text-white"><%= formatNumber(detailedStats.proxies.total) %></strong></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Tổng</span><strong class="font-mono text-white"><%= formatNumber(detailedStats.proxies.total) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Available</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.proxies.available) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Assigned</span><strong class="font-mono text-yellow-400"><%= formatNumber(detailedStats.proxies.assigned) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Dead</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.proxies.dead) %></strong></div>
@@ -139,7 +144,7 @@ const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", 
                     <div class="flex justify-between"><span class="text-gray-400">Online</span><strong class="font-mono text-green-400"><%= formatNumber(detailedStats.workers.online) %></strong></div>
                     <div class="flex justify-between"><span class="text-gray-400">Offline</span><strong class="font-mono text-red-400"><%= formatNumber(detailedStats.workers.offline) %></strong></div>
                 </div>
-             </div>
+            </div>
         </div>
     </div>
 </div>

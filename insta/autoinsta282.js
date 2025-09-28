@@ -982,6 +982,35 @@ class InstagramAPIFlow {
         const responseData = await response.text();
         return responseData;
     }
+
+    async switch_to_sms() {
+        const url = 'https://i.instagram.com/api/v1/bloks/apps/com.bloks.www.checkpoint.ufac.contact_point.resend_code/';
+        const headers = this.get_common_headers();
+
+        const data = new URLSearchParams({
+            'params': JSON.stringify({
+                "client_input_params":{},
+                "server_params":{
+                    "INTERNAL__latency_qpl_marker_id":36707139,
+                    "xfac_context":"{\"use_xmds\":true}",
+                    "send_by_whatsapp":0,
+                    "INTERNAL__latency_qpl_instance_id":9.7550464200008E13,
+                    "challenge_root_id": this.challenge_root_id,
+                    "was_sent_by_whatsapp":1,
+                    "enrollment_id": this.enrollment_id
+                }
+            }),
+            '_uuid': this.device_id,
+            'bk_client_context': JSON.stringify({
+                "bloks_version": this.bloks_version,
+                "styles_id": "instagram"
+            }),
+            'bloks_versioning_id': this.bloks_version
+        });
+
+        const response = await this.session(url, { method: 'POST', headers: headers, body: data.toString() });
+        return response.text();
+    }
  
     async api5_submit_phone_code(captcha_code) {
         const url = "https://i.instagram.com/api/v1/bloks/async_action/com.bloks.www.checkpoint.ufac.contact_point.submit_code/";

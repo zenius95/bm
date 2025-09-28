@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 plugins: {
-                    legend: { display: false }, // Ẩn legend vì chỉ có 1 loại dữ liệu
+                    legend: { display: false },
                     tooltip: {
                         enabled: true,
                         backgroundColor: 'rgba(17, 24, 39, 0.85)', titleColor: '#ffffff', bodyColor: '#d1d5db',
@@ -99,6 +99,98 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
+            }
+        });
+    }
+
+    // === CODE MỚI CHO MODAL CHI TIẾT DOANH THU (ĐÃ SỬA LỖI) ===
+    const viewDetailsBtn = document.getElementById('view-chart-details-btn');
+    const detailsModal = document.getElementById('chart-details-modal');
+    // SỬA LỖI: Sử dụng đúng ID của backdrop từ file _footer.ejs
+    const modalBackdrop = document.getElementById('custom-modal-backdrop'); 
+    const detailsTbody = document.getElementById('chart-details-tbody');
+    const modalDateRange = document.getElementById('modal-date-range');
+    const monthSelect = document.getElementById('chart-month-select');
+    const yearSelect = document.getElementById('chart-year-select');
+
+    const showDetailsModal = () => {
+        if (!detailsModal || !modalBackdrop) return;
+        modalBackdrop.classList.remove('hidden');
+        detailsModal.classList.remove('hidden');
+        setTimeout(() => {
+            modalBackdrop.classList.remove('opacity-0');
+            detailsModal.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    };
+
+    const hideDetailsModal = () => {
+        if (!detailsModal || !modalBackdrop) return;
+        modalBackdrop.classList.add('opacity-0');
+        detailsModal.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+            modalBackdrop.classList.add('hidden');
+            detailsModal.classList.add('hidden');
+        }, 300);
+    };
+
+    if (viewDetailsBtn) {
+        viewDetailsBtn.addEventListener('click', async () => {
+            const month = monthSelect.value;
+            const year = yearSelect.value;
+
+            const monthName = monthSelect.options[monthSelect.selectedIndex].text;
+            modalDateRange.textContent = `Dữ liệu cho ${monthName}, ${year}`;
+            
+            detailsTbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-gray-400">Đang tải dữ liệu...</td></tr>';
+            showDetailsModal();
+
+            try {
+                const response = await fetch(`/admin/dashboard/revenue-details?chart_month=${month}&chart_year=${year}`);
+                const result = await response.json();
+                
+                if (result.success && result.transactions) {
+                    if (result.transactions.length > 0) {
+                        detailsTbody.innerHTML = result.transactions.map(log => {
+                            const change = log.metadata.change || 0;
+                            const changeClass = change >= 0 ? 'text-green-400' : 'text-red-400';
+                            const changeFormatted = (change >= 0 ? '+' : '') + change.toLocaleString('vi-VN') + 'đ';
+
+                            // Thay thế ACTION_LABELS bằng text đơn giản
+                            let actionText = log.action;
+                            if (log.action === 'CLIENT_DEPOSIT') actionText = 'Nạp tiền thủ công';
+                            if (log.action === 'CLIENT_DEPOSIT_AUTO') actionText = 'Nạp tiền tự động';
+                            if (log.action === 'ADMIN_ADJUST_BALANCE') actionText = 'Admin điều chỉnh';
+
+
+                            return `
+                                <tr class="hover:bg-white/5">
+                                    <td class="px-6 py-3 text-gray-400">${new Date(log.createdAt).toLocaleString('vi-VN')}</td>
+                                    <td class="px-6 py-3 font-semibold">${log.user ? log.user.username : 'N/A'}</td>
+                                    <td class="px-6 py-3">${actionText}</td>
+                                    <td class="px-6 py-3 text-right font-mono ${changeClass}">${changeFormatted}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        detailsTbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-gray-400">Không có giao dịch nào trong khoảng thời gian này.</td></tr>';
+                    }
+                } else {
+                    detailsTbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-400">Lỗi: ${result.message}</td></tr>`;
+                }
+            } catch (error) {
+                detailsTbody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-400">Lỗi kết nối: ${error.message}</td></tr>`;
+            }
+        });
+    }
+
+    if (detailsModal) {
+        detailsModal.querySelector('.btn-cancel').addEventListener('click', hideDetailsModal);
+    }
+    
+    if(modalBackdrop) {
+        modalBackdrop.addEventListener('click', () => {
+            if (detailsModal && !detailsModal.classList.contains('hidden')) {
+                hideDetailsModal();
             }
         });
     }

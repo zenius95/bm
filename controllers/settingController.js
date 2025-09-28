@@ -6,7 +6,6 @@ const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
 const autoDepositManager = require('../utils/autoDepositManager');
 const autoProxyCheckManager = require('../utils/autoProxyCheckManager');
-const autoWhatsappCheckManager = require('../utils/autoWhatsappCheckManager'); 
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -69,7 +68,6 @@ settingController.getSettingsPage = async (req, res) => {
             initialState: { 
                 autoCheck: autoCheckManager.getStatus(),
                 autoProxyCheck: autoProxyCheckManager.getStatus(),
-                autoWhatsappCheck: autoWhatsappCheckManager.getStatus(),
                 itemProcessor: itemProcessorManager.getStatus(),
                 autoDeposit: autoDepositManager.getStatus() 
             },
@@ -284,24 +282,6 @@ settingController.updateItemProcessorConfig = async (req, res) => {
 
 settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
-};
-
-settingController.updateAutoWhatsappCheckConfig = async (req, res) => {
-    try {
-        const { isEnabled, intervalMinutes, batchSize } = req.body;
-        const configToUpdate = {};
-        if (typeof isEnabled === 'boolean') configToUpdate.isEnabled = isEnabled;
-        const parse = (val, min = 0) => { const num = parseInt(val, 10); return !isNaN(num) && num >= min ? num : undefined; };
-        configToUpdate.intervalMinutes = parse(intervalMinutes, 1);
-        configToUpdate.batchSize = parse(batchSize, 0);
-        Object.keys(configToUpdate).forEach(key => configToUpdate[key] === undefined && delete configToUpdate[key]);
-        
-        await autoWhatsappCheckManager.updateConfig(configToUpdate);
-        res.json({ success: true, message: 'Cập nhật cài đặt Auto WhatsApp Check thành công.', data: autoWhatsappCheckManager.getStatus() });
-    } catch (error) {
-        console.error("Error updating auto whatsapp check config:", error.message);
-        res.status(500).json({ success: false, message: error.message });
-    }
 };
 
 module.exports = settingController;

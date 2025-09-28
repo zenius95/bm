@@ -84,7 +84,6 @@ class SettingsService extends EventEmitter {
                 autoDeposit: { ...DEFAULT_SETTINGS.autoDeposit, ...(fileData.autoDeposit || {}) },
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
-                autoWhatsappCheck: { ...DEFAULT_SETTINGS.autoWhatsappCheck, ...(fileData.autoWhatsappCheck || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) },
                 services: {
                     ...DEFAULT_SETTINGS.services,

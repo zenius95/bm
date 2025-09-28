@@ -32,8 +32,6 @@ const itemProcessorManager = require('./utils/itemProcessorManager');
 const workerMonitor = require('./utils/workerMonitor');
 const autoDepositManager = require('./utils/autoDepositManager');
 const autoProxyCheckManager = require('./utils/autoProxyCheckManager');
-const whatsappManager = require('./utils/whatsappManager'); // <<< THÊM DÒNG NÀY
-const autoWhatsappCheckManager = require('./utils/autoWhatsappCheckManager'); 
 
 const app = express();
 const server = http.createServer(app);
@@ -53,6 +51,7 @@ io.on('connection', (socket) => {
         }
     });
     // === END: THÊM LOGIC RỜI PHÒNG ===
+    
 });
 
 app.set('view engine', 'ejs');
@@ -165,7 +164,6 @@ async function startServer() {
     await settingsService.update('autoCheck', { isEnabled: false });
     await settingsService.update('autoProxyCheck', { isEnabled: false });
     await settingsService.update('autoDeposit', { isEnabled: false });
-    await settingsService.update('autoWhatsappCheck', { isEnabled: false });
     console.log('✅ All auto-services have been disabled.');
     
     const adminCount = await User.countDocuments({ role: 'admin' });
@@ -197,8 +195,6 @@ async function startServer() {
         workerMonitor.initialize(io);
         autoDepositManager.initialize(io);
         autoProxyCheckManager.initialize(io);
-        whatsappManager.initialize(io);
-        autoWhatsappCheckManager.initialize(io); // <<< CẬP NHẬT
     });
 }
 
