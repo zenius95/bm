@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === Tab Logic ===
     const tabLinks = document.querySelectorAll('#settings-tab-list a[role="tab"]');
     const tabPanes = document.querySelectorAll('#settings-tab-content .tab-pane');
-    const activeClasses = ['text-white', 'bg-blue-600/50'];
+    const activeClasses = ['text-white', 'bg-blue-600', 'shadow-lg'];
     const inactiveClasses = ['text-gray-400', 'hover:bg-white/10', 'hover:text-white'];
 
     function activateTab(targetId) {
@@ -23,14 +23,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 pane.classList.add('hidden');
             }
         });
+         localStorage.setItem('activeSettingsTab', targetId);
     }
+
     tabLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            activateTab(link.getAttribute('data-tab-target'));
+            const targetId = link.getAttribute('data-tab-target');
+            activateTab(targetId);
         });
     });
-    if (tabLinks.length > 0) {
+
+    const savedTab = localStorage.getItem('activeSettingsTab');
+    if (savedTab && document.querySelector(`[data-tab-target="${savedTab}"]`)) {
+        activateTab(savedTab);
+    } else if (tabLinks.length > 0) {
         activateTab(tabLinks[0].getAttribute('data-tab-target'));
     }
 
@@ -49,9 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
             apiKeyInput.value = [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
         });
         copyBtn.addEventListener('click', () => {
-            apiKeyInput.select();
-            document.execCommand('copy');
-            showToast('Đã copy API Key!', 'Thành công', 'success');
+            navigator.clipboard.writeText(apiKeyInput.value).then(() => {
+                 showToast('Đã copy API Key!', 'Thành công', 'success');
+            });
         });
         apiKeyForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -78,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (orderSettingsForm) {
         const container = document.getElementById('pricing-tiers-container');
         const addBtn = document.getElementById('add-tier-btn');
-        const maxItemsInput = document.getElementById('maxItemsPerOrder'); // Lấy element input
+        const maxItemsInput = document.getElementById('maxItemsPerOrder');
         let initialTiers = settings.order.pricingTiers || [];
 
         const createTierRow = (tier = { quantity: 1, price: 100 }) => {
@@ -130,18 +137,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // === START: SỬA LỖI ===
             const payload = {
                 pricingTiers: tiers,
                 maxItemsPerOrder: maxItemsInput.value
             };
-            // === END: SỬA LỖI ===
 
             try {
                 const response = await fetch('/admin/settings/order/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload) // Gửi payload đã có đủ dữ liệu
+                    body: JSON.stringify(payload)
                 });
                 const result = await response.json();
                 if (result.success) {
@@ -170,11 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function updateApiKeyInput(selectElement, inputElement, keyGroup) {
             const selectedService = selectElement.value;
-            if (selectedService && allApiKeys[keyGroup] && allApiKeys[keyGroup][selectedService]) {
-                inputElement.value = allApiKeys[keyGroup][selectedService];
-            } else {
-                inputElement.value = '';
-            }
+            inputElement.value = (selectedService && allApiKeys[keyGroup] && allApiKeys[keyGroup][selectedService]) || '';
         }
 
         imageCaptchaSelect.addEventListener('change', () => updateApiKeyInput(imageCaptchaSelect, imageCaptchaApiKeyInput, 'captcha'));
@@ -239,46 +240,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
+    
     // --- Generic Log Handler ---
     function setupLogHandler(logContainerId, initialLogs, eventName) {
         const logsContainer = document.getElementById(logContainerId);
         if (!logsContainer) return;
 
-        function addLogMessage(logEntry, isRealtime = false) {
+        function addLogMessage(logEntry) {
             const firstChild = logsContainer.querySelector('div:first-child');
             if(firstChild && (firstChild.textContent.includes('Connecting') || firstChild.textContent.includes('Chưa có'))) {
                 logsContainer.innerHTML = '';
             }
             if (logsContainer.childElementCount > 150) {
-                 logsContainer.removeChild(logsContainer.firstChild);
+                 logsContainer.removeChild(logsContainer.lastChild);
             }
-
-            const shouldAutoScroll = Math.abs(logsContainer.scrollHeight - logsContainer.clientHeight - logsContainer.scrollTop) < 50;
             
             const logLine = document.createElement('div');
             const timestamp = new Date(logEntry.timestamp).toLocaleTimeString('vi-VN');
             logLine.innerHTML = `
                 <span class="text-gray-600 flex-shrink-0">[${timestamp}]</span>
-                <span class="text-cyan-400 flex-shrink-0 ml-2">~</span>
                 <p class="ml-2 whitespace-pre-wrap break-words">${logEntry.message}</p>
             `;
             logLine.className = 'flex items-start';
-            logsContainer.appendChild(logLine);
-            
-            if (isRealtime && shouldAutoScroll) {
-                logsContainer.scrollTop = logsContainer.scrollHeight;
-            }
+            logsContainer.prepend(logLine);
         }
         
         logsContainer.innerHTML = '';
         if (initialLogs && initialLogs.length > 0) {
-            initialLogs.reverse().forEach(log => addLogMessage({ 
-                timestamp: log.timestamp, 
-                message: log.message.replace(/<[^>]*>/g, '') 
-            }, false));
+            initialLogs.forEach(log => addLogMessage(log));
         } else {
-            logsContainer.innerHTML = '';
+            logsContainer.innerHTML = '<div class="text-gray-500">Chưa có log nào.</div>';
         }
 
         socket.on(eventName, (logEntry) => addLogMessage(logEntry, true));
@@ -341,21 +332,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        function getFormDataAnd(extras) {
-            const formData = {
+        autoDepositForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateAutoDepositConfig({
                 apiKey: apiKeyInput.value,
                 intervalMinutes: intervalInput.value,
                 prefix: prefixInput.value
-            };
-            return { ...formData, ...extras };
-        }
-
-        autoDepositForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            updateAutoDepositConfig(getFormDataAnd({}));
+            });
         });
-        startBtn.addEventListener('click', () => updateAutoDepositConfig(getFormDataAnd({ isEnabled: true })));
-        stopBtn.addEventListener('click', () => updateAutoDepositConfig(getFormDataAnd({ isEnabled: false })));
+        startBtn.addEventListener('click', () => updateAutoDepositConfig({ isEnabled: true }));
+        stopBtn.addEventListener('click', () => updateAutoDepositConfig({ isEnabled: false }));
         
         updateAutoDepositUI(initialState.autoDeposit);
         socket.on('autoDeposit:statusUpdate', (state) => updateAutoDepositUI(state));
@@ -388,11 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
             }
-            intervalInput.value = state.config.intervalMinutes;
-            concurrencyInput.value = state.config.concurrency;
-            delayInput.value = state.config.delay;
-            timeoutInput.value = state.config.timeout;
-            batchSizeInput.value = state.config.batchSize;
         }
 
         async function updateAutoCheckConfig(payload) {
@@ -430,7 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAutoCheckUI(initialState.autoCheck);
         socket.on('autoCheck:statusUpdate', (state) => updateAutoCheckUI(state));
         setupLogHandler('autocheck-logs', initialState.autoCheck?.logs, 'autoCheck:log');
-
     }
     
     // --- Auto Proxy Check ---
@@ -462,12 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
             }
-            intervalInput.value = state.config.intervalMinutes;
-            concurrencyInput.value = state.config.concurrency;
-            delayInput.value = state.config.delay;
-            timeoutInput.value = state.config.timeout;
-            batchSizeInput.value = state.config.batchSize;
-            retriesInput.value = state.config.retries;
             if (state.nextRun && !state.isJobRunning) {
                 nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
                 nextRunContainer.style.display = 'block';
@@ -513,22 +487,164 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.on('autoProxyCheck:statusUpdate', (state) => updateAutoProxyCheckUI(state));
         setupLogHandler('autoproxycheck-logs', initialState.autoProxyCheck?.logs, 'autoProxyCheck:log');
     }
-    
-    // --- Item Processor ---
-    const procForm = document.getElementById('processor-settings-form');
-    if (procForm) {
-        const procConcurrencyInput = document.getElementById('proc-concurrency');
-        const procPollingInput = document.getElementById('proc-pollingInterval');
-        const procTimeoutInput = document.getElementById('proc-timeout');
-        const procMaxSuccessInput = document.getElementById('proc-maxSuccess');
-        const procMaxErrorInput = document.getElementById('proc-maxError');
 
-        async function updateProcConfig(payload) {
+    // --- Auto WhatsApp Check ---
+    const autoWhatsappCheckForm = document.getElementById('autowhatsappcheck-settings-form');
+    if (autoWhatsappCheckForm) {
+        const intervalInput = document.getElementById('awc-intervalMinutes');
+        const batchSizeInput = document.getElementById('awc-batchSize');
+        const startBtn = document.getElementById('awc-start-btn');
+        const stopBtn = document.getElementById('awc-stop-btn');
+        const statusBadge = document.getElementById('awc-status-badge');
+        const nextRunContainer = document.getElementById('awc-next-run-container');
+        const nextRunTime = document.getElementById('awc-next-run-time');
+
+        function updateAutoWhatsappCheckUI(state) {
+            if (!state) return;
+            statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full ';
+            if (state.status === 'RUNNING') {
+                statusBadge.textContent = state.isJobRunning ? 'Đang check...' : 'Đang chạy';
+                statusBadge.classList.add('bg-green-500/20', 'text-green-300');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                statusBadge.textContent = 'Đã dừng';
+                statusBadge.classList.add('bg-red-500/20', 'text-red-300');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+            if (state.nextRun && !state.isJobRunning) {
+                nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
+                nextRunContainer.style.display = 'block';
+            } else {
+                nextRunContainer.style.display = 'none';
+            }
+        }
+
+        async function updateAutoWhatsappCheckConfig(payload) {
             try {
-                const response = await fetch('/admin/settings/item-processor/config', {
+                const response = await fetch('/admin/settings/auto-whatsapp-check/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                    updateAutoWhatsappCheckUI(result.data);
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server', 'Lỗi', 'error');
+            }
+        }
+        
+        autoWhatsappCheckForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateAutoWhatsappCheckConfig({
+                intervalMinutes: intervalInput.value,
+                batchSize: batchSizeInput.value,
+            });
+        });
+
+        startBtn.addEventListener('click', () => updateAutoWhatsappCheckConfig({ isEnabled: true }));
+        stopBtn.addEventListener('click', () => updateAutoWhatsappCheckConfig({ isEnabled: false }));
+
+        if (initialState.autoWhatsappCheck) {
+            updateAutoWhatsappCheckUI(initialState.autoWhatsappCheck);
+        }
+        socket.on('autoWhatsappCheck:statusUpdate', (state) => updateAutoWhatsappCheckUI(state));
+        setupLogHandler('autowhatsappcheck-logs', initialState.autoWhatsappCheck?.logs, 'autoWhatsappCheck:log');
+    }
+    
+    // <<< LOGIC MỚI CHO TỰ ĐỘNG LẤY SĐT >>>
+    const autoPhoneForm = document.getElementById('ap-settings-form');
+    if (autoPhoneForm) {
+        const intervalInput = document.getElementById('ap-intervalMinutes');
+        const countriesInput = document.getElementById('ap-countries');
+        const sourcesInput = document.getElementById('ap-sources');
+        const startBtn = document.getElementById('ap-start-btn');
+        const stopBtn = document.getElementById('ap-stop-btn');
+        const statusBadge = document.getElementById('ap-status-badge');
+        const nextRunContainer = document.getElementById('ap-next-run-container');
+        const nextRunTime = document.getElementById('ap-next-run-time');
+
+        function updateAutoPhoneUI(state) {
+            if (!state || !state.config) return;
+            statusBadge.className = 'px-2 py-1 text-xs font-semibold rounded-full ';
+            if (state.status === 'RUNNING') {
+                statusBadge.textContent = state.isJobRunning ? 'Đang lấy số...' : 'Đang chạy';
+                statusBadge.classList.add('bg-green-500/20', 'text-green-300');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                statusBadge.textContent = 'Đã dừng';
+                statusBadge.classList.add('bg-red-500/20', 'text-red-300');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+            
+            if (state.nextRun && state.status === 'RUNNING' && !state.isJobRunning) {
+                nextRunTime.textContent = new Date(state.nextRun).toLocaleString('vi-VN');
+                nextRunContainer.style.display = 'block';
+            } else {
+                nextRunContainer.style.display = 'none';
+            }
+        }
+
+        async function updateAutoPhoneConfig(payload) {
+            try {
+                const response = await fetch('/admin/settings/auto-phone/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                    updateAutoPhoneUI(result.data);
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
+            }
+        }
+
+        autoPhoneForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateAutoPhoneConfig({
+                intervalMinutes: intervalInput.value,
+                countries: countriesInput.value.split(',').map(c => c.trim()).filter(Boolean),
+                sources: sourcesInput.value.split(',').map(s => s.trim()).filter(Boolean)
+            });
+        });
+
+        startBtn.addEventListener('click', () => updateAutoPhoneConfig({ isEnabled: true }));
+        stopBtn.addEventListener('click', () => updateAutoPhoneConfig({ isEnabled: false }));
+
+        if(initialState.autoPhone) {
+            updateAutoPhoneUI(initialState.autoPhone);
+            setupLogHandler('ap-logs', initialState.autoPhone.logs, 'autoPhone:log');
+        }
+
+        socket.on('autoPhone:statusUpdate', (state) => updateAutoPhoneUI(state));
+    }
+    // <<< KẾT THÚC LOGIC MỚI >>>
+
+    // --- Item Processor ---
+    const procForm = document.getElementById('processor-settings-form');
+    if (procForm) {
+        procForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(procForm);
+            const data = Object.fromEntries(formData.entries());
+             try {
+                const response = await fetch('/admin/settings/item-processor/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
                 const result = await response.json();
                 if (result.success) {
@@ -539,17 +655,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 showToast('Lỗi kết nối server', 'Lỗi', 'error');
             }
-        }
-
-        procForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            updateProcConfig({
-                concurrency: procConcurrencyInput.value,
-                pollingInterval: procPollingInput.value,
-                timeout: procTimeoutInput.value, 
-                maxSuccess: procMaxSuccessInput.value,
-                maxError: procMaxErrorInput.value
-            });
         });
     }
 });

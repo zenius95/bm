@@ -63,7 +63,7 @@
         "retries": 2
     },
     "autoPhone": {
-        "isEnabled": false,
+        "isEnabled": true,
         "intervalMinutes": 60,
         "countries": [],
         "sources": []
