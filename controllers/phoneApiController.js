@@ -1,7 +1,7 @@
 // controllers/phoneApiController.js
 const PhoneNumber = require('../models/PhoneNumber');
-const fetch = require('node-fetch');
 const settingsService = require('../utils/settingsService');
+const { getCodeFromPhonePage } = require('../utils/phoneScraper'); // Import hàm scraper mới
 
 const authenticateRequest = (req) => {
     const apiKey = req.query.apiKey;
@@ -71,40 +71,15 @@ phoneApiController.getCode = async (req, res) => {
             return res.status(404).json({ success: false, message: `ID số điện thoại ${phoneNumberId} không được tìm thấy trong hệ thống.` });
         }
 
-        const { phoneNumber, country, source } = phoneRecord;
+        const { phoneNumber, country } = phoneRecord;
 
-        const url = `https://otp-api.shelex.dev/api/${country}/${phoneNumber}?source=${source}`;
+        // Thay thế fetch bằng hàm puppeteer mới
+        const code = await getCodeFromPhonePage(country, phoneNumber);
 
-        console.log(url)
-
-        const response = await fetch(url, {
-             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API trả về lỗi: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        console.log(data)
-
-        const apiResult = data && data[0];
-        
-        if (!apiResult || !Array.isArray(apiResult.results)) {
-            return res.status(404).json({ success: false, message: 'Không tìm thấy tin nhắn nào hoặc cấu trúc API không đúng.' });
+        if (code) {
+            return res.json({ success: true, code: code, fullMessage: `Instagram code: ${code}` });
         }
         
-        for (const message of apiResult.results) {
-            if (message.message && message.message.toLowerCase().includes('instagram')) {
-                const codeMatch = message.message.match(/\b(\d{6})\b/);
-                if (codeMatch && codeMatch[1]) {
-                    return res.json({ success: true, code: codeMatch[1], fullMessage: message.message });
-                }
-            }
-        }
         return res.status(404).json({ success: false, message: 'Không tìm thấy code Instagram trong các tin nhắn gần đây.' });
 
     } catch (error) {

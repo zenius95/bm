@@ -1,25 +1,13 @@
 // utils/autoPhoneManager.js
 const EventEmitter = require('events');
-const fetch = require('node-fetch');
 const settingsService = require('./settingsService');
 const PhoneNumber = require('../models/PhoneNumber');
+// *** SỬA LẠI DÒNG NÀY ***
+const { scrapeAllPhoneData } = require('./phoneScraper'); 
+const fs = require('fs').promises;
+const path = require('path');
 
-// Bảng tra cứu mã quốc gia
-const countryCodeMap = {
-    'USA': '1', 'UK': '44', 'Canada': '1', 'Finland': '358', 'Sweden': '46', 
-    'Netherlands': '31', 'Belgium': '32', 'Spain': '34', 'Germany': '49', 
-    'Austria': '43', 'Poland': '48', 'Ukraine': '380', 'Portugal': '351', 
-    'Estonia': '372', 'Italy': '39', 'Latvia': '371', 'Ireland': '353', 
-    'Moldova': '373', 'Georgia': '995', 'Australia': '61', 'Brazil': '55', 
-    'China': '86', 'France': '33', 'Hungary': '36', 'India': '91', 
-    'Indonesia': '62', 'SouthKorea': '82', 'Lithuania': '370', 'Mexico': '52', 
-    'Morocco': '212', 'Pakistan': '92', 'SouthAfrica': '27', 'Serbia': '381', 
-    'Switzerland': '41', 'Thailand': '66', 'Mauritius': '230', 'Israel': '972', 
-    'Kazakhstan': '7', 'Philippines': '63', 'Croatia': '385', 'HongKong': '852', 
-    'Nigeria': '234', 'Romania': '40', 'CzechRepublic': '420', 'Japan': '81', 
-    'Taiwan': '886', 'Singapore': '65', 'SriLanka': '94'
-};
-
+const LOG_FILE = path.join(__dirname, '..', 'logs', 'autophone-log.txt');
 
 class AutoPhoneManager extends EventEmitter {
     constructor() {
@@ -45,8 +33,10 @@ class AutoPhoneManager extends EventEmitter {
     addLog(message) {
         const logEntry = { timestamp: new Date(), message };
         this.logs.unshift(logEntry);
-        if (this.logs.length > 100) this.logs.pop();
+        if (this.logs.length > 150) this.logs.pop();
         if (this.io) this.io.emit('autoPhone:log', logEntry);
+        const fileLogMessage = `[${logEntry.timestamp.toLocaleString('vi-VN')}] ${message.replace(/<[^>]*>/g, '')}\n`;
+        fs.appendFile(LOG_FILE, fileLogMessage).catch(err => console.error('Failed to write to autophone log file:', err));
     }
 
     getLogs() { return this.logs; }
@@ -97,53 +87,29 @@ class AutoPhoneManager extends EventEmitter {
 
     async executeFetch() {
         this.addLog('Bắt đầu chu kỳ lấy số điện thoại...');
-        const { countries, sources } = this.config;
-        if (!countries || countries.length === 0) {
-            this.addLog('<span class="text-yellow-400">Bỏ qua: Chưa có quốc gia nào được cấu hình.</span>');
-            return;
-        }
-
-        for (const country of countries) {
+        const configuredCountries = (this.config.countries || []).map(c => c.toLowerCase().trim()).filter(Boolean);
+        
+        // *** SỬA LẠI LỜI GỌI HÀM ***
+        const allPhones = await scrapeAllPhoneData(configuredCountries, this.addLog.bind(this));
+        
+        if (allPhones.length > 0) {
+            let insertedCount = 0;
             try {
-                const response = await fetch(`https://otp-api.shelex.dev/api/list/${country}`, {
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
-                });
-                if (!response.ok) throw new Error(`API error for ${country}: ${response.statusText}`);
-                const data = await response.json();
-
-                const phoneList = data.phones;
-                if (!Array.isArray(phoneList)) throw new Error(`Cấu trúc JSON không chứa mảng 'phones' như mong đợi.`);
-
-                const phonesToInsert = phoneList
-                    .filter(phone => sources.length === 0 || sources.includes(phone.source))
-                    .map(phone => {
-                        // === START: LOGIC THÊM ĐẦU SỐ QUỐC GIA ===
-                        const prefix = countryCodeMap[country];
-                        let finalPhoneNumber = phone.value.replace(/\D/g, ''); // Chỉ giữ lại số
-
-                        if (prefix && !finalPhoneNumber.startsWith(prefix)) {
-                            finalPhoneNumber = prefix + finalPhoneNumber;
-                        }
-                        
-                        return {
-                            phoneNumber: finalPhoneNumber, // Đảm bảo luôn có dấu '+'
-                            country: country,
-                            source: phone.source,
-                        };
-                        // === END: LOGIC THÊM ĐẦU SỐ QUỐC GIA ===
-                    });
-
-                if (phonesToInsert.length > 0) {
-                    const result = await PhoneNumber.insertMany(phonesToInsert, { ordered: false }).catch(err => err);
-                    const insertedCount = result.insertedCount || (result.result && result.result.nInserted) || 0;
-                    this.addLog(`Đã lấy và lưu <strong class="text-white">${insertedCount}</strong> số mới cho <strong class="text-white">${country}</strong>. Bỏ qua các số trùng lặp.`);
-                } else {
-                    this.addLog(`Không tìm thấy số mới nào cho <strong class="text-white">${country}</strong> với nguồn đã chọn.`);
-                }
+                const result = await PhoneNumber.insertMany(allPhones, { ordered: false });
+                insertedCount = result.length;
             } catch (error) {
-                this.addLog(`<span class="text-red-400">Lỗi khi lấy số cho ${country}: ${error.message}</span>`);
+                if (error.code === 11000) {
+                    insertedCount = error.result.nInserted || 0;
+                } else {
+                    // Ném lỗi lên trên để catch bên ngoài xử lý
+                    throw error;
+                }
             }
+            this.addLog(`Tổng kết: Đã lưu <strong class="text-white">${insertedCount}</strong> số mới vào database. Bỏ qua các số trùng lặp.`);
+        } else {
+             this.addLog(`Tổng kết: Không tìm thấy số điện thoại mới nào để thêm.`);
         }
+
         this.addLog('Hoàn thành chu kỳ lấy số.');
     }
 
