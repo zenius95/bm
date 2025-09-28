@@ -23,11 +23,40 @@ async function createBrowserInstance(browserId) {
     console.log(`[BrowserManager] 🚀 Đang khởi chạy trình duyệt #${browserId}...`);
     try {
         const browser = await puppeteer.launch({
-            headless: false,
+            headless: 'new',
             args: [
-                '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote',
-                '--single-process', '--disable-gpu'
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',      // Quan trọng cho môi trường Docker và VPS hạn chế tài nguyên
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',             // Chỉ dùng cho môi trường không có GPU
+                '--disable-gpu',                // Quan trọng cho server không có card đồ họa
+                '--disable-background-networking',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-breakpad',
+                '--disable-client-side-phishing-detection',
+                '--disable-component-update',
+                '--disable-default-apps',
+                '--disable-extensions',
+                '--disable-features=AudioServiceOutOfProcess',
+                '--disable-hang-monitor',
+                '--disable-ipc-flooding-protection',
+                '--disable-notifications',
+                '--disable-offer-store-unmasked-wallet-cards',
+                '--disable-popup-blocking',
+                '--disable-print-preview',
+                '--disable-prompt-on-repost',
+                '--disable-renderer-backgrounding',
+                '--disable-sync',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--no-pings',
+                '--password-store=basic',
+                '--use-gl=swiftshader',
+                '--use-mock-keychain'
             ]
         });
 
