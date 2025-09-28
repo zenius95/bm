@@ -1,9 +1,35 @@
 // controllers/phoneApiController.js
 const PhoneNumber = require('../models/PhoneNumber');
 const settingsService = require('../utils/settingsService');
-const { getCodeFromPhonePage } = require('../utils/phoneScraper'); // Import hàm scraper mới
+const { getCodeFromPhonePage } = require('../utils/phoneScraper');
+
+// --- START: HÀM TIỆN ÍCH MỚI ĐỂ DỊCH THỜI GIAN ---
+/**
+ * Chuyển đổi chuỗi thời gian (vd: "5m", "2h", "10d") thành số giây.
+ * @param {string} timeString - Chuỗi thời gian đầu vào.
+ * @returns {number|null} - Tổng số giây, hoặc null nếu không hợp lệ.
+ */
+function parseMaxAge(timeString) {
+    if (!timeString) return null;
+    const match = timeString.toLowerCase().match(/^(\d+)([smhdM])$/);
+    if (!match) return null;
+
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+
+    switch (unit) {
+        case 's': return value; // Giây
+        case 'm': return value * 60; // Phút
+        case 'h': return value * 3600; // Giờ
+        case 'd': return value * 86400; // Ngày
+        case 'M': return value * 2592000; // Tháng (ước lượng 30 ngày)
+        default: return null;
+    }
+}
+// --- END: HÀM TIỆN ÍCH MỚI ---
 
 const authenticateRequest = (req) => {
+    // ... (Hàm này giữ nguyên)
     const apiKey = req.query.apiKey;
     const masterApiKey = settingsService.get('masterApiKey');
     if (!apiKey) return { success: false, message: 'Unauthorized: API Key is missing.' };
@@ -14,6 +40,7 @@ const authenticateRequest = (req) => {
 const phoneApiController = {};
 
 phoneApiController.getPhoneNumber = async (req, res) => {
+    // ... (Hàm này giữ nguyên)
     const authResult = authenticateRequest(req);
     if (!authResult.success) return res.status(401).json(authResult);
 
@@ -54,41 +81,59 @@ phoneApiController.getPhoneNumber = async (req, res) => {
     }
 };
 
+// === HÀM ĐƯỢC NÂNG CẤP ===
 phoneApiController.getCode = async (req, res) => {
     const authResult = authenticateRequest(req);
     if (!authResult.success) {
         return res.status(401).json(authResult);
     }
     
-    const { phoneNumberId } = req.query;
+    // Mặc định là 5 phút ("5m")
+    const { phoneNumberId, service = 'instagram', maxAge = '5m' } = req.query; 
+    
     if (!phoneNumberId) {
         return res.status(400).json({ success: false, message: 'Thiếu thông tin phoneNumberId.' });
+    }
+
+    const maxAgeInSeconds = parseMaxAge(maxAge);
+    if (maxAgeInSeconds === null) {
+        return res.status(400).json({ success: false, message: 'maxAge không hợp lệ. Dùng "s" (giây), "m" (phút), "h" (giờ), "d" (ngày), "M" (tháng). Ví dụ: 30s, 10m, 2h, 3d, 1M.' });
     }
 
     try {
         const phoneRecord = await PhoneNumber.findById(phoneNumberId).lean();
         if (!phoneRecord) {
-            return res.status(404).json({ success: false, message: `ID số điện thoại ${phoneNumberId} không được tìm thấy trong hệ thống.` });
+            return res.status(404).json({ success: false, message: `ID số điện thoại ${phoneNumberId} không được tìm thấy.` });
         }
 
         const { phoneNumber, country } = phoneRecord;
 
-        // Thay thế fetch bằng hàm puppeteer mới
-        const code = await getCodeFromPhonePage(country, phoneNumber);
+        const result = await getCodeFromPhonePage(country, phoneNumber, service, maxAgeInSeconds);
 
-        if (code) {
-            return res.json({ success: true, code: code, fullMessage: `Instagram code: ${code}` });
+        if (result.code) {
+            return res.json({ 
+                success: true, 
+                code: result.code, 
+                fullMessage: result.latestMessage, 
+                messages: result.allMessages
+            });
         }
         
-        return res.status(404).json({ success: false, message: 'Không tìm thấy code Instagram trong các tin nhắn gần đây.' });
+        return res.status(404).json({ 
+            success: false, 
+            message: `Không tìm thấy code cho '${service}' trong vòng ${maxAge} gần đây.`,
+            messages: result.allMessages
+        });
 
     } catch (error) {
         console.error('[PhoneAPI] Error getting code:', error);
         res.status(500).json({ success: false, message: 'Lỗi server khi lấy code.', error: error.message });
     }
 };
+// === KẾT THÚC NÂNG CẤP ===
 
 phoneApiController.cancelPhoneNumber = async (req, res) => {
+    // ... (Hàm này giữ nguyên)
     const authResult = authenticateRequest(req);
     if (!authResult.success) return res.status(401).json(authResult);
 

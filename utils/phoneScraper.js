@@ -2,20 +2,36 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const AdblockerPlugin = require('puppeteer-extra-plugin-adblocker');
+const browserManager = require('./browserManager');
 
 puppeteer.use(StealthPlugin());
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 const BASE_URL = 'https://www.receive-sms-free.cc';
 
+function parseRelativeTime(timeString) {
+    if (!timeString) return null;
+    const match = timeString.toLowerCase().match(/(\d+)\s+(second|minute|hour|day|month|year)s?/);
+    if (!match) return null;
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    switch (unit) {
+        case 'second': return value;
+        case 'minute': return value * 60;
+        case 'hour':   return value * 3600;
+        case 'day':    return value * 86400;
+        case 'month':  return value * 2592000; // 30 days
+        case 'year':   return value * 31536000; // 365 days
+        default: return null;
+    }
+}
+
+// ... (Các hàm scrapeAllPhoneData, _getAllCountryLinks, _getPhonesFromCountryPage, getMessages giữ nguyên)
 async function scrapeAllPhoneData(configuredCountries = [], logCallback = console.log) {
-    let browser = null;
+    let page = null;
     try {
-        logCallback(`[PhoneScraper] Khởi chạy trình duyệt (Stealth + Adblock Mode)...`);
-        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-        const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-        await page.setViewport({ width: 1366, height: 768 });
+        logCallback(`[PhoneScraper] Mượn tab để cào danh sách SĐT...`);
+        page = await browserManager.acquirePage();
 
         const allCountryLinks = await _getAllCountryLinks(page, configuredCountries, logCallback);
 
@@ -27,10 +43,10 @@ async function scrapeAllPhoneData(configuredCountries = [], logCallback = consol
         const countriesToScrape = allCountryLinks.filter(country => {
             if (configuredCountries.length === 0) return true;
             const scrapedName = country.countryName.toLowerCase();
-            const scrapedKey = country.countryKey.toLowerCase();
-            return configuredCountries.some(cfgName => 
+            const scrapedSlug = country.countryUrlSlug.toLowerCase().replace(/-/g, ' ');
+            return configuredCountries.some(cfgName =>
                 scrapedName.includes(cfgName) || cfgName.includes(scrapedName) ||
-                scrapedKey.includes(cfgName) || cfgName.includes(scrapedKey)
+                scrapedSlug.includes(cfgName) || cfgName.includes(scrapedSlug)
             );
         });
 
@@ -43,7 +59,7 @@ async function scrapeAllPhoneData(configuredCountries = [], logCallback = consol
 
         let allPhones = [];
         for (const country of countriesToScrape) {
-            const phones = await _getPhonesFromCountryPage(page, country.countryName, country.url, logCallback);
+            const phones = await _getPhonesFromCountryPage(page, country.countryName, country.countryUrlSlug, country.url, logCallback);
             allPhones = allPhones.concat(phones);
         }
 
@@ -53,9 +69,9 @@ async function scrapeAllPhoneData(configuredCountries = [], logCallback = consol
         logCallback(`<span class="text-red-400">[PhoneScraper] Lỗi nghiêm trọng: ${error.message}</span>`);
         return [];
     } finally {
-        if (browser) {
-            logCallback('[PhoneScraper] Đóng trình duyệt.');
-            await browser.close();
+        if (page) {
+            logCallback('[PhoneScraper] Trả tab sau khi cào SĐT xong.');
+            await browserManager.releasePage(page);
         }
     }
 }
@@ -90,8 +106,10 @@ async function _getAllCountryLinks(page, configuredCountries, logCallback) {
                     if (countryName && relativeUrl) {
                         const fullUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseUrl}${relativeUrl}`;
                         const urlMatch = relativeUrl.match(/Free-([a-zA-Z0-9_-]+)-Phone-Number/);
-                        const countryKey = urlMatch ? urlMatch[1].replace(/-/g, ' ') : countryName;
-                        countryList.push({ countryName, countryKey, url: fullUrl });
+                        const countryUrlSlug = urlMatch ? urlMatch[1] : null; 
+                        if (countryUrlSlug) {
+                            countryList.push({ countryName, countryUrlSlug, url: fullUrl });
+                        }
                     }
                 }
             });
@@ -104,11 +122,11 @@ async function _getAllCountryLinks(page, configuredCountries, logCallback) {
             if (!allCountries.has(country.url)) {
                 allCountries.set(country.url, country);
                 if (configuredCountries.length > 0) {
-                    const scrapedName = country.countryName.toLowerCase();
-                    const scrapedKey = country.countryKey.toLowerCase();
-                    const matchedConfig = configuredCountries.find(cfgName => 
+                     const scrapedName = country.countryName.toLowerCase();
+                     const scrapedSlug = country.countryUrlSlug.toLowerCase().replace(/-/g, ' ');
+                     const matchedConfig = configuredCountries.find(cfgName =>
                         scrapedName.includes(cfgName) || cfgName.includes(scrapedName) ||
-                        scrapedKey.includes(cfgName) || cfgName.includes(scrapedKey)
+                        scrapedSlug.includes(cfgName) || cfgName.includes(scrapedSlug)
                     );
                     if (matchedConfig) {
                         foundConfiguredCountries.add(matchedConfig);
@@ -146,7 +164,7 @@ async function _getAllCountryLinks(page, configuredCountries, logCallback) {
     return Array.from(allCountries.values());
 }
 
-async function _getPhonesFromCountryPage(page, countryName, countryUrl, logCallback) {
+async function _getPhonesFromCountryPage(page, countryName, countryUrlSlug, countryUrl, logCallback) {
     logCallback(`[PhoneScraper] Bắt đầu cào SĐT cho ${countryName} tại: ${countryUrl}`);
     await page.goto(countryUrl, { waitUntil: 'networkidle2', timeout: 60000 });
 
@@ -200,30 +218,28 @@ async function _getPhonesFromCountryPage(page, countryName, countryUrl, logCallb
 
     return Array.from(allPhoneNumbers).map(number => ({
         phoneNumber: number,
-        country: countryName,
+        country: countryUrlSlug,
         source: 'receive-sms-free.cc'
     }));
 }
 
-async function getMessages(country, phoneNumber) {
-    let browser = null;
+async function getMessages(countrySlug, phoneNumber, logCallback = console.log) {
+    let page = null; 
     try {
-        logCallback(`[MessageScraper] Khởi chạy trình duyệt lấy tin nhắn cho ${phoneNumber}...`);
-        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-        const page = await browser.newPage();
-        const countryKey = country.replace(/\s/g, '-');
-        const phoneUrl = `${BASE_URL}/Free-${countryKey}-Phone-Number/${phoneNumber}.html`;
+        logCallback(`[MessageScraper] Mượn tab để lấy tin nhắn cho ${phoneNumber}...`);
+        page = await browserManager.acquirePage();
+        
+        const phoneUrl = `${BASE_URL}/Free-${countrySlug}-Phone-Number/${phoneNumber}/`;
         
         logCallback(`[MessageScraper] Truy cập: ${phoneUrl}`);
         await page.goto(phoneUrl, { waitUntil: 'networkidle2', timeout: 60000 });
 
         const messages = await page.evaluate(() => {
             const msgs = [];
-            // Selector đã được kiểm tra lại cho trang tin nhắn
-            document.querySelectorAll('div.mobile_and_detail_new_message_list div.row').forEach(row => {
-                const fromEl = row.querySelector('.col-xs-12.col-md-2.message-from');
+            document.querySelectorAll('div.casetext > div.row.border-bottom').forEach(row => {
+                const fromEl = row.querySelector('.col-xs-12.col-md-2');
+                const timeEl = row.querySelector('.col-xs-0.col-md-2.mobile_hide');
                 const textEl = row.querySelector('.col-xs-12.col-md-8');
-                const timeEl = row.querySelector('.col-xs-12.col-md-2.ago');
 
                 if (fromEl && textEl && timeEl) {
                      msgs.push({
@@ -241,21 +257,48 @@ async function getMessages(country, phoneNumber) {
         logCallback(`<span class="text-red-400">[MessageScraper] Lỗi khi lấy tin nhắn cho ${phoneNumber}: ${error.message}</span>`);
         return [];
     } finally {
-        if (browser) await browser.close();
+        if (page) {
+             logCallback(`[MessageScraper] Trả tab sau khi lấy tin nhắn xong.`);
+             await browserManager.releasePage(page);
+        }
     }
 }
 
-async function getCodeFromPhonePage(country, phoneNumber) {
-    const messages = await getMessages(country, phoneNumber); // Tái sử dụng hàm getMessages
+// === START: HÀM ĐƯỢC NÂNG CẤP ===
+async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagram', maxAgeInSeconds = 300, logCallback = console.log) {
+    const messages = await getMessages(countrySlug, phoneNumber, logCallback);
+    
+    let foundCode = null;
+    let foundLatestMessage = null;
+    const relevantMessages = [];
+
     for (const message of messages) {
-        if (message.text.toLowerCase().includes('instagram')) {
-            const codeMatch = message.text.match(/\b(\d{6})\b/);
-            if (codeMatch && codeMatch[1]) {
-                return codeMatch[1];
+        if (message.from.toLowerCase().includes(service.toLowerCase())) {
+            relevantMessages.push({ text: message.text, time: message.time });
+
+            // Phân tích "tuổi" của tin nhắn, không quan trọng đơn vị
+            const messageAgeInSeconds = parseRelativeTime(message.time);
+            
+            // Nếu chưa tìm thấy code và tin nhắn đủ mới
+            if (!foundCode && messageAgeInSeconds !== null && messageAgeInSeconds <= maxAgeInSeconds) {
+                const codeMatch = message.text.match(/\b(\d{6})\b/);
+                
+                if (codeMatch && codeMatch[1]) {
+                    foundCode = codeMatch[1];
+                    foundLatestMessage = message.text;
+                    logCallback(`[CodeFound] Dịch vụ: ${service}, SĐT: ${phoneNumber}, Tin nhắn hợp lệ (${message.time}), Code: ${foundCode}`);
+                }
             }
         }
     }
-    return null;
+    
+    if (foundCode) {
+        return { code: foundCode, latestMessage: foundLatestMessage, allMessages: relevantMessages };
+    }
+
+    logCallback(`[CodeNotFound] Không tìm thấy code MỚI nào (dưới ${maxAgeInSeconds}s) cho dịch vụ '${service}' của SĐT ${phoneNumber}.`);
+    return { code: null, allMessages: relevantMessages }; 
 }
+// === END: HÀM ĐƯỢC NÂNG CẤP ===
 
 module.exports = { scrapeAllPhoneData, getCodeFromPhonePage, getMessages };

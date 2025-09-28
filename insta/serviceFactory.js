@@ -57,28 +57,37 @@ class ExternalService {
  * Lớp xử lý logic cho các dịch vụ thuê số điện thoại.
  */
 class PhoneService extends ExternalService {
+    constructor(config) {
+        super(config);
+        // Tự động nhận diện và cấu hình baseUrl cho dịch vụ nội bộ
+        if (this.config.name === 'Local System API') {
+            const port = process.env.PORT || '3000';
+            const domain = process.env.API_DOMAIN || `http://localhost:${port}`;
+            this.config.baseUrl = `${domain}/api/phone`;
+            this.log(`Đã tự động cấu hình baseUrl cho dịch vụ nội bộ: ${this.config.baseUrl}`);
+        }
+    }
+
+    _buildUrl(pathTemplate, replacements) {
+        const { baseUrl } = this.config;
+        const relativePath = this._formatTemplate(pathTemplate, replacements);
+        // Nếu là dịch vụ nội bộ, ghép baseUrl vào. Nếu không, URL đã đầy đủ sẵn.
+        return baseUrl ? `${baseUrl}${relativePath}` : relativePath;
+    }
+
     async getPhoneNumber() {
         const { getPhone: phoneConfig, apiKey, service, delay } = this.config;
-        const url = this._formatTemplate(phoneConfig.url, { apiKey, service });
+        const url = this._buildUrl(phoneConfig.url, { apiKey, service });
+
         for (let i = 1; i <= phoneConfig.retry; i++) {
             this.log(`Đang lấy SĐT (Lần thử ${i}/${phoneConfig.retry})...`);
             try {
                 const data = await this._makeRequest(url);
                 let phoneNumber = this._getValueFromPath(data, phoneConfig.phonePath);
                 const id = this._getValueFromPath(data, phoneConfig.idPath);
-                let prefix = phoneConfig.prefix || '';
-                let subString = phoneConfig.subString || '';
-                if (prefix && prefix.startsWith('{') && prefix.endsWith('}')) {
-                    prefix = this._getValueFromPath(data, prefix.slice(1, -1)) || '';
-                }
-
-                if (subString) {
-                    phoneNumber = phoneNumber.substring(subString)
-                }
                 if (phoneNumber && id) {
-                    const fullPhoneNumber = `${prefix}${phoneNumber}`;
-                    this.log(`Lấy SĐT thành công: ${fullPhoneNumber} (ID: ${id})`);
-                    return { phone: fullPhoneNumber, id };
+                    this.log(`Lấy SĐT thành công: ${phoneNumber} (ID: ${id})`);
+                    return { phone: phoneNumber, id };
                 }
                 this.log(`Không tìm thấy SĐT/ID. Chờ ${delay}ms...`);
             } catch (error) {
@@ -91,7 +100,8 @@ class PhoneService extends ExternalService {
 
     async getCode(id) {
         const { getCode: codeConfig, apiKey, delay } = this.config;
-        const url = this._formatTemplate(codeConfig.url, { apiKey, id });
+        const url = this._buildUrl(codeConfig.url, { apiKey, id });
+
         for (let i = 1; i <= codeConfig.retry; i++) {
             this.log(`Đang lấy Code cho ID: ${id} (Lần thử ${i}/${codeConfig.retry})...`);
             try {
@@ -112,20 +122,17 @@ class PhoneService extends ExternalService {
 
     async cancelPhoneNumber(id) {
         const { cancelPhone: cancelConfig, apiKey } = this.config;
-        // Kiểm tra xem dịch vụ có hỗ trợ hủy không
         if (!cancelConfig) {
             this.log("Chức năng hủy số không được cấu hình cho dịch vụ này.");
             return;
         }
 
-        const url = this._formatTemplate(cancelConfig.url, { apiKey, id });
+        const url = this._buildUrl(cancelConfig.url, { apiKey, id });
         this.log(`Đang gửi yêu cầu hủy cho SĐT có ID: ${id}...`);
         try {
-            // Hàm _makeRequest sẽ tự động kiểm tra response.ok
             await this._makeRequest(url, { method: 'GET' });
             this.log(`Đã hủy thành công yêu cầu cho ID: ${id}`);
         } catch (error) {
-            // Ghi lại lỗi nhưng không dừng tiến trình, vì hủy lỗi không phải là lỗi nghiêm trọng
             this.log(`⚠️ Lỗi khi hủy yêu cầu cho ID ${id}: ${error.message}`);
         }
     }
@@ -137,9 +144,7 @@ class PhoneService extends ExternalService {
     }
 }
 
-/**
- * Lớp cơ sở cho các dịch vụ Captcha, chứa logic lấy kết quả chung.
- */
+// (Các lớp BaseCaptchaService, ImageCaptchaService, RecaptchaService giữ nguyên không đổi)
 class BaseCaptchaService extends ExternalService {
     async _getResult(taskId) {
         const { getResult: resultConfig, apiKey, delay } = this.config;
@@ -170,10 +175,6 @@ class BaseCaptchaService extends ExternalService {
         throw new Error(`Không thể giải captcha cho Task ID ${taskId} sau ${resultConfig.retry} lần thử.`);
     }
 }
-
-/**
- * Lớp chuyên xử lý Captcha Ảnh (Image-to-Text).
- */
 class ImageCaptchaService extends BaseCaptchaService {
     async solve(imageBase64) {
         const { createImageTask: taskConfig, apiKey } = this.config;
@@ -196,10 +197,6 @@ class ImageCaptchaService extends BaseCaptchaService {
         return await this._getResult(taskId);
     }
 }
-
-/**
- * Lớp chuyên xử lý Google reCAPTCHA.
- */
 class RecaptchaService extends BaseCaptchaService {
     async solve(websiteUrl, websiteKey) {
         const { createRecaptchaTask: taskConfig, apiKey } = this.config;
@@ -221,27 +218,23 @@ class RecaptchaService extends BaseCaptchaService {
     }
 }
 
-
 /**
  * Factory để tạo ra các đối tượng dịch vụ dựa trên cấu hình.
  */
 async function createService(serviceId, serviceType, options = {}, configDir = null) {
     const baseDir = configDir || path.resolve(__dirname, '../configs');
     const serviceDir = serviceType === 'phone' ? 'phone_services' : 'captcha_services';
-    // === START: SỬA LỖI ===
-    // Không cộng thêm đuôi .json nữa vì serviceId đã có sẵn
     const configPath = path.join(baseDir, serviceDir, serviceId);
-    // === END: SỬA LỖI ===
 
     if (!fs.existsSync(configPath)) {
         throw new Error(`Không tìm thấy file cấu hình tại: ${configPath}`);
     }
 
     const fileContent = await fs.promises.readFile(configPath, 'utf-8');
-    const config = JSON.parse(fileContent);
-    const finalConfig = { ...config, ...options };
+    const configData = JSON.parse(fileContent);
 
-    // Dựa vào cấu trúc của config để quyết định class sẽ tạo
+    const finalConfig = { ...configData, ...options };
+
     if (finalConfig.getPhone) {
         return new PhoneService(finalConfig);
     }

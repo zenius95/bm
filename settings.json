@@ -83,14 +83,15 @@
     "services": {
         "selectedImageCaptchaService": "2captcha_image.json",
         "selectedRecaptchaService": "",
-        "selectedPhoneService": "codesim.json",
+        "selectedPhoneService": "default.json",
         "apiKeys": {
             "captcha": {
                 "omocaptcha_image.json": "OMO_7GNHWXNX7H3YMSF72JMRZRDNME1OLJ2NV7UV3H8U2J2C6EB2SKBFXYEBURLUKV1757170914",
                 "2captcha_image.json": "59cab26bbaac7e8789fdf52474a4fdfa"
             },
             "phone": {
-                "codesim.json": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwMzg0MjIwMzQ1IiwianRpIjoiMzMyNDYiLCJpYXQiOjE3MDA3ODQ3MzIsImV4cCI6MTc2Mjk5MjczMn0.fHoaxAS3F6GTv6rVhbiihHGc3uhSDhSW3NeIgKE0o5wdFtCRQ0Tx7ceyVALq76aXBgJIKGC1MFVjswrOeiZOcA"
+                "codesim.json": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwMzg0MjIwMzQ1IiwianRpIjoiMzMyNDYiLCJpYXQiOjE3MDA3ODQ3MzIsImV4cCI6MTc2Mjk5MjczMn0.fHoaxAS3F6GTv6rVhbiihHGc3uhSDhSW3NeIgKE0o5wdFtCRQ0Tx7ceyVALq76aXBgJIKGC1MFVjswrOeiZOcA",
+                "default.json": "2b26be39141b87dceccb22b003db6a177e260d353dcddf1e4d9b916b35eee130"
             }
         },
         "userAgents": [

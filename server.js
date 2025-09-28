@@ -20,7 +20,7 @@ const Proxy = require('./models/Proxy');
 const Item = require('./models/Item');
 const authController = require('./controllers/authController');
 const apiKeyAuthController = require('./controllers/apiKeyAuthController');
-
+const browserManager = require('./utils/browserManager'); // <<< THÊM DÒNG NÀY
 const phoneStatusManager = require('./utils/phoneStatusManager'); // <<< THÊM DÒNG NÀY
 
 const adminRoutes = require('./routes/admin');
@@ -152,6 +152,9 @@ async function startServer() {
     console.log('🚀 Starting server, checking connections...');
     
     await settingsService.initialize();
+    
+    await browserManager.launchBrowser(); 
+    phoneStatusManager.start();
 
     await mongoose.connect(config.mongodb.uri)
         .then(() => console.log('✅ MongoDB connection: OK'))
@@ -199,7 +202,6 @@ async function startServer() {
         autoDepositManager.initialize(io);
         autoProxyCheckManager.initialize(io);
         autoPhoneManager.initialize(io); // <<< THÊM DÒNG NÀY
-        phoneStatusManager.initialize(); 
     });
 }
 

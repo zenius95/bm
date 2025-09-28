@@ -1,0 +1,22 @@
+{
+    "name": "Default",
+    "apiKey": "",
+    "delay": 5000,
+    "getPhone": {
+        "url": "/get-number?apiKey={apiKey}",
+        "method": "GET",
+        "retry": 3,
+        "phonePath": "phone.phoneNumber",
+        "idPath": "phone._id"
+    },
+    "getCode": {
+        "url": "/get-code?apiKey={apiKey}&phoneNumberId={id}&service=instagram&maxAge=30s",
+        "method": "GET",
+        "retry": 12,
+        "codePath": "code"
+    },
+    "cancelPhone": {
+        "url": "/cancel-number?apiKey={apiKey}&phoneNumberId={id}",
+        "method": "GET"
+    }
+}

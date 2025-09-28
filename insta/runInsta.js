@@ -244,8 +244,12 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
             for (let i = 0; i < 3; i++) {
                 log(`Bắt đầu lấy SĐT mới (lần thử ${i + 1}/3)...`);
                 try {
+                    const phoneServiceProvider = await createService(phoneService.name, 'phone', { apiKey: phoneService.apiKey }, path.resolve(__dirname, 'configs'));
+                    
+                    const { phone, id } = await phoneServiceProvider.getPhoneNumber();
+                    log(`Đã lấy SĐT mới: ${phone} (Request ID: ${id})`);
 
-                    const res = await flow.api4_set_contact_point_phone('18068553764');
+                    const res = await flow.api4_set_contact_point_phone(phone);
 
                     if (res.includes('we sent via WhatsApp')) {
 
@@ -259,13 +263,10 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
 
                     log("Đã gửi SĐT mới lên Instagram, đang chờ mã xác nhận...");
 
-                    await delayTimeout(5000000)
-
                     const phoneCode = await phoneServiceProvider.getCode(id);
                     log(`Đã nhận được mã mới: ${phoneCode}`);
 
                     state = await flow.api5_submit_phone_code(phoneCode);
-
 
                     if (state.includes('this email') || state.includes('selfie')) {
                         log("Xác minh SĐT mới thành công.");
