@@ -270,17 +270,23 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
 
                     if (state.includes('this email') || state.includes('selfie')) {
                         log("Xác minh SĐT mới thành công.");
+                        
                         phoneVerified = true;
-                        // Lưu lại thông tin SĐT và mã vào DB cho account này
-                        log(`Lưu SĐT ${phone} vào DB cho tài khoản ${account.username}`);
-                        await Account.findByIdAndUpdate(account.id, {
-                            $set: {
-                                lastUsedPhone: phone,
-                                lastUsedPhoneId: id,
-                                lastUsedPhoneCode: phoneCode
-                            }
-                        });
-                        break; 
+
+                        try {
+                            // Lưu lại thông tin SĐT và mã vào DB cho account này
+                            log(`Lưu SĐT ${phone} vào DB cho tài khoản ${account.username}`);
+                            await Account.findByIdAndUpdate(account.id, {
+                                $set: {
+                                    lastUsedPhone: phone,
+                                    lastUsedPhoneId: id,
+                                    lastUsedPhoneCode: phoneCode
+                                }
+                            });
+                            break; 
+
+                        } catch {}
+                        
                     } else {
                         log(`Xác minh SĐT mới lần ${i + 1} thất bại, thử lại...`);
 

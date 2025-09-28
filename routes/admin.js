@@ -17,6 +17,9 @@ router.use(proxyController.parseQueryMiddleware);
 router.use(phoneController.parseQueryMiddleware); // <<< THÊM DÒNG NÀY
 
 router.get('/', adminController.getDashboard);
+router.get('/dashboard/revenue-details', adminController.getRevenueDetails);
+router.get('/dashboard/export-revenue', adminController.exportRevenueDetails);
+
 
 // --- Account Routes ---
 router.get('/accounts', accountController.handleGetAll);

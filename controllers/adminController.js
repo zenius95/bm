@@ -12,6 +12,8 @@ const ActivityLog = require('../models/ActivityLog');
 const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 const mongoose = require('mongoose');
+const { Parser } = require('json2csv');
+const ExcelJS = require('exceljs');
 
 const orderService = new CrudService(Order, {
     populateFields: ['user']
@@ -203,8 +205,9 @@ adminOrderController.getDashboard = async (req, res) => {
         const selectedYear = parseInt(chart_year, 10) || now.getFullYear();
         const selectedMonth = parseInt(chart_month, 10) || now.getMonth() + 1;
 
-        const chartStart = new Date(selectedYear, selectedMonth - 2, 29, 0, 0, 0, 0);
-        const chartEnd = new Date(selectedYear, selectedMonth - 1, 28, 23, 59, 59, 999);
+        const chartEnd = new Date(Date.UTC(selectedYear, selectedMonth - 1, 28, 23, 59, 59, 999));
+        const chartStart = new Date(Date.UTC(selectedYear, selectedMonth - 2, 29, 0, 0, 0, 0));
+
 
         const revenueData = await getChartAggregation(ActivityLog, chartStart, chartEnd, '$metadata.change', "%Y-%m-%d", depositActions);
         
@@ -256,6 +259,8 @@ adminOrderController.getDashboard = async (req, res) => {
             selectedYear,
             yearList,
             chartTotalRevenue,
+            chartStartDate: chartStart,
+            chartEndDate: chartEnd,
             title: 'Admin Dashboard',
             page: 'dashboard'
         });
@@ -477,20 +482,31 @@ adminOrderController.handleHardDelete = async (req, res, next) => {
 
 adminOrderController.getRevenueDetails = async (req, res) => {
     try {
-        const { chart_month, chart_year } = req.query;
+        const { chart_month, chart_year, search } = req.query;
         const now = new Date();
         const selectedYear = parseInt(chart_year, 10) || now.getFullYear();
         const selectedMonth = parseInt(chart_month, 10) || now.getMonth() + 1;
 
-        const chartStart = new Date(selectedYear, selectedMonth - 2, 29, 0, 0, 0, 0);
-        const chartEnd = new Date(selectedYear, selectedMonth - 1, 28, 23, 59, 59, 999);
+        const chartStart = new Date(Date.UTC(selectedYear, selectedMonth - 2, 29, 0, 0, 0, 0));
+        const chartEnd = new Date(Date.UTC(selectedYear, selectedMonth - 1, 28, 23, 59, 59, 999));
         
         const depositActions = { $in: ['CLIENT_DEPOSIT', 'CLIENT_DEPOSIT_AUTO', 'ADMIN_ADJUST_BALANCE'] };
 
-        const transactions = await ActivityLog.find({
+        let query = {
             createdAt: { $gte: chartStart, $lte: chartEnd },
             action: depositActions
-        })
+        };
+
+        if (search) {
+            const users = await User.find({ username: { $regex: search, $options: 'i' } }).select('_id');
+            const userIds = users.map(u => u._id);
+            query.$or = [
+                { 'user': { $in: userIds } },
+                { 'details': { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const transactions = await ActivityLog.find(query)
         .populate('user', 'username')
         .sort({ createdAt: -1 })
         .lean();
@@ -500,6 +516,76 @@ adminOrderController.getRevenueDetails = async (req, res) => {
     } catch (error) {
         console.error("Error fetching revenue details:", error);
         res.status(500).json({ success: false, message: 'Could not load revenue details.' });
+    }
+};
+
+adminOrderController.exportRevenueDetails = async (req, res) => {
+    try {
+        const { chart_month, chart_year, search, format = 'csv' } = req.query;
+        const now = new Date();
+        const selectedYear = parseInt(chart_year, 10) || now.getFullYear();
+        const selectedMonth = parseInt(chart_month, 10) || now.getMonth() + 1;
+
+        const chartStart = new Date(Date.UTC(selectedYear, selectedMonth - 2, 29, 0, 0, 0, 0));
+        const chartEnd = new Date(Date.UTC(selectedYear, selectedMonth - 1, 28, 23, 59, 59, 999));
+        
+        const depositActions = { $in: ['CLIENT_DEPOSIT', 'CLIENT_DEPOSIT_AUTO', 'ADMIN_ADJUST_BALANCE'] };
+
+        let query = {
+            createdAt: { $gte: chartStart, $lte: chartEnd },
+            action: depositActions
+        };
+
+        if (search) {
+            const users = await User.find({ username: { $regex: search, $options: 'i' } }).select('_id');
+            const userIds = users.map(u => u._id);
+            query.$or = [
+                { 'user': { $in: userIds } },
+                { 'details': { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const transactions = await ActivityLog.find(query)
+            .populate('user', 'username')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const dataToExport = transactions.map(log => ({
+            'Thời gian': new Date(log.createdAt).toLocaleString('vi-VN'),
+            'Người dùng': log.user ? log.user.username : 'N/A',
+            'Hành động': log.action,
+            'Chi tiết': log.details,
+            'Số tiền': log.metadata.change || 0
+        }));
+
+        if (format === 'csv') {
+            const json2csvParser = new Parser();
+            const csv = json2csvParser.parse(dataToExport);
+            res.header('Content-Type', 'text/csv');
+            res.attachment(`doanh-thu-${selectedMonth}-${selectedYear}.csv`);
+            res.send(csv);
+        } else if (format === 'xlsx') {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Doanh thu');
+            worksheet.columns = [
+                { header: 'Thời gian', key: 'Thời gian', width: 25 },
+                { header: 'Người dùng', key: 'Người dùng', width: 20 },
+                { header: 'Hành động', key: 'Hành động', width: 25 },
+                { header: 'Chi tiết', key: 'Chi tiết', width: 50 },
+                { header: 'Số tiền', key: 'Số tiền', width: 15, style: { numFmt: '#,##0 "VND"' } }
+            ];
+            worksheet.addRows(dataToExport);
+            res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.attachment(`doanh-thu-${selectedMonth}-${selectedYear}.xlsx`);
+            await workbook.xlsx.write(res);
+            res.end();
+        } else {
+            res.status(400).send('Invalid format');
+        }
+
+    } catch (error) {
+        console.error("Error exporting revenue details:", error);
+        res.status(500).send('Could not export revenue details.');
     }
 };
 
