@@ -8,18 +8,11 @@
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
         <form method="GET" action="/admin/phones" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <% if (inTrash) { %><input type="hidden" name="inTrash" value="true"><% } %>
-            <input type="text" name="search" class="form-input" placeholder="Tìm theo SĐT..." value="<%= currentQuery.search || '' %>">
-            <select name="country" class="form-select">
-                <option value="">-- Lọc theo quốc gia --</option>
-                <% countries.forEach(country => { %>
-                    <option value="<%= country %>" <%= currentQuery.country === country ? 'selected' : '' %>><%= country %></option>
-                <% }); %>
-            </select>
-            <select name="source" class="form-select">
-                <option value="">-- Lọc theo nguồn --</option>
-                 <% sources.forEach(source => { %>
-                    <option value="<%= source %>" <%= currentQuery.source === source ? 'selected' : '' %>><%= source %></option>
-                <% }); %>
+            <input type="text" name="search" class="form-input" placeholder="Tìm theo SĐT, nguồn..." value="<%= currentQuery.search || '' %>">
+            <select name="status" class="form-select">
+                <option value="">-- Lọc theo trạng thái --</option>
+                <option value="AVAILABLE" <%= currentQuery.status === 'AVAILABLE' ? 'selected' : '' %>>Available</option>
+                <option value="IN_USE" <%= currentQuery.status === 'IN_USE' ? 'selected' : '' %>>In Use</option>
             </select>
             <div class="flex items-center gap-2">
                  <button type="submit" class="w-full md:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">Lọc</button>
@@ -37,6 +30,15 @@
             <% } %>
         </div>
     </div>
+
+    <% if (pagination.totalPages > 1) { %>
+        <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+        </div>
+        <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+        </div>
+    <% } %>
   
     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl overflow-hidden">
         <div class="overflow-x-auto">
@@ -47,7 +49,8 @@
                         <th scope="col" class="px-6 py-3">Số điện thoại</th>
                         <th scope="col" class="px-6 py-3">Quốc gia</th>
                         <th scope="col" class="px-6 py-3">Nguồn</th>
-                        <th scope="col" class="px-6 py-3">Ngày thêm</th>
+                        <th scope="col" class="px-6 py-3">Trạng Thái</th>
+                        <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Lần Cuối Sử Dụng' %></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,12 +61,29 @@
                                 <td class="px-6 py-4 font-mono text-white"><%= phone.phoneNumber %></td>
                                 <td class="px-6 py-4 text-gray-400"><%= phone.country %></td>
                                 <td class="px-6 py-4 text-gray-400"><%= phone.source %></td>
-                                <td class="px-6 py-4 text-gray-400"><%= new Date(inTrash ? phone.deletedAt : phone.createdAt).toLocaleString('vi-VN') %></td>
+                                <td class="px-6 py-4">
+                                    <% 
+                                        let statusClass = 'bg-green-500/20 text-green-400';
+                                        if (phone.status === 'IN_USE') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                                    %>
+                                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>">
+                                        <%= phone.status %>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-gray-400">
+                                    <% if (inTrash && phone.deletedAt) { %>
+                                        <%= new Date(phone.deletedAt).toLocaleString('vi-VN') %>
+                                    <% } else if (!inTrash && phone.lastUsedAt) { %>
+                                        <%= new Date(phone.lastUsedAt).toLocaleString('vi-VN') %>
+                                    <% } else if (!inTrash) { %>
+                                        Chưa dùng
+                                    <% } %>
+                                </td>
                             </tr>
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="5" class="text-center py-16 px-6">
+                            <td colspan="6" class="text-center py-16 px-6">
                                 <i class="ri-database-2-line text-6xl text-gray-700"></i>
                                 <h4 class="mt-4 text-xl font-semibold text-white">Không có số điện thoại nào</h4>
                                 <p class="mt-2 text-gray-400">Hãy thử thay đổi bộ lọc hoặc chờ hệ thống tự động lấy về.</p>

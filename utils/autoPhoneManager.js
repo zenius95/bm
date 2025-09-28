@@ -4,6 +4,23 @@ const fetch = require('node-fetch');
 const settingsService = require('./settingsService');
 const PhoneNumber = require('../models/PhoneNumber');
 
+// Bảng tra cứu mã quốc gia
+const countryCodeMap = {
+    'USA': '1', 'UK': '44', 'Canada': '1', 'Finland': '358', 'Sweden': '46', 
+    'Netherlands': '31', 'Belgium': '32', 'Spain': '34', 'Germany': '49', 
+    'Austria': '43', 'Poland': '48', 'Ukraine': '380', 'Portugal': '351', 
+    'Estonia': '372', 'Italy': '39', 'Latvia': '371', 'Ireland': '353', 
+    'Moldova': '373', 'Georgia': '995', 'Australia': '61', 'Brazil': '55', 
+    'China': '86', 'France': '33', 'Hungary': '36', 'India': '91', 
+    'Indonesia': '62', 'SouthKorea': '82', 'Lithuania': '370', 'Mexico': '52', 
+    'Morocco': '212', 'Pakistan': '92', 'SouthAfrica': '27', 'Serbia': '381', 
+    'Switzerland': '41', 'Thailand': '66', 'Mauritius': '230', 'Israel': '972', 
+    'Kazakhstan': '7', 'Philippines': '63', 'Croatia': '385', 'HongKong': '852', 
+    'Nigeria': '234', 'Romania': '40', 'CzechRepublic': '420', 'Japan': '81', 
+    'Taiwan': '886', 'Singapore': '65', 'SriLanka': '94'
+};
+
+
 class AutoPhoneManager extends EventEmitter {
     constructor() {
         super();
@@ -88,26 +105,33 @@ class AutoPhoneManager extends EventEmitter {
 
         for (const country of countries) {
             try {
-                const response = await fetch(`https://otp-api.shelex.dev/api/list/${country}`);
+                const response = await fetch(`https://otp-api.shelex.dev/api/list/${country}`, {
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
+                });
                 if (!response.ok) throw new Error(`API error for ${country}: ${response.statusText}`);
                 const data = await response.json();
-                // 2. Truy cập vào mảng 'phones' bên trong đối tượng đầu tiên.
-                const phoneList = data.phones;
 
-                // 3. Kiểm tra xem phoneList có thực sự là một mảng không.
-                if (!Array.isArray(phoneList)) {
-                    throw new Error(`Cấu trúc JSON không chứa mảng 'phones' như mong đợi.`);
-                }
-                // === END: SỬA LỖI LOGIC ===
+                const phoneList = data.phones;
+                if (!Array.isArray(phoneList)) throw new Error(`Cấu trúc JSON không chứa mảng 'phones' như mong đợi.`);
 
                 const phonesToInsert = phoneList
                     .filter(phone => sources.length === 0 || sources.includes(phone.source))
-                    .map(phone => ({
-                        // 4. Sử dụng đúng key 'value' cho số điện thoại
-                        phoneNumber: phone.value,
-                        country: country,
-                        source: phone.source,
-                    }));
+                    .map(phone => {
+                        // === START: LOGIC THÊM ĐẦU SỐ QUỐC GIA ===
+                        const prefix = countryCodeMap[country];
+                        let finalPhoneNumber = phone.value.replace(/\D/g, ''); // Chỉ giữ lại số
+
+                        if (prefix && !finalPhoneNumber.startsWith(prefix)) {
+                            finalPhoneNumber = prefix + finalPhoneNumber;
+                        }
+                        
+                        return {
+                            phoneNumber: finalPhoneNumber, // Đảm bảo luôn có dấu '+'
+                            country: country,
+                            source: phone.source,
+                        };
+                        // === END: LOGIC THÊM ĐẦU SỐ QUỐC GIA ===
+                    });
 
                 if (phonesToInsert.length > 0) {
                     const result = await PhoneNumber.insertMany(phonesToInsert, { ordered: false }).catch(err => err);
