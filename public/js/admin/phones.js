@@ -1,5 +1,90 @@
 // public/js/admin/phones.js
 document.addEventListener('DOMContentLoaded', () => {
+    // --- START: LOGIC CHO MODAL XEM TIN NHẮN ---
+    const messageModal = document.getElementById('message-modal');
+    const messageFetchForm = document.getElementById('message-fetch-form');
+    const messageResultEl = document.getElementById('message-result');
+
+    document.querySelectorAll('.btn-view-messages').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const phoneId = btn.dataset.id;
+            const phoneNumber = btn.dataset.phoneNumber;
+            
+            if (messageFetchForm) {
+                messageFetchForm.querySelector('#modal-phone-id').value = phoneId;
+            }
+            if (document.getElementById('modal-phone-number')) {
+                document.getElementById('modal-phone-number').textContent = phoneNumber;
+            }
+            if (messageResultEl) {
+                messageResultEl.textContent = 'Nhập thông tin và nhấn "Lấy tin nhắn" để bắt đầu.';
+            }
+            
+            showModal(messageModal);
+        });
+    });
+
+    if (messageFetchForm) {
+        messageFetchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const phoneId = messageFetchForm.querySelector('#modal-phone-id').value;
+            const service = messageFetchForm.querySelector('#modal-service').value;
+            const maxAge = messageFetchForm.querySelector('#modal-maxage').value;
+            const fetchBtnText = document.getElementById('fetch-msg-text');
+            const fetchBtnIcon = document.getElementById('fetch-msg-icon');
+
+            if(fetchBtnText) fetchBtnText.textContent = 'Đang lấy...';
+            if(fetchBtnIcon) fetchBtnIcon.className = 'ri-loader-4-line animate-spin mr-2';
+            if(messageResultEl) messageResultEl.textContent = 'Đang tải...';
+
+            try {
+                const response = await fetch(`/admin/phones/${phoneId}/get-messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service, maxAge })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    if(messageResultEl) messageResultEl.textContent = JSON.stringify(result.data, null, 2);
+                } else {
+                    if(messageResultEl) messageResultEl.textContent = `Lỗi: ${result.message}`;
+                }
+            } catch (error) {
+                if(messageResultEl) messageResultEl.textContent = `Lỗi kết nối: ${error.message}`;
+            } finally {
+                if(fetchBtnText) fetchBtnText.textContent = 'Lấy tin nhắn';
+                if(fetchBtnIcon) fetchBtnIcon.className = 'ri-search-eye-line mr-2';
+            }
+        });
+    }
+    // --- END: LOGIC CHO MODAL XEM TIN NHẮN ---
+
+
+    // Modal handling chung
+    const backdrop = document.getElementById('modal-backdrop');
+    const showModal = (modalEl) => {
+        if (!modalEl || !backdrop) return; // Thêm kiểm tra
+        backdrop.classList.remove('hidden');
+        modalEl.classList.remove('hidden');
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            modalEl.classList.remove('opacity-0', 'scale-95');
+        }, 10);
+    };
+    const hideModal = (modalEl) => {
+        if (!modalEl || !backdrop) return; // Thêm kiểm tra
+        backdrop.classList.add('opacity-0');
+        modalEl.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+            backdrop.classList.add('hidden');
+            modalEl.classList.add('hidden');
+        }, 300);
+    };
+    if (backdrop) {
+        backdrop.addEventListener('click', () => document.querySelectorAll('.modal-container').forEach(hideModal));
+    }
+    document.querySelectorAll('.btn-cancel').forEach(btn => btn.addEventListener('click', () => hideModal(btn.closest('.modal-container'))));
+
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
     const hardDeleteSelectedBtn = document.getElementById('hardDeleteSelectedBtn');
@@ -19,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectAllBanner.classList.add('hidden');
             clearSelectionBanner.classList.remove('hidden');
         } else if (allCheckedOnPage) {
-            itemsOnPageCountSpan.textContent = itemCheckboxes.length;
+            if(itemsOnPageCountSpan) itemsOnPageCountSpan.textContent = itemCheckboxes.length;
             selectAllBanner.classList.remove('hidden');
             clearSelectionBanner.classList.add('hidden');
         } else {

@@ -46,7 +46,7 @@
         "retries": 2
     },
     "autoPhone": {
-        "isEnabled": true,
+        "isEnabled": false,
         "intervalMinutes": 60,
         "countries": [
             "USA"

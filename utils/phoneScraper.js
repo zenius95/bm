@@ -9,44 +9,49 @@ puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 const BASE_URL = 'https://www.receive-sms-free.cc';
 
-// === START: HÀM ĐƯỢC NÂNG CẤP ===
 /**
- * Chuyển đổi chuỗi thời gian tương đối (vd: "2 min ago", "5 seconds ago") thành số giây.
+ * Chuyển đổi chuỗi thời gian tương đối (vd: "2 min ago", "5 months ago") thành số giây.
  * @param {string} timeString - Chuỗi thời gian từ trang web.
  * @returns {number|null} - Số giây đã trôi qua, hoặc null nếu không parse được.
  */
 function parseRelativeTime(timeString) {
     if (!timeString) return null;
     
-    // Regex được nâng cấp để hiểu cả "min" và "minute", "sec" và "second",...
-    const match = timeString.toLowerCase().match(/(\d+)\s+(sec(?:ond)?|min(?:ute)?|hou?r|day|month|year)s?/);
+    const lowerCaseTime = timeString.toLowerCase();
+    // Regex được cải tiến để ưu tiên khớp các đơn vị dài hơn trước (ví dụ: 'month' trước 'min')
+    const match = lowerCaseTime.match(/(\d+)\s+(month|year|day|hour|hr|minute|min|second|sec)s?/);
     if (!match) return null;
 
     const value = parseInt(match[1], 10);
-    let unit = match[2];
-
-    // Chuẩn hóa đơn vị để xử lý nhất quán
-    if (unit.startsWith('sec')) unit = 'second';
-    if (unit.startsWith('min')) unit = 'minute';
-    if (unit.startsWith('h')) unit = 'hour';
+    const unit = match[2];
 
     switch (unit) {
-        case 'second': return value;
-        case 'minute': return value * 60;
-        case 'hour':   return value * 3600;
-        case 'day':    return value * 86400;
-        case 'month':  return value * 2592000; // 30 days
-        case 'year':   return value * 31536000; // 365 days
+        case 'sec':
+        case 'second':
+             return value;
+        case 'min':
+        case 'minute':
+            return value * 60;
+        case 'hr':
+        case 'hour':
+            return value * 3600;
+        case 'day':
+            return value * 86400;
+        case 'month':
+            return value * 2592000; // ~30 days
+        case 'year':
+            return value * 31536000; // 365 days
         default: return null;
     }
 }
-// === END: HÀM ĐƯỢC NÂNG CẤP ===
+
 
 async function scrapeAllPhoneData(configuredCountries = [], logCallback = console.log) {
-    let page = null;
+    let browser = null;
     try {
-        logCallback(`[PhoneScraper] Mượn tab để cào danh sách SĐT...`);
-        page = await browserManager.acquirePage();
+        logCallback(`[PhoneScraper] Yêu cầu trình duyệt mới để cào danh sách SĐT...`);
+        browser = await browserManager.acquireBrowser();
+        const page = await browser.newPage();
 
         const allCountryLinks = await _getAllCountryLinks(page, configuredCountries, logCallback);
 
@@ -84,9 +89,9 @@ async function scrapeAllPhoneData(configuredCountries = [], logCallback = consol
         logCallback(`<span class="text-red-400">[PhoneScraper] Lỗi nghiêm trọng: ${error.message}</span>`);
         return [];
     } finally {
-        if (page) {
-            logCallback('[PhoneScraper] Trả tab sau khi cào SĐT xong.');
-            await browserManager.releasePage(page);
+        if (browser) {
+            logCallback('[PhoneScraper] Trả lại trình duyệt sau khi cào SĐT xong.');
+            await browserManager.releaseBrowser(browser);
         }
     }
 }
@@ -239,26 +244,31 @@ async function _getPhonesFromCountryPage(page, countryName, countryUrlSlug, coun
 }
 
 async function getMessages(countrySlug, phoneNumber, logCallback = console.log) {
-    let page = null;
+    let browser = null;
     const maxRetries = 3; // Thử lại tối đa 3 lần với các proxy khác nhau
     let attempts = 0;
 
     while (attempts < maxRetries) {
         attempts++;
         try {
-            logCallback(`[MessageScraper] Lần thử ${attempts}/${maxRetries}: Mượn tab để lấy tin nhắn cho ${phoneNumber}...`);
-            page = await browserManager.acquirePage();
+            logCallback(`[MessageScraper] Lần thử ${attempts}/${maxRetries}: Yêu cầu trình duyệt mới để lấy tin nhắn cho ${phoneNumber}...`);
+            browser = await browserManager.acquireBrowser();
+            const page = await browser.newPage();
             
             const phoneUrl = `${BASE_URL}/Free-${countrySlug}-Phone-Number/${phoneNumber}/`;
             
             logCallback(`[MessageScraper] Truy cập: ${phoneUrl}`);
             await page.goto(phoneUrl, { waitUntil: 'networkidle2', timeout: 60000 });
 
+            // --- START: SỬA LỖI ---
             const messages = await page.evaluate(() => {
                 const msgs = [];
                 document.querySelectorAll('div.casetext > div.row.border-bottom').forEach(row => {
-                    const fromEl = row.querySelector('.col-xs-12.col-md-2');
+                    // Cột 1: Người gửi
+                    const fromEl = row.querySelector('.col-xs-12.col-md-2 .mobile_hide');
+                    // Cột 2: Thời gian (bị ẩn trên mobile)
                     const timeEl = row.querySelector('.col-xs-0.col-md-2.mobile_hide');
+                    // Cột 3: Nội dung tin nhắn
                     const textEl = row.querySelector('.col-xs-12.col-md-8');
 
                     if (fromEl && textEl && timeEl) {
@@ -271,36 +281,35 @@ async function getMessages(countrySlug, phoneNumber, logCallback = console.log) 
                 });
                 return msgs;
             });
+            // --- END: SỬA LỖI ---
 
             const isCensored = messages.some(msg => msg.text.includes('*** ***'));
 
             if (isCensored) {
                 logCallback(`<span class="text-yellow-400">[MessageScraper] Phát hiện nội dung bị ẩn (*** ***). Có thể proxy đã bị chặn. Thử lại với proxy khác...</span>`);
-                if (page) await browserManager.releasePage(page);
-                page = null; // Quan trọng: reset page để vòng lặp sau lấy page mới
-                if (attempts < maxRetries) await new Promise(resolve => setTimeout(resolve, 2000)); // Chờ 2s trước khi thử lại
-                continue; // Chuyển sang lần thử tiếp theo
+                if (browser) await browserManager.releaseBrowser(browser);
+                browser = null; 
+                if (attempts < maxRetries) await new Promise(resolve => setTimeout(resolve, 2000));
+                continue;
             }
 
-
             logCallback(`[MessageScraper] Tìm thấy ${messages.length} tin nhắn cho ${phoneNumber}.`);
-            return messages; // Trả về kết quả nếu không bị ẩn
+            return messages;
         } catch (error) {
             logCallback(`<span class="text-red-400">[MessageScraper] Lỗi khi lấy tin nhắn cho ${phoneNumber} (lần thử ${attempts}): ${error.message}</span>`);
-            if (page) {
-                await browserManager.releasePage(page);
-                page = null;
+            if (browser) {
+                await browserManager.releaseBrowser(browser);
+                browser = null;
             }
             if (attempts < maxRetries) await new Promise(resolve => setTimeout(resolve, 2000));
         } finally {
-            if (page) {
-                 logCallback(`[MessageScraper] Trả tab sau khi lấy tin nhắn xong.`);
-                 await browserManager.releasePage(page);
+            if (browser) {
+                 logCallback(`[MessageScraper] Trả lại trình duyệt sau khi lấy tin nhắn xong.`);
+                 await browserManager.releaseBrowser(browser);
             }
         }
     }
 
-    // Nếu đã thử hết số lần mà vẫn lỗi hoặc bị ẩn
     throw new Error(`Không thể lấy được tin nhắn cho ${phoneNumber} sau ${maxRetries} lần thử.`);
 }
 
@@ -314,8 +323,13 @@ async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagr
         const relevantMessages = [];
 
         for (const message of messages) {
-            if (message.from.toLowerCase().includes(service.toLowerCase())) {
-                relevantMessages.push({ text: message.text, time: message.time });
+            // Nếu có service, lọc theo service. Nếu không, lấy tất cả tin nhắn.
+            if (!service || message.from.toLowerCase().includes(service.toLowerCase())) {
+                relevantMessages.push({ 
+                    from: message.from, 
+                    text: message.text, 
+                    time: message.time 
+                });
 
                 const messageAgeInSeconds = parseRelativeTime(message.time);
                 
@@ -325,7 +339,7 @@ async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagr
                     if (codeMatch && codeMatch[1]) {
                         foundCode = codeMatch[1];
                         foundLatestMessage = message.text;
-                        logCallback(`[CodeFound] Dịch vụ: ${service}, SĐT: ${phoneNumber}, Tin nhắn hợp lệ (${message.time}), Code: ${foundCode}`);
+                        logCallback(`[CodeFound] Dịch vụ: ${service || 'Bất kỳ'}, SĐT: ${phoneNumber}, Tin nhắn hợp lệ (${message.time}), Code: ${foundCode}`);
                     }
                 }
             }
@@ -335,11 +349,11 @@ async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagr
             return { code: foundCode, latestMessage: foundLatestMessage, allMessages: relevantMessages };
         }
 
-        logCallback(`[CodeNotFound] Không tìm thấy code MỚI nào (dưới ${maxAgeInSeconds}s) cho dịch vụ '${service}' của SĐT ${phoneNumber}.`);
+        logCallback(`[CodeNotFound] Không tìm thấy code MỚI nào (dưới ${maxAgeInSeconds}s) cho dịch vụ '${service || 'Bất kỳ'}' của SĐT ${phoneNumber}.`);
         return { code: null, allMessages: relevantMessages }; 
     } catch (error) {
         logCallback(`<span class="text-red-400">[CodeFinder] Lỗi cuối cùng khi cố gắng lấy mã: ${error.message}</span>`);
-        return { code: null, allMessages: [] }; // Trả về thất bại nếu getMessages hết lần thử
+        return { code: null, allMessages: [] };
     }
 }
 

@@ -3,19 +3,20 @@ const PhoneNumber = require('../models/PhoneNumber');
 const settingsService = require('../utils/settingsService');
 const { getCodeFromPhonePage } = require('../utils/phoneScraper');
 
-// --- START: HÀM TIỆN ÍCH MỚI ĐỂ DỊCH THỜI GIAN ---
+// --- START: HÀM TIỆN ÍCH ĐÃ SỬA LỖI ---
 /**
- * Chuyển đổi chuỗi thời gian (vd: "5m", "2h", "10d") thành số giây.
+ * Chuyển đổi chuỗi thời gian (vd: "5m", "2h", "3M") thành số giây.
  * @param {string} timeString - Chuỗi thời gian đầu vào.
  * @returns {number|null} - Tổng số giây, hoặc null nếu không hợp lệ.
  */
 function parseMaxAge(timeString) {
     if (!timeString) return null;
-    const match = timeString.toLowerCase().match(/^(\d+)([smhdM])$/);
+    // SỬA LỖI: Bỏ .toLowerCase() để phân biệt 'm' (phút) và 'M' (tháng)
+    const match = timeString.match(/^(\d+)([smhdM])$/);
     if (!match) return null;
 
     const value = parseInt(match[1], 10);
-    const unit = match[2];
+    const unit = match[2]; // Giữ nguyên chữ hoa/thường
 
     switch (unit) {
         case 's': return value; // Giây
@@ -26,7 +27,7 @@ function parseMaxAge(timeString) {
         default: return null;
     }
 }
-// --- END: HÀM TIỆN ÍCH MỚI ---
+// --- END: HÀM TIỆN ÍCH ĐÃ SỬA LỖI ---
 
 const authenticateRequest = (req) => {
     // ... (Hàm này giữ nguyên)
@@ -97,6 +98,7 @@ phoneApiController.getCode = async (req, res) => {
 
     const maxAgeInSeconds = parseMaxAge(maxAge);
     if (maxAgeInSeconds === null) {
+        // Cập nhật thông báo lỗi để rõ ràng hơn
         return res.status(400).json({ success: false, message: 'maxAge không hợp lệ. Dùng "s" (giây), "m" (phút), "h" (giờ), "d" (ngày), "M" (tháng). Ví dụ: 30s, 10m, 2h, 3d, 1M.' });
     }
 

@@ -22,10 +22,12 @@
         <div>
             <% if (inTrash) { %>
                 <a href="/admin/phones" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-arrow-left-line mr-2"></i> Quay lại</a>
-                <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
+                <button id="restoreSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-blue-600/80 
+border border-blue-500 rounded-md font-semibold text-sm text-white hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-arrow-go-back-line mr-2"></i> Khôi phục</button>
                 <button id="hardDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-red-600/80 border border-red-500 rounded-md font-semibold text-sm text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-fill mr-2"></i> Xóa vĩnh viễn</button>
             <% } else { %>
-                <a href="/admin/phones?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
+                <a href="/admin/phones?inTrash=true" class="inline-flex items-center px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-md font-semibold text-sm text-white hover:bg-gray-600/50 transition"><i class="ri-delete-bin-line mr-2"></i> 
+Thùng rác (<span id="trash-count"><%= trashCount %></span>)</a>
                 <button id="softDeleteSelectedBtn" disabled class="inline-flex items-center px-4 py-2 bg-yellow-600/80 border border-yellow-500 rounded-md font-semibold text-sm text-white hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><i class="ri-delete-bin-2-line mr-2"></i> Bỏ vào thùng rác</button>
             <% } %>
         </div>
@@ -33,10 +35,12 @@
 
     <% if (pagination.totalPages > 1) { %>
         <div id="select-all-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn. <a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
+           Tất cả <strong id="items-on-page-count"></strong> mục trên trang này đã được chọn.
+<a href="#" id="select-all-matching-items" class="font-bold underline hover:text-white">Chọn tất cả <%= pagination.totalItems %> mục khớp với tìm kiếm này.</a>
         </div>
         <div id="clear-selection-banner" class="hidden bg-blue-500/20 border border-blue-500/30 text-blue-300 px-4 py-3 rounded-lg text-sm" role="alert">
-            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn. <a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
+            Tất cả <strong><%= pagination.totalItems %></strong> mục đã được chọn.
+<a href="#" id="clear-selection" class="font-bold underline hover:text-white">Bỏ chọn.</a>
         </div>
     <% } %>
   
@@ -45,60 +49,118 @@
             <table class="w-full text-sm text-left text-gray-300">
                 <thead class="text-xs text-gray-400 uppercase bg-white/5">
                     <tr>
-                        <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
+                         <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Số điện thoại</th>
                         <th scope="col" class="px-6 py-3">Quốc gia</th>
-                        <th scope="col" class="px-6 py-3">Nguồn</th>
+          
+               <th scope="col" class="px-6 py-3">Nguồn</th>
                         <th scope="col" class="px-6 py-3">Trạng Thái</th>
-                        <th scope="col" class="px-6 py-3"><%= inTrash ? 'Ngày Xóa' : 'Lần Cuối Sử Dụng' %></th>
+                        <th scope="col" class="px-6 py-3"><%= inTrash ?
+'Ngày Xóa' : 'Lần Cuối Sử Dụng' %></th>
+                        <th scope="col" class="px-6 py-3 text-right">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% if (phones && phones.length > 0) { %>
-                        <% phones.forEach(phone => { %>
+             
+           <% phones.forEach(phone => { %>
                             <tr id="phone-row-<%= phone._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                 <td class="p-4"><input type="checkbox" value="<%= phone._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
-                                <td class="px-6 py-4 font-mono text-white"><%= phone.phoneNumber %></td>
+   
+                             <td class="px-6 py-4 font-mono text-white"><%= phone.phoneNumber %></td>
                                 <td class="px-6 py-4 text-gray-400"><%= phone.country %></td>
-                                <td class="px-6 py-4 text-gray-400"><%= phone.source %></td>
+                            
+     <td class="px-6 py-4 text-gray-400"><%= phone.source %></td>
                                 <td class="px-6 py-4">
                                     <% 
-                                        let statusClass = 'bg-green-500/20 text-green-400';
-                                        if (phone.status === 'IN_USE') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                    
+                     let statusClass = 'bg-green-500/20 text-green-400';
+if (phone.status === 'IN_USE') statusClass = 'bg-yellow-500/20 text-yellow-400';
                                     %>
                                     <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>">
                                         <%= phone.status %>
-                                    </span>
+      
+                               </span>
                                 </td>
                                 <td class="px-6 py-4 text-gray-400">
-                                    <% if (inTrash && phone.deletedAt) { %>
+   
+                                  <% if (inTrash && phone.deletedAt) { %>
                                         <%= new Date(phone.deletedAt).toLocaleString('vi-VN') %>
-                                    <% } else if (!inTrash && phone.lastUsedAt) { %>
+                  
+                   <% } else if (!inTrash && phone.lastUsedAt) { %>
                                         <%= new Date(phone.lastUsedAt).toLocaleString('vi-VN') %>
-                                    <% } else if (!inTrash) { %>
+                               
+      <% } else if (!inTrash) { %>
                                         Chưa dùng
+                                    <% } %>
+          
+                       </td>
+                               <td class="px-6 py-4 text-right">
+                                    <% if (!inTrash) { %>
+                                        <button class="btn-view-messages p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Xem tin nhắn" data-id="<%= phone._id %>" data-phone-number="<%= phone.phoneNumber %>">
+                                            <i class="ri-message-2-line"></i>
+                                        </button>
                                     <% } %>
                                 </td>
                             </tr>
-                        <% }); %>
+                        <% });
+%>
                     <% } else { %>
                         <tr>
-                            <td colspan="6" class="text-center py-16 px-6">
-                                <i class="ri-database-2-line text-6xl text-gray-700"></i>
+                            <td colspan="7" class="text-center py-16 px-6">
+                    
+             <i class="ri-database-2-line text-6xl text-gray-700"></i>
                                 <h4 class="mt-4 text-xl font-semibold text-white">Không có số điện thoại nào</h4>
-                                <p class="mt-2 text-gray-400">Hãy thử thay đổi bộ lọc hoặc chờ hệ thống tự động lấy về.</p>
+                                <p class="mt-2 text-gray-400">Hãy thử thay đổi bộ lọc hoặc chờ hệ thống 
+tự động lấy về.</p>
                             </td>
                         </tr>
                     <% } %>
                 </tbody>
-            </table>
+             </table>
         </div>
     </div>
     <%- include('../partials/_pagination.ejs', { pagination, currentQuery }) %>
 </div>
 
+<div id="message-modal" class="modal-container fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-4xl p-4 hidden transform transition-all duration-300 ease-in-out scale-95 opacity-0">
+    <div class="bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 flex flex-col" style="height: 80vh;">
+        <div class="p-6 border-b border-white/10 flex-shrink-0">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Tin nhắn cho số: <span id="modal-phone-number" class="font-mono text-blue-400"></span></h3>
+                </div>
+                <button class="btn-cancel p-2 rounded-md hover:bg-white/10 text-gray-400 transition absolute top-4 right-4"><i class="ri-close-line ri-lg"></i></button>
+            </div>
+             <form id="message-fetch-form" class="mt-4 flex items-end gap-3">
+                <input type="hidden" id="modal-phone-id">
+                <div class="flex-1">
+                    <label for="modal-service" class="block text-xs text-gray-400 mb-1">Dịch vụ</label>
+                    <input type="text" id="modal-service" class="form-input !py-2 text-sm" value="instagram">
+                </div>
+                <div class="flex-1">
+                    <label for="modal-maxage" class="block text-xs text-gray-400 mb-1">Tin nhắn mới trong</label>
+                    <input type="text" id="modal-maxage" class="form-input !py-2 text-sm" value="5m" placeholder="5m, 10s, 1h...">
+                </div>
+                <button type="submit" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-sm text-white transition whitespace-nowrap">
+                    <i id="fetch-msg-icon" class="ri-search-eye-line mr-2"></i>
+                    <span id="fetch-msg-text">Lấy tin nhắn</span>
+                </button>
+            </form>
+        </div>
+        <div class="p-4 flex-grow overflow-y-auto">
+            <pre><code id="message-result" class="language-json text-xs"></code></pre>
+        </div>
+    </div>
+</div>
+
+<%# --- START: THÊM DÒNG NÀY --- %>
+<div id="modal-backdrop" class="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-[99] hidden transition-opacity duration-300 ease-in-out opacity-0"></div>
+<%# --- END: THÊM DÒNG NÀY --- %>
+
+
 <script>
     document.body.dataset.currentQuery = JSON.stringify(<%- JSON.stringify(currentQuery) %>);
-    document.body.dataset.totalItems = "<%= pagination.totalItems %>";
+document.body.dataset.totalItems = "<%= pagination.totalItems %>";
 </script>
 <script src="/js/admin/phones.js"></script>
