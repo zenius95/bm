@@ -288,18 +288,26 @@ class ItemProcessorManager extends EventEmitter {
     }
 
     async updateOrderProgress(orderId, lastItemStatus, item) {
-        const updateField = lastItemStatus === 'completed' ? 'completedItems' : 'failedItems';
-        
-        const order = await Order.findByIdAndUpdate(orderId, 
-            { $inc: { [updateField]: 1 } },
-            { new: true }
-        ).populate('user');
-
+        // *** BẮT ĐẦU THAY ĐỔI: Không dùng $inc nữa ***
+        const order = await Order.findById(orderId).populate('user');
         if (!order) return;
+
+        // Đếm lại số lượng từ DB để đảm bảo chính xác
+        const [completedCount, failedCount] = await Promise.all([
+            Item.countDocuments({ orderId: orderId, status: 'completed' }),
+            Item.countDocuments({ orderId: orderId, status: 'failed' })
+        ]);
+        
+        // Cập nhật lại bộ đếm trong order (chủ yếu để hiển thị)
+        order.completedItems = completedCount;
+        order.failedItems = failedCount;
+        await order.save();
+        // *** KẾT THÚC THAY ĐỔI ***
         
         const updatedItem = await Item.findById(item._id).lean();
         const orderRoom = `order_${orderId}`;
         const userRoom = `user_${order.user._id.toString()}`;
+        
         this.io.to(orderRoom).to(userRoom).emit('order:item_update', {
             id: order._id.toString(),
             completedItems: order.completedItems,
@@ -309,18 +317,35 @@ class ItemProcessorManager extends EventEmitter {
         });
         
         if ((order.completedItems + order.failedItems) >= order.totalItems) {
-            await this.checkOrderCompletion(order);
+            await this.checkOrderCompletion(orderId);
         }
     }
 
-    async checkOrderCompletion(order) {
+    async checkOrderCompletion(orderId) {
+        // *** BẮT ĐẦU THAY ĐỔI: Lấy orderId thay vì object, truy vấn lại để có dữ liệu mới nhất ***
+        const order = await Order.findById(orderId).populate('user');
         if (!order) return;
+        if (order.status !== 'processing') {
+            console.log(`[ItemProcessor] Order #${order.shortId} đã ở trạng thái cuối cùng, bỏ qua quyết toán.`);
+            return;
+        }
+
+        // Đếm lại một lần nữa để chắc chắn 100%
+        const [finalCompletedCount, finalFailedCount] = await Promise.all([
+            Item.countDocuments({ orderId: orderId, status: 'completed' }),
+            Item.countDocuments({ orderId: orderId, status: 'failed' })
+        ]);
+
         const initialCost = order.pricePerItem * order.totalItems;
-        const finalPricePerItem = settingsService.calculatePricePerItem(order.completedItems);
-        const finalCost = order.completedItems * finalPricePerItem;
+        const finalPricePerItem = settingsService.calculatePricePerItem(finalCompletedCount);
+        const finalCost = finalCompletedCount * finalPricePerItem;
         const refundAmount = initialCost - finalCost;
+        
         order.status = 'completed';
         order.totalCost = finalCost;
+        order.completedItems = finalCompletedCount;
+        order.failedItems = finalFailedCount;
+        // *** KẾT THÚC THAY ĐỔI ***
 
         let user = await User.findById(order.user._id);
         const balanceBefore = user.balance;
