@@ -20,14 +20,13 @@ const Proxy = require('./models/Proxy');
 const Item = require('./models/Item');
 const authController = require('./controllers/authController');
 const apiKeyAuthController = require('./controllers/apiKeyAuthController');
-const browserManager = require('./utils/browserManager'); // <<< THÊM DÒNG NÀY
-const phoneStatusManager = require('./utils/phoneStatusManager'); // <<< THÊM DÒNG NÀY
+const phoneStatusManager = require('./utils/phoneStatusManager'); 
 
 const adminRoutes = require('./routes/admin');
 const clientRoutes = require('./routes/client');
 const orderRoutes = require('./routes/order');
 const workerApiRoutes = require('./routes/workerApi');
-const phoneApiRoutes = require('./routes/phoneApi'); // <<< THÊM DÒNG NÀY
+const phoneApiRoutes = require('./routes/phoneApi'); 
 
 
 const autoCheckManager = require('./utils/autoCheckManager');
@@ -35,7 +34,7 @@ const itemProcessorManager = require('./utils/itemProcessorManager');
 const workerMonitor = require('./utils/workerMonitor');
 const autoDepositManager = require('./utils/autoDepositManager');
 const autoProxyCheckManager = require('./utils/autoProxyCheckManager');
-const autoPhoneManager = require('./utils/autoPhoneManager'); // <<< THÊM DÒNG NÀY
+const autoPhoneManager = require('./utils/autoPhoneManager'); 
 
 const app = express();
 const server = http.createServer(app);
@@ -153,7 +152,6 @@ async function startServer() {
     
     await settingsService.initialize();
     
-    await browserManager.launchBrowser(); 
     phoneStatusManager.start();
 
     await mongoose.connect(config.mongodb.uri)
@@ -169,7 +167,7 @@ async function startServer() {
     await settingsService.update('autoCheck', { isEnabled: false });
     await settingsService.update('autoProxyCheck', { isEnabled: false });
     await settingsService.update('autoDeposit', { isEnabled: false });
-    await settingsService.update('autoPhone', { isEnabled: false }); // <<< THÊM DÒNG NÀY
+    await settingsService.update('autoPhone', { isEnabled: false }); 
     console.log('✅ All auto-services have been disabled.');
     
     const adminCount = await User.countDocuments({ role: 'admin' });
@@ -201,7 +199,7 @@ async function startServer() {
         workerMonitor.initialize(io);
         autoDepositManager.initialize(io);
         autoProxyCheckManager.initialize(io);
-        autoPhoneManager.initialize(io); // <<< THÊM DÒNG NÀY
+        autoPhoneManager.initialize(io); 
     });
 }
 
