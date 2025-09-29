@@ -1,6 +1,6 @@
 // utils/itemProcessorManager.js
 const EventEmitter = require('events');
-const settingsService = require('../utils/settingsService');
+const settingsService = require('./settingsService');
 const Order = require('../models/Order');
 const Item = require('../models/Item');
 const Account = require('../models/Account');
@@ -170,11 +170,14 @@ class ItemProcessorManager extends EventEmitter {
             this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
         }
         
-        if (!item.data || !/^\d+$/.test(item.data.trim())) {
+        const bmIdMatch = item.data.trim().match(/^\d+/);
+        const bmId = bmIdMatch ? bmIdMatch[0] : null;
+
+        if (!bmId) {
             const errorMessage = `Xử lý thất bại: BM ID "${item.data}" không hợp lệ. Vui lòng chỉ nhập ID là số.`;
-            console.error(`[ItemProcessor] Invalid BM ID for item ${item._id}: ${item.data}`);
             await this.writeLog(item.orderId, item._id, 'ERROR', errorMessage);
             await Item.findByIdAndUpdate(item._id, { status: 'failed' });
+            // Cập nhật tiến trình ngay lập tức và ném lỗi để dừng xử lý
             await this.updateOrderProgress(item.orderId, 'failed', item);
             throw new Error(errorMessage);
         }
@@ -217,7 +220,7 @@ class ItemProcessorManager extends EventEmitter {
             };
 
             try {
-                const result = await runAppealProcess(account, item.data, logCallback);
+                const result = await runAppealProcess(account, bmId, logCallback);
                 
                 if (result === true) {
                     await Item.findByIdAndUpdate(item._id, { status: 'completed', processedWith: account._id });
