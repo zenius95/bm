@@ -55,7 +55,6 @@
         "maxBrowsers": 5,
         "maxPagesPerBrowser": 2,
         "respawnDelayMs": 5000,
-        "useProxies": false,
         "proxies": [
             "http://ZiIuSG:RSZiCH@160.250.46.75:17475",
             "http://KoykSf:IiZXHY@171.224.206.252:23491",
@@ -369,7 +368,8 @@
             "http://Xrpadl:bGErAV@171.236.166.248:26973",
             "http://Xrpadl:bGErAV@171.236.161.79:36201",
             "http://Xrpadl:bGErAV@171.236.182.234:39092"
-        ]
+        ],
+        "useProxies": true
     },
     "phoneManager": {
         "stalePhoneTimeoutMinutes": 10

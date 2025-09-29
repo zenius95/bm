@@ -6,7 +6,7 @@ const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
 const autoDepositManager = require('../utils/autoDepositManager');
 const autoProxyCheckManager = require('../utils/autoProxyCheckManager');
-const autoPhoneManager = require('../utils/autoPhoneManager');
+const autoPhoneManager = require('../utils/autoPhoneManager'); // Mới thêm
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -71,7 +71,7 @@ settingController.getSettingsPage = async (req, res) => {
                 autoProxyCheck: autoProxyCheckManager.getStatus(),
                 itemProcessor: itemProcessorManager.getStatus(),
                 autoDeposit: autoDepositManager.getStatus(),
-                autoPhone: autoPhoneManager.getStatus()
+                autoPhone: autoPhoneManager.getStatus() // Cập nhật
             },
             availableImageCaptchaServices,
             availableRecaptchaServices,
@@ -344,6 +344,7 @@ settingController.updateAutoPhoneConfig = async (req, res) => {
     }
 };
 
+// START: THÊM MỚI
 settingController.updateBrowserSettings = async (req, res) => {
     try {
         const { 
@@ -351,7 +352,7 @@ settingController.updateBrowserSettings = async (req, res) => {
             maxPagesPerBrowser, 
             respawnDelayMs, 
             stalePhoneTimeoutMinutes,
-            useProxies
+            proxies
         } = req.body;
 
         const parse = (val, min) => {
@@ -363,13 +364,14 @@ settingController.updateBrowserSettings = async (req, res) => {
             maxBrowsers: parse(maxBrowsers, 1),
             maxPagesPerBrowser: parse(maxPagesPerBrowser, 1),
             respawnDelayMs: parse(respawnDelayMs, 1000),
-            useProxies: !!useProxies
+            proxies: proxies.split('\n').map(p => p.trim()).filter(Boolean)
         };
 
         const phoneConfig = {
             stalePhoneTimeoutMinutes: parse(stalePhoneTimeoutMinutes, 1)
         };
 
+        // Lọc bỏ các giá trị undefined để không ghi đè lên setting hiện tại nếu input trống
         Object.keys(browserConfig).forEach(key => browserConfig[key] === undefined && delete browserConfig[key]);
         Object.keys(phoneConfig).forEach(key => phoneConfig[key] === undefined && delete phoneConfig[key]);
 
@@ -382,5 +384,6 @@ settingController.updateBrowserSettings = async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật cài đặt.' });
     }
 };
+// END: THÊM MỚI
 
 module.exports = settingController;

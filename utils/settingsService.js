@@ -50,15 +50,17 @@ const DEFAULT_SETTINGS = {
         countries: [],
         sources: []
     },
+    // START: THÊM MỚI
     browserManager: {
         maxBrowsers: 2,
         maxPagesPerBrowser: 5,
         respawnDelayMs: 5000,
-        useProxies: false
+        proxies: []
     },
     phoneManager: {
         stalePhoneTimeoutMinutes: 10
     },
+    // END: THÊM MỚI
     itemProcessor: {
         isEnabled: false,
         concurrency: 10,
@@ -100,8 +102,10 @@ class SettingsService extends EventEmitter {
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
                 autoPhone: { ...DEFAULT_SETTINGS.autoPhone, ...(fileData.autoPhone || {}) },
+                // START: THÊM MỚI
                 browserManager: { ...DEFAULT_SETTINGS.browserManager, ...(fileData.browserManager || {}) },
                 phoneManager: { ...DEFAULT_SETTINGS.phoneManager, ...(fileData.phoneManager || {}) },
+                // END: THÊM MỚI
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) },
                 services: {
                     ...DEFAULT_SETTINGS.services,
