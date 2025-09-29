@@ -23,6 +23,9 @@ class ItemProcessorManager extends EventEmitter {
         this.activeTasks = 0;
         this.queuedTasks = 0;
         // <<< END: THÊM THUỘC TÍNH THEO DÕI TRẠNG THÁI >>>
+        // <<< START: THÊM BIẾN GIỮ RUNNER HIỆN TẠI >>>
+        this.currentRunner = null;
+        // <<< END: THÊM BIẾN GIỮ RUNNER HIỆN TẠI >>>
     }
 
     initialize(io) {
@@ -35,6 +38,10 @@ class ItemProcessorManager extends EventEmitter {
         await settingsService.update('itemProcessor', newConfig);
         console.log(`[ItemProcessor] Config updated.`);
         this.emitStatus();
+        // <<< START: KHỞI ĐỘNG LẠI PROCESSOR KHI CONFIG THAY ĐỔI >>>
+        this.stop();
+        this.start();
+        // <<< END: KHỞI ĐỘNG LẠI PROCESSOR KHI CONFIG THAY ĐỔI >>>
     }
 
     start() {
@@ -49,6 +56,12 @@ class ItemProcessorManager extends EventEmitter {
     stop() {
         if (this.timer) clearInterval(this.timer);
         this.timer = null;
+        // <<< START: DỪNG RUNNER HIỆN TẠI >>>
+        if (this.currentRunner) {
+            this.currentRunner.stop();
+            this.currentRunner = null;
+        }
+        // <<< END: DỪNG RUNNER HIỆN TẠI >>>
         console.log('[ItemProcessor] Service stopped.');
     }
 
@@ -80,22 +93,25 @@ class ItemProcessorManager extends EventEmitter {
             const maxConcurrency = currentConfig.concurrency || 10;
             const itemProcessingTimeout = currentConfig.timeout || 180000;
             
-            // Cập nhật số lượng item trong hàng đợi
             this.queuedTasks = await Item.countDocuments({ status: 'queued' });
+
+            const availableSlots = maxConcurrency - this.activeTasks;
+            if (availableSlots <= 0) {
+                return;
+            }
 
             const items = await Item.find({ status: 'queued' })
                                     .sort({ createdAt: 1 })
-                                    .limit(maxConcurrency)
+                                    .limit(availableSlots)
                                     .lean();
             
             if (items.length === 0) {
-                this.activeTasks = 0;
                 this.emitStatus();
                 return;
             }
             
             console.log(`[ItemProcessor] Found ${items.length} items to process.`);
-            this.activeTasks = items.length;
+            this.activeTasks += items.length;
             this.emitStatus();
             
             const itemIds = items.map(i => i._id);
@@ -104,56 +120,79 @@ class ItemProcessorManager extends EventEmitter {
             const orderIds = [...new Set(items.map(i => i.orderId.toString()))];
             await Order.updateMany({ _id: { $in: orderIds }, status: 'pending' }, { $set: { status: 'processing' } });
             
-            const runner = new ProcessRunner({
-                concurrency: maxConcurrency,
-                timeout: itemProcessingTimeout,
-            });
+            // <<< START: SỬ DỤNG RUNNER MỚI >>>
+            if (!this.currentRunner || this.currentRunner.status === 'finished' || this.currentRunner.status === 'stopped') {
+                this.currentRunner = new ProcessRunner({
+                    concurrency: maxConcurrency,
+                    timeout: itemProcessingTimeout,
+                });
+                this.setupRunnerEvents();
+            }
 
             const tasks = items.map(item => ({
                 id: item._id.toString(),
-                task: () => this.runSingleItemTask(item)
+                task: (signal) => this.runSingleItemTask(item, signal) // Truyền signal vào task
             }));
 
-            runner.addTasks(tasks);
+            this.currentRunner.addTasks(tasks);
 
-            runner.on('task:complete', async ({ result }) => {
-                const { account } = result;
-                await this.updateAccountOnFinish(account, true);
-            });
-
-            runner.on('task:error', async ({ error, taskWrapper }) => {
-                const item = await Item.findById(taskWrapper.id);
-                if (!item) return;
-
-                if (error.lastUsedAccount) {
-                    await this.updateAccountOnFinish(error.lastUsedAccount, false);
-                }
-                
-                console.error(`[ItemProcessor] Task for item ${item._id} failed: ${error.message}`);
-                await this.writeLog(item.orderId, item._id, 'ERROR', `Xử lý thất bại: ${error.message}`);
-                item.status = 'failed';
-                await item.save();
-            });
-            
-            runner.on('end', async () => {
-                // Khi một lô hoàn thành, cập nhật lại trạng thái
-                this.activeTasks = 0;
-                this.queuedTasks = await Item.countDocuments({ status: 'queued' });
-                this.emitStatus();
-            });
-
-            runner.start();
+            if (this.currentRunner.status !== 'running') {
+                this.currentRunner.start();
+            }
+            // <<< END: SỬ DỤNG RUNNER MỚI >>>
 
         } catch (err) {
             console.error('[ItemProcessor] Critical error during item processing batch:', err);
-            this.activeTasks = 0; // Reset on critical error
-            this.emitStatus();
         } finally {
             this.isProcessingBatch = false;
         }
     }
     
-    async runSingleItemTask(item) {
+    // <<< START: TÁCH LOGIC SETUP EVENT RA RIÊNG >>>
+    setupRunnerEvents() {
+        if (!this.currentRunner) return;
+
+        this.currentRunner.on('task:complete', async ({ result }) => {
+            const { account } = result;
+            if (account) {
+                await this.updateAccountOnFinish(account, true);
+            }
+        });
+
+        this.currentRunner.on('task:error', async ({ error, taskWrapper }) => {
+            // Không xử lý AbortError như lỗi thực sự
+            if (error.name === 'AbortError') {
+                 console.log(`[ItemProcessor] Task for item ${taskWrapper.id} was aborted.`);
+                 // Có thể trả item về 'queued' nếu cần
+                 await Item.findByIdAndUpdate(taskWrapper.id, { $set: { status: 'queued' }});
+                 return; // Dừng xử lý
+            }
+
+            const item = await Item.findById(taskWrapper.id);
+            if (!item) return;
+
+            if (error.lastUsedAccount) {
+                await this.updateAccountOnFinish(error.lastUsedAccount, false);
+            }
+            
+            console.error(`[ItemProcessor] Task for item ${item._id} failed: ${error.message}`);
+            await this.writeLog(item.orderId, item._id, 'ERROR', `Xử lý thất bại: ${error.message}`);
+            item.status = 'failed';
+            await item.save();
+        });
+        
+        this.currentRunner.on('end', async () => {
+            console.log('[ItemProcessor] A batch of tasks has finished.');
+            this.activeTasks = this.currentRunner.activeTasks;
+            this.queuedTasks = await Item.countDocuments({ status: 'queued' });
+            this.emitStatus();
+        });
+    }
+    // <<< END: TÁCH LOGIC SETUP EVENT RA RIÊNG >>>
+    
+    // <<< START: NHẬN SIGNAL LÀM THAM SỐ >>>
+    async runSingleItemTask(item, signal) {
+    // <<< END: NHẬN SIGNAL LÀM THAM SỐ >>>
         const bmIdMatch = item.data.trim().match(/^\d+$/);
         const bmId = bmIdMatch ? bmIdMatch[0] : null;
 
@@ -162,7 +201,7 @@ class ItemProcessorManager extends EventEmitter {
         }
 
         if (SIMULATION_KEYWORDS.includes(item.data.toLowerCase().trim())) {
-             await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
             if (item.data.toLowerCase().trim() === 'success') {
                 await Item.findByIdAndUpdate(item._id, { status: 'completed' });
                 return { item, account: null };
@@ -178,6 +217,11 @@ class ItemProcessorManager extends EventEmitter {
         let lastUsedAccount = null;
 
         while (attemptCount < MAX_ITEM_RETRIES && !success) {
+            // <<< START: KIỂM TRA TÍN HIỆU TRƯỚC MỖI LẦN THỬ >>>
+            if (signal && signal.aborted) {
+                throw new Error('Process was aborted.');
+            }
+            // <<< END: KIỂM TRA TÍN HIỆU TRƯỚC MỖI LẦN THỬ >>>
             attemptCount++;
             const account = await this.acquireAccount(usedAccountIds);
             lastUsedAccount = account;
@@ -195,7 +239,9 @@ class ItemProcessorManager extends EventEmitter {
             };
 
             try {
-                const result = await runAppealProcess(account, bmId, logCallback);
+                // <<< START: TRUYỀN TÍN HIỆU VÀO HÀM CON >>>
+                const result = await runAppealProcess(account, bmId, logCallback, signal);
+                // <<< END: TRUYỀN TÍN HIỆU VÀO HÀM CON >>>
                 
                 if (result === true) {
                     await Item.findByIdAndUpdate(item._id, { status: 'completed', processedWith: account._id });
@@ -206,6 +252,11 @@ class ItemProcessorManager extends EventEmitter {
                 }
 
             } catch (error) {
+                // <<< START: KHÔNG CẦN CẬP NHẬT ACCOUNT KHI BỊ ABORT >>>
+                if (error.name === 'AbortError') {
+                    throw error; // Ném lại lỗi để ProcessRunner xử lý
+                }
+                // <<< END: KHÔNG CẦN CẬP NHẬT ACCOUNT KHI BỊ ABORT >>>
                 await this.writeLog(item.orderId, item._id, 'ERROR', `Lỗi với account ${account.uid}: ${error.message}`);
                 await this.updateAccountOnFinish(account, false);
                 await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ACCOUNTS));
@@ -259,7 +310,12 @@ class ItemProcessorManager extends EventEmitter {
 
     async writeLog(orderId, itemId, level, message) {
          try {
-            await Log.create({ orderId, itemId, level, message });
+            const logEntry = { orderId, itemId, level, message, timestamp: new Date() };
+            await Log.create(logEntry);
+            // Gửi log qua socket để cập nhật UI real-time
+            if (this.io) {
+                this.io.to(`item_${itemId}`).to(`order_${orderId}`).emit('order:new_logs_batch', [logEntry]);
+            }
         } catch (error) {
             console.error(`Failed to write log for item ${itemId}:`, error);
         }

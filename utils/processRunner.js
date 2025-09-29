@@ -21,6 +21,9 @@ class ProcessRunner extends EventEmitter {
         this.totalTasks = 0;
         this.errors = 0;
         this.status = 'idle';
+        // <<< START: THÊM ABORT CONTROLLER >>>
+        this.abortController = null;
+        // <<< END: THÊM ABORT CONTROLLER >>>
     }
 
     addTasks(tasks) {
@@ -39,6 +42,10 @@ class ProcessRunner extends EventEmitter {
             this.emit('end', { message: 'Không có task nào.' });
             return;
         }
+        
+        // <<< START: KHỞI TẠO ABORT CONTROLLER >>>
+        this.abortController = new AbortController();
+        // <<< END: KHỞI TẠO ABORT CONTROLLER >>>
         
         this.queue = [...this.tasks];
         this.status = 'running';
@@ -61,6 +68,12 @@ class ProcessRunner extends EventEmitter {
 
     stop() {
         this.status = 'stopped';
+        // <<< START: KÍCH HOẠT HỦY BỎ >>>
+        if (this.abortController) {
+            this.abortController.abort();
+            console.log('[ProcessRunner] Abort signal sent to all active tasks.');
+        }
+        // <<< END: KÍCH HOẠT HỦY BỎ >>>
         this.queue = [];
         this.activeTasks = 0;
         this.emit('stop');
@@ -79,9 +92,10 @@ class ProcessRunner extends EventEmitter {
         while (this.activeTasks < this.options.concurrency && this.queue.length > 0) {
             this.activeTasks++;
             const taskWrapper = this.queue.shift();
-            // Bọc việc thực thi trong một hàm tự gọi để đảm bảo nó không ném lỗi ra ngoài
             (async () => {
+                // <<< START: TRUYỀN TÍN HIỆU VÀO TASK >>>
                 await this._executeTask(taskWrapper);
+                // <<< END: TRUYỀN TÍN HIỆU VÀO TASK >>>
             })();
         }
     }
@@ -92,22 +106,25 @@ class ProcessRunner extends EventEmitter {
                 return;
             }
             
-            // === START: SỬA LỖI - Bọc emit trong try...catch ===
-            // An toàn hơn khi emit sự kiện, tránh lỗi từ listener làm sập tiến trình
             try { this.emit('task:start', { taskWrapper, attempt }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:start:', e); }
 
-            const result = await this._runWithTimeout(taskWrapper.task);
+            // <<< START: TRUYỀN TÍN HIỆU VÀO TASK >>>
+            const result = await this._runWithTimeout(() => taskWrapper.task(this.abortController.signal));
+            // <<< END: TRUYỀN TÍN HIỆU VÀO TASK >>>
+            
             this.completedTasks++;
             
-            // An toàn hơn khi emit sự kiện
             try { this.emit('task:complete', { result, taskWrapper }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:complete:', e); }
-            // === END: SỬA LỖI ===
 
         } catch (error) {
+            // <<< START: XỬ LÝ LỖI ABORT RIÊNG >>>
+            if (error.name === 'AbortError') {
+                console.log(`[ProcessRunner] Task ${taskWrapper.id} was aborted.`);
+                // Không tính là lỗi, không retry
+            } else 
+            // <<< END: XỬ LÝ LỖI ABORT RIÊNG >>>
             if (this.options.retries > 0 && attempt <= this.options.retries) {
-                // === START: SỬA LỖI - Bọc emit trong try...catch ===
                 try { this.emit('task:retry', { error: error, taskWrapper, attempt: attempt + 1 }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:retry:', e); }
-                // === END: SỬA LỖI ===
                 await this._delay(1000); 
                 this.activeTasks--; 
                 this._executeTask(taskWrapper, attempt + 1);
@@ -115,10 +132,7 @@ class ProcessRunner extends EventEmitter {
             } else {
                 this.errors++;
                 this.failedTasks++;
-                // === START: SỬA LỖI - Bọc emit trong try...catch ===
-                // An toàn hơn khi emit sự kiện
                 try { this.emit('task:error', { error: error, taskWrapper }); } catch (e) { console.error('[ProcessRunner] Lỗi trong listener task:error:', e); }
-                // === END: SỬA LỖI ===
             }
         } finally {
             if (!(this.options.retries > 0 && attempt <= this.options.retries)) {
