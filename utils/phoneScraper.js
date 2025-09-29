@@ -239,77 +239,108 @@ async function _getPhonesFromCountryPage(page, countryName, countryUrlSlug, coun
 }
 
 async function getMessages(countrySlug, phoneNumber, logCallback = console.log) {
-    let page = null; 
-    try {
-        logCallback(`[MessageScraper] Mượn tab để lấy tin nhắn cho ${phoneNumber}...`);
-        page = await browserManager.acquirePage();
-        
-        const phoneUrl = `${BASE_URL}/Free-${countrySlug}-Phone-Number/${phoneNumber}/`;
-        
-        logCallback(`[MessageScraper] Truy cập: ${phoneUrl}`);
-        await page.goto(phoneUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+    let page = null;
+    const maxRetries = 3; // Thử lại tối đa 3 lần với các proxy khác nhau
+    let attempts = 0;
 
-        const messages = await page.evaluate(() => {
-            const msgs = [];
-            document.querySelectorAll('div.casetext > div.row.border-bottom').forEach(row => {
-                const fromEl = row.querySelector('.col-xs-12.col-md-2');
-                const timeEl = row.querySelector('.col-xs-0.col-md-2.mobile_hide');
-                const textEl = row.querySelector('.col-xs-12.col-md-8');
-
-                if (fromEl && textEl && timeEl) {
-                     msgs.push({
-                        from: fromEl.textContent.trim(),
-                        text: textEl.textContent.trim(),
-                        time: timeEl.textContent.trim()
-                    });
-                }
-            });
-            return msgs;
-        });
-        logCallback(`[MessageScraper] Tìm thấy ${messages.length} tin nhắn cho ${phoneNumber}.`);
-        return messages;
-    } catch (error) {
-        logCallback(`<span class="text-red-400">[MessageScraper] Lỗi khi lấy tin nhắn cho ${phoneNumber}: ${error.message}</span>`);
-        return [];
-    } finally {
-        if (page) {
-             logCallback(`[MessageScraper] Trả tab sau khi lấy tin nhắn xong.`);
-             await browserManager.releasePage(page);
-        }
-    }
-}
-
-async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagram', maxAgeInSeconds = 300, logCallback = console.log) {
-    const messages = await getMessages(countrySlug, phoneNumber, logCallback);
-    
-    let foundCode = null;
-    let foundLatestMessage = null;
-    const relevantMessages = [];
-
-    for (const message of messages) {
-        if (message.from.toLowerCase().includes(service.toLowerCase())) {
-            relevantMessages.push({ text: message.text, time: message.time });
-
-            const messageAgeInSeconds = parseRelativeTime(message.time);
+    while (attempts < maxRetries) {
+        attempts++;
+        try {
+            logCallback(`[MessageScraper] Lần thử ${attempts}/${maxRetries}: Mượn tab để lấy tin nhắn cho ${phoneNumber}...`);
+            page = await browserManager.acquirePage();
             
-            if (!foundCode && messageAgeInSeconds !== null && messageAgeInSeconds <= maxAgeInSeconds) {
-                const codeMatch = message.text.match(/\b(\d{6})\b/);
-                
-                if (codeMatch && codeMatch[1]) {
-                    foundCode = codeMatch[1];
-                    foundLatestMessage = message.text;
-                    logCallback(`[CodeFound] Dịch vụ: ${service}, SĐT: ${phoneNumber}, Tin nhắn hợp lệ (${message.time}), Code: ${foundCode}`);
-                }
+            const phoneUrl = `${BASE_URL}/Free-${countrySlug}-Phone-Number/${phoneNumber}/`;
+            
+            logCallback(`[MessageScraper] Truy cập: ${phoneUrl}`);
+            await page.goto(phoneUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+
+            const messages = await page.evaluate(() => {
+                const msgs = [];
+                document.querySelectorAll('div.casetext > div.row.border-bottom').forEach(row => {
+                    const fromEl = row.querySelector('.col-xs-12.col-md-2');
+                    const timeEl = row.querySelector('.col-xs-0.col-md-2.mobile_hide');
+                    const textEl = row.querySelector('.col-xs-12.col-md-8');
+
+                    if (fromEl && textEl && timeEl) {
+                         msgs.push({
+                            from: fromEl.textContent.trim(),
+                            text: textEl.textContent.trim(),
+                            time: timeEl.textContent.trim()
+                        });
+                    }
+                });
+                return msgs;
+            });
+
+            const isCensored = messages.some(msg => msg.text.includes('*** ***'));
+
+            if (isCensored) {
+                logCallback(`<span class="text-yellow-400">[MessageScraper] Phát hiện nội dung bị ẩn (*** ***). Có thể proxy đã bị chặn. Thử lại với proxy khác...</span>`);
+                if (page) await browserManager.releasePage(page);
+                page = null; // Quan trọng: reset page để vòng lặp sau lấy page mới
+                if (attempts < maxRetries) await new Promise(resolve => setTimeout(resolve, 2000)); // Chờ 2s trước khi thử lại
+                continue; // Chuyển sang lần thử tiếp theo
+            }
+
+
+            logCallback(`[MessageScraper] Tìm thấy ${messages.length} tin nhắn cho ${phoneNumber}.`);
+            return messages; // Trả về kết quả nếu không bị ẩn
+        } catch (error) {
+            logCallback(`<span class="text-red-400">[MessageScraper] Lỗi khi lấy tin nhắn cho ${phoneNumber} (lần thử ${attempts}): ${error.message}</span>`);
+            if (page) {
+                await browserManager.releasePage(page);
+                page = null;
+            }
+            if (attempts < maxRetries) await new Promise(resolve => setTimeout(resolve, 2000));
+        } finally {
+            if (page) {
+                 logCallback(`[MessageScraper] Trả tab sau khi lấy tin nhắn xong.`);
+                 await browserManager.releasePage(page);
             }
         }
     }
-    
-    if (foundCode) {
-        return { code: foundCode, latestMessage: foundLatestMessage, allMessages: relevantMessages };
-    }
 
-    logCallback(`[CodeNotFound] Không tìm thấy code MỚI nào (dưới ${maxAgeInSeconds}s) cho dịch vụ '${service}' của SĐT ${phoneNumber}.`);
-    return { code: null, allMessages: relevantMessages }; 
+    // Nếu đã thử hết số lần mà vẫn lỗi hoặc bị ẩn
+    throw new Error(`Không thể lấy được tin nhắn cho ${phoneNumber} sau ${maxRetries} lần thử.`);
+}
+
+
+async function getCodeFromPhonePage(countrySlug, phoneNumber, service = 'instagram', maxAgeInSeconds = 300, logCallback = console.log) {
+    try {
+        const messages = await getMessages(countrySlug, phoneNumber, logCallback);
+        
+        let foundCode = null;
+        let foundLatestMessage = null;
+        const relevantMessages = [];
+
+        for (const message of messages) {
+            if (message.from.toLowerCase().includes(service.toLowerCase())) {
+                relevantMessages.push({ text: message.text, time: message.time });
+
+                const messageAgeInSeconds = parseRelativeTime(message.time);
+                
+                if (!foundCode && messageAgeInSeconds !== null && messageAgeInSeconds <= maxAgeInSeconds) {
+                    const codeMatch = message.text.match(/\b(\d{6})\b/);
+                    
+                    if (codeMatch && codeMatch[1]) {
+                        foundCode = codeMatch[1];
+                        foundLatestMessage = message.text;
+                        logCallback(`[CodeFound] Dịch vụ: ${service}, SĐT: ${phoneNumber}, Tin nhắn hợp lệ (${message.time}), Code: ${foundCode}`);
+                    }
+                }
+            }
+        }
+        
+        if (foundCode) {
+            return { code: foundCode, latestMessage: foundLatestMessage, allMessages: relevantMessages };
+        }
+
+        logCallback(`[CodeNotFound] Không tìm thấy code MỚI nào (dưới ${maxAgeInSeconds}s) cho dịch vụ '${service}' của SĐT ${phoneNumber}.`);
+        return { code: null, allMessages: relevantMessages }; 
+    } catch (error) {
+        logCallback(`<span class="text-red-400">[CodeFinder] Lỗi cuối cùng khi cố gắng lấy mã: ${error.message}</span>`);
+        return { code: null, allMessages: [] }; // Trả về thất bại nếu getMessages hết lần thử
+    }
 }
 
 module.exports = { scrapeAllPhoneData, getCodeFromPhonePage, getMessages };

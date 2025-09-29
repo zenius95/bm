@@ -6,7 +6,7 @@ const Worker = require('../models/Worker');
 const { logActivity } = require('../utils/activityLogService');
 const autoDepositManager = require('../utils/autoDepositManager');
 const autoProxyCheckManager = require('../utils/autoProxyCheckManager');
-const autoPhoneManager = require('../utils/autoPhoneManager'); // Mới thêm
+const autoPhoneManager = require('../utils/autoPhoneManager');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -71,7 +71,7 @@ settingController.getSettingsPage = async (req, res) => {
                 autoProxyCheck: autoProxyCheckManager.getStatus(),
                 itemProcessor: itemProcessorManager.getStatus(),
                 autoDeposit: autoDepositManager.getStatus(),
-                autoPhone: autoPhoneManager.getStatus() // Cập nhật
+                autoPhone: autoPhoneManager.getStatus()
             },
             availableImageCaptchaServices,
             availableRecaptchaServices,
@@ -315,13 +315,11 @@ settingController.getAutoCheckStatus = (req, res) => {
     res.json(autoCheckManager.getStatus());
 };
 
-// === START: SỬA LỖI LOGIC ===
 settingController.updateAutoPhoneConfig = async (req, res) => {
     try {
         const { isEnabled, intervalMinutes, countries, sources } = req.body;
         const configToUpdate = {};
 
-        // Chỉ cập nhật những trường có trong request
         if (isEnabled !== undefined) {
             configToUpdate.isEnabled = typeof isEnabled === 'boolean' ? isEnabled : (isEnabled === 'true');
         }
@@ -345,6 +343,44 @@ settingController.updateAutoPhoneConfig = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// === END: SỬA LỖI LOGIC ===
+
+settingController.updateBrowserSettings = async (req, res) => {
+    try {
+        const { 
+            maxBrowsers, 
+            maxPagesPerBrowser, 
+            respawnDelayMs, 
+            stalePhoneTimeoutMinutes,
+            useProxies
+        } = req.body;
+
+        const parse = (val, min) => {
+            const num = parseInt(val, 10);
+            return !isNaN(num) && num >= min ? num : undefined;
+        };
+
+        const browserConfig = {
+            maxBrowsers: parse(maxBrowsers, 1),
+            maxPagesPerBrowser: parse(maxPagesPerBrowser, 1),
+            respawnDelayMs: parse(respawnDelayMs, 1000),
+            useProxies: !!useProxies
+        };
+
+        const phoneConfig = {
+            stalePhoneTimeoutMinutes: parse(stalePhoneTimeoutMinutes, 1)
+        };
+
+        Object.keys(browserConfig).forEach(key => browserConfig[key] === undefined && delete browserConfig[key]);
+        Object.keys(phoneConfig).forEach(key => phoneConfig[key] === undefined && delete phoneConfig[key]);
+
+        await settingsService.update('browserManager', browserConfig);
+        await settingsService.update('phoneManager', phoneConfig);
+
+        res.json({ success: true, message: 'Cập nhật cài đặt trình duyệt thành công.' });
+    } catch (error) {
+        console.error("Error updating browser settings:", error);
+        res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật cài đặt.' });
+    }
+};
 
 module.exports = settingController;

@@ -16,32 +16,23 @@
 					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-services" role="tab">
 					<i class="ri-settings-5-line w-5 h-5 mr-3"></i> Dịch Vụ
 					</a>
-					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all
-duration-200 
-
- cursor-pointer" data-tab-target="#tab-deposit" role="tab">
+					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-deposit" role="tab">
 					<i class="ri-bank-card-line w-5 h-5 mr-3"></i> Nạp Tiền
 					</a>
-					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autodeposit"
-						role="tab">
+					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autodeposit" role="tab">
 					<i class="ri-robot-line w-5 h-5 mr-3"></i> Tự Động Nạp Tiền
 					</a>
-					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm
-						font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autocheck" role="tab">
+					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autocheck" role="tab">
 					<i class="ri-refresh-line w-5 h-5 mr-3"></i> Tự Động Check Live
 					</a>
-					<a class="flex items-center px-4 py-2.5
-						rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autoproxycheck" role="tab">
+					<a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autoproxycheck" role="tab">
 					<i class="ri-shield-cross-line w-5 h-5 mr-3"></i> Tự Động Check Proxy
 					</a>
                     <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-autophone" role="tab">
 						<i class="ri-phone-find-line w-5 h-5 mr-3"></i> Tự Động Lấy SĐT
 					</a>
-         
-           <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all
-						duration-200 cursor-pointer" data-tab-target="#tab-processor" role="tab">
-					<i class="ri-database-2-line w-5 h-5
-						mr-3"></i> Tiến Trình Xử Lý
+                    <a class="flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer" data-tab-target="#tab-processor" role="tab">
+					<i class="ri-database-2-line w-5 h-5 mr-3"></i> Tiến Trình Xử Lý
 					</a>
 				</div>
 			</div>
@@ -49,28 +40,19 @@ duration-200
 		<div class="lg:col-span-3" id="settings-tab-content">
 			<div id="tab-security" role="tabpanel" class="tab-pane">
 				<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-					<div
-class="p-6 border-b border-white/10">
-						<h3 class="text-lg font-semibold
-							text-white">Master API
-							Key
-						</h3>
+					<div class="p-6 border-b border-white/10">
+						<h3 class="text-lg font-semibold text-white">Master API Key</h3>
 					</div>
 					<div class="p-6">
 						<form id="api-key-form" class="space-y-6">
 							<div>
 								<label for="masterApiKey" class="block text-sm text-gray-300 mb-1">API Key Chính Của Server</label>
 								<div class="flex items-center gap-2">
-									<input type="text" id="masterApiKey" 
- class="form-input font-mono" value="<%= settings.masterApiKey %>" readonly>
+									<input type="text" id="masterApiKey" class="form-input font-mono" value="<%= settings.masterApiKey %>" readonly>
 									<button type="button" id="copy-api-key-btn" class="p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg transition" title="Copy"><i class="ri-file-copy-line"></i></button>
 									<button type="button" id="regenerate-api-key-btn" class="p-3 bg-blue-600/80 hover:bg-blue-600 rounded-lg transition" title="Tạo key mới"><i class="ri-refresh-line"></i></button>
 								</div>
-								<p class="text-xs text-gray-500 mt-2">API key này được dùng để xác thực
-									kết nối 
-giữa các server worker.
- Worker cục bộ sẽ tự động dùng key này.
- </p>
+								<p class="text-xs text-gray-500 mt-2">API key này được dùng để xác thực kết nối giữa các server worker. Worker cục bộ sẽ tự động dùng key này. </p>
 							</div>
 							<div class="pt-6 border-t border-white/10">
 								<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu API Key</button>
@@ -92,16 +74,11 @@ giữa các server worker.
 									<div class="space-y-3" id="pricing-tiers-container">
 									</div>
 									<div class="mt-4">
-										<button
-											type="button" id="add-tier-btn" class="inline-flex items-center px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-md font-semibold text-sm text-green-300 hover:bg-green-500/20 transition">
+										<button type="button" id="add-tier-btn" class="inline-flex items-center px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-md font-semibold text-sm text-green-300 hover:bg-green-500/20 transition">
 										<i class="ri-add-line mr-2"></i>Thêm Bậc Giá
 										</button>
 									</div>
-									<p class="text-xs text-gray-500 mt-4">Hệ thống sẽ tự động áp dụng mức giá tương ứng với bậc thấp nhất mà số lượng
-item đạt 
- được.
- Ví dụ: Nếu có bậc 1, 20, 50 và người dùng đặt 30 items, giá của bậc 20 sẽ được áp dụng.
- </p>
+									<p class="text-xs text-gray-500 mt-4">Hệ thống sẽ tự động áp dụng mức giá tương ứng với bậc thấp nhất mà số lượng item đạt được. Ví dụ: Nếu có bậc 1, 20, 50 và người dùng đặt 30 items, giá của bậc 20 sẽ được áp dụng. </p>
 								</div>
 								<div class="pt-4 border-t border-white/10">
 									<h4 class="font-semibold text-gray-200 mb-2">Giới Hạn</h4>
@@ -133,15 +110,11 @@ item đạt
 								<h4 class="font-semibold text-gray-200 mb-2">Dịch Vụ Captcha Ảnh (Image)</h4>
 								<div class="p-4 bg-gray-900/50 rounded-lg border border-white/10 space-y-4">
 									<div>
-										<label for="image-captcha-service-select" class="block text-sm text-gray-300
-mb-1">Chọn 
-
- dịch vụ</label>
+										<label for="image-captcha-service-select" class="block text-sm text-gray-300 mb-1">Chọn dịch vụ</label>
 										<select id="image-captcha-service-select" name="selectedImageCaptchaService" class="form-select">
 											<option value="">-- Không sử dụng --</option>
 											<% availableImageCaptchaServices.forEach(service => { %>
-											<option value="<%= service.id %>" <%= settings.services.selectedImageCaptchaService === service.id ?
- 'selected' : '' %>>
+											<option value="<%= service.id %>" <%= settings.services.selectedImageCaptchaService === service.id ? 'selected' : '' %>>
 												<%= service.name %>
 											</option>
 											<% }); %>
@@ -149,23 +122,19 @@ mb-1">Chọn
 									</div>
 									<div>
 										<label for="image-captcha-api-key" class="block text-sm text-gray-300 mb-1">API Key</label>
-										<input type="text"
-											id="image-captcha-api-key" name="imageCaptchaApiKey" class="form-input font-mono" placeholder="Dán API Key cho dịch vụ Captcha Ảnh">
+										<input type="text" id="image-captcha-api-key" name="imageCaptchaApiKey" class="form-input font-mono" placeholder="Dán API Key cho dịch vụ Captcha Ảnh">
 									</div>
 								</div>
 							</div>
 							<div>
-								<h4 class="font-semibold text-gray-200 mb-2">Dịch Vụ
-									reCAPTCHA
-								</h4>
+								<h4 class="font-semibold text-gray-200 mb-2">Dịch Vụ reCAPTCHA</h4>
 								<div class="p-4 bg-gray-900/50 rounded-lg border border-white/10 space-y-4">
 									<div>
 										<label for="recaptcha-service-select" class="block text-sm text-gray-300 mb-1">Chọn dịch vụ</label>
 										<select id="recaptcha-service-select" name="selectedRecaptchaService" class="form-select">
 											<option value="">-- Không sử dụng --</option>
 											<% availableRecaptchaServices.forEach(service => { %>
-											<option value="<%= service.id %>" <%= settings.services.selectedRecaptchaService === service.id ?
- 'selected' : '' %>>
+											<option value="<%= service.id %>" <%= settings.services.selectedRecaptchaService === service.id ? 'selected' : '' %>>
 												<%= service.name %>
 											</option>
 											<% }); %>
@@ -173,8 +142,7 @@ mb-1">Chọn
 									</div>
 									<div>
 										<label for="recaptcha-api-key" class="block text-sm text-gray-300 mb-1">API Key</label>
-										<input type="text"
-											id="recaptcha-api-key" name="recaptchaApiKey" class="form-input font-mono" placeholder="Dán API Key cho dịch vụ reCAPTCHA">
+										<input type="text" id="recaptcha-api-key" name="recaptchaApiKey" class="form-input font-mono" placeholder="Dán API Key cho dịch vụ reCAPTCHA">
 									</div>
 								</div>
 							</div>
@@ -185,19 +153,16 @@ mb-1">Chọn
 										<label for="phone-service-select" class="block text-sm text-gray-300 mb-1">Chọn dịch vụ</label>
 										<select id="phone-service-select" name="selectedPhoneService" class="form-select">
 											<option value="">-- Không sử dụng --</option>
-											<% availablePhoneServices.forEach(service =>
-												{ %>
+											<% availablePhoneServices.forEach(service => { %>
 											<option value="<%= service.id %>" <%= settings.services.selectedPhoneService === service.id ? 'selected' : '' %>>
 												<%= service.name %>
 											</option>
-											<% });
- %>
+											<% }); %>
 										</select>
 									</div>
 									<div>
 										<label for="phone-api-key" class="block text-sm text-gray-300 mb-1">API Key</label>
-										<input type="text"
-											id="phone-api-key" name="phoneApiKey" class="form-input font-mono" placeholder="Dán API Key của bạn vào đây">
+										<input type="text" id="phone-api-key" name="phoneApiKey" class="form-input font-mono" placeholder="Dán API Key của bạn vào đây">
 									</div>
 								</div>
 							</div>
@@ -212,43 +177,28 @@ mb-1">Chọn
 								</div>
 							</div>
 							<div class="pt-6 border-t border-white/10">
-								<button type="submit" class="inline-flex
-									items-center px-4 py-2 bg-blue-600 border
-									border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition">
-								<i class="ri-save-line mr-2"></i>Lưu Cấu Hình
-Dịch Vụ
+								<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition">
+								<i class="ri-save-line mr-2"></i>Lưu Cấu Hình Dịch Vụ
 								</button>
 							</div>
 						</form>
 					</div>
 				</div>
 			</div>
-			<div id="tab-deposit"
-				role="tabpanel"
-				class="tab-pane hidden">
-				<div 
-
- class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
-					<div
-						class="p-6 border-b border-white/10">
+			<div id="tab-deposit" role="tabpanel" class="tab-pane hidden">
+				<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+					<div class="p-6 border-b border-white/10">
 						<h3 class="text-lg font-semibold text-white">Thông Tin Nạp Tiền</h3>
 					</div>
 					<div class="p-6">
 						<form id="deposit-settings-form" class="space-y-4">
 							<div>
 								<label for="bankName" class="block text-sm font-medium text-gray-300 mb-2">Tên ngân hàng (Mã VietQR)</label>
-								<input type="text" id="bankName" name="bankName" class="form-input" value="<%= settings.deposit.bankName
-									%>" placeholder="Ví dụ: TCB, VCB, MBBANK" required>
-								<p class="text-xs text-gray-500 mt-2">Sử dụng mã ngân hàng theo chuẩn
-									VietQR để hiển thị logo.
- Ví dụ: Techcombank là TCB.
-								</p>
+								<input type="text" id="bankName" name="bankName" class="form-input" value="<%= settings.deposit.bankName %>" placeholder="Ví dụ: TCB, VCB, MBBANK" required>
+								<p class="text-xs text-gray-500 mt-2">Sử dụng mã ngân hàng theo chuẩn VietQR để hiển thị logo. Ví dụ: Techcombank là TCB. </p>
 							</div>
 							<div>
-								<label for="accountName" class="block
-									text-sm font-medium text-gray-300 mb-2">Tên
-								chủ
-								tài khoản</label>
+								<label for="accountName" class="block text-sm font-medium text-gray-300 mb-2">Tên chủ tài khoản</label>
 								<input type="text" id="accountName" name="accountName" class="form-input" value="<%= settings.deposit.accountName %>" required>
 							</div>
 							<div>
@@ -256,8 +206,7 @@ Dịch Vụ
 								<input type="text" id="accountNumber" name="accountNumber" class="form-input font-mono" value="<%= settings.deposit.accountNumber %>" required>
 							</div>
 							<div class="pt-6 mt-4 border-t border-white/10">
-								<button type="submit" class="inline-flex items-center px-4
-									py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition">
+								<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition">
 								<i class="ri-save-line -ml-1 mr-2"></i>
 								<span>Lưu Thông Tin</span>
 								</button>
@@ -268,8 +217,7 @@ Dịch Vụ
 			</div>
 			<div id="tab-autodeposit" role="tabpanel" class="tab-pane hidden">
 				<div class="grid grid-cols-1 gap-8">
-					<div class="bg-white/5 backdrop-blur-lg
-						border border-white/10 rounded-xl">
+					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
 						<div class="p-6 border-b border-white/10">
 							<h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Nạp Tiền</h3>
 						</div>
@@ -277,25 +225,17 @@ Dịch Vụ
 							<form id="ad-settings-form" class="space-y-6">
 								<div>
 									<h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
-									<div class="flex
-										items-center justify-between p-4
-bg-gray-900/50 rounded-lg border border-white/10">
+									<div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
 										<div>
 											<strong class="text-sm">Trạng thái: </strong>
-											<span
-												id="ad-status-badge" 
-
- class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
+											<span id="ad-status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
 											<div id="ad-next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
 												<i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="ad-next-run-time" class="text-white"></strong>
 											</div>
 										</div>
-										<div class="flex items-center
-											gap-2">
-											<button id="ad-start-btn"
-												type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
-											<button id="ad-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80
-												hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
+										<div class="flex items-center gap-2">
+											<button id="ad-start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
+											<button id="ad-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
 										</div>
 									</div>
 								</div>
@@ -303,51 +243,31 @@ bg-gray-900/50 rounded-lg border border-white/10">
 									<h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
 									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div>
-											<label for="ad-apiKey" class="block text-sm text-gray-300 mb-1">API
-											Key (Web2M)</label>
-											<input
-												type="text" id="ad-apiKey" name="apiKey" class="form-input
-												text-sm
-												font-mono" value="<%= settings.autoDeposit.apiKey %>">
+											<label for="ad-apiKey" class="block text-sm text-gray-300 mb-1">API Key (Web2M)</label>
+											<input type="text" id="ad-apiKey" name="apiKey" class="form-input text-sm font-mono" value="<%= settings.autoDeposit.apiKey %>">
 										</div>
 										<div>
 											<label for="ad-intervalMinutes" class="block text-sm text-gray-300 mb-1">Kiểm tra mỗi (phút)</label>
-											<input
-												type="number" id="ad-intervalMinutes" name="intervalMinutes" class="form-input
-												text-sm" value="<%= settings.autoDeposit.intervalMinutes %>" min="1">
+											<input type="number" id="ad-intervalMinutes" name="intervalMinutes" class="form-input text-sm" value="<%= settings.autoDeposit.intervalMinutes %>" min="1">
 										</div>
 										<div class="md:col-span-2">
-											<label for="ad-prefix"
-class="block text-sm text-gray-300 mb-1">Tiền tố nội
-											dung</label>
-											<input type="text" id="ad-prefix" name="prefix" class="form-input
-												text-sm" value="<%= settings.autoDeposit.prefix %>">
-											<p class="text-xs text-gray-500 
- mt-1">Hệ thống sẽ tìm 
- user có username khớp với phần sau tiền tố này trong nội dung
-												chuyển khoản.
- </p>
+											<label for="ad-prefix" class="block text-sm text-gray-300 mb-1">Tiền tố nội dung</label>
+											<input type="text" id="ad-prefix" name="prefix" class="form-input text-sm" value="<%= settings.autoDeposit.prefix %>">
+											<p class="text-xs text-gray-500 mt-1">Hệ thống sẽ tìm user có username khớp với phần sau tiền tố này trong nội dung chuyển khoản. </p>
 										</div>
 									</div>
 								</div>
 								<div class="pt-6 border-t border-white/10">
-									<button type="submit"
-										class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
+									<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
 								</div>
 							</form>
 						</div>
 					</div>
-					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex
-						flex-col">
-						<div class="p-6
-							border-b
-							border-white/10">
-							<h3 class="text-lg font-semibold text-white">Logs
-								Tự Động Nạp Tiền
-							</h3>
+					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
+						<div class="p-6 border-b border-white/10">
+							<h3 class="text-lg font-semibold text-white">Logs Tự Động Nạp Tiền</h3>
 						</div>
-						<div id="ad-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px;
-							max-height: 400px;">
+						<div id="ad-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px; max-height: 400px;">
 							<div class="text-gray-500">Connecting to stream...<span class="blinking-cursor">_</span></div>
 						</div>
 					</div>
@@ -362,25 +282,17 @@ class="block text-sm text-gray-300 mb-1">Tiền tố nội
 						<div class="p-6">
 							<form id="ac-settings-form" class="space-y-6">
 								<div>
-									<h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều
-										khiển
-									</h4>
+									<h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
 									<div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
 										<div>
 											<strong class="text-sm">Trạng thái: </strong>
-											<span id="ac-status-badge" class="px-2
-												py-1 text-xs
-font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
-											<div id="ac-next-run-container" class="mt-2 text-sm 
-
- text-gray-400" style="display: none;">
+											<span id="ac-status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
+											<div id="ac-next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
 												<i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="ac-next-run-time" class="text-white"></strong>
 											</div>
 										</div>
 										<div class="flex items-center gap-2">
-											<button id="ac-start-btn" type="button"
-												class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50
-												font-semibold text-white">Start</button>
+											<button id="ac-start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
 											<button id="ac-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
 										</div>
 									</div>
@@ -391,15 +303,11 @@ font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
 										<div>
 											<label for="ac-intervalMinutes" class="block text-sm text-gray-300 mb-1">Ưu tiên check sau (phút)</label>
 											<input type="number" id="ac-intervalMinutes" name="intervalMinutes" class="form-input text-sm" value="<%= settings.autoCheck.intervalMinutes %>" min="1">
-											<p class="text-xs text-gray-500 mt-1">Ưu tiên check các account có lần check
-												cuối cũ hơn khoảng thời gian này.
- </p>
+											<p class="text-xs text-gray-500 mt-1">Ưu tiên check các account có lần check cuối cũ hơn khoảng thời gian này. </p>
 										</div>
 										<div>
-											<label for="ac-concurrency" class="block
-												text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
-											<input type="number" id="ac-concurrency" name="concurrency" class="form-input
-												text-sm" value="<%= settings.autoCheck.concurrency %>" min="1">
+											<label for="ac-concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
+											<input type="number" id="ac-concurrency" name="concurrency" class="form-input text-sm" value="<%= settings.autoCheck.concurrency %>" min="1">
 										</div>
 										<div>
 											<label for="ac-batchSize" class="block text-sm text-gray-300 mb-1">Số account mỗi lượt</label>
@@ -407,14 +315,11 @@ font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
 											<p class="text-xs text-gray-500 mt-1">Nhập 0 để không giới hạn.</p>
 										</div>
 										<div>
-											<label for="ac-delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task
-											(ms)</label>
+											<label for="ac-delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task (ms)</label>
 											<input type="number" id="ac-delay" name="delay" class="form-input text-sm" value="<%= settings.autoCheck.delay %>" min="0">
 										</div>
 										<div>
-											<label
-												for="ac-timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi task
-											(ms)</label>
+											<label for="ac-timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi task (ms)</label>
 											<input type="number" id="ac-timeout" name="timeout" class="form-input text-sm" value="<%= settings.autoCheck.timeout %>" min="1000">
 										</div>
 									</div>
@@ -425,15 +330,11 @@ font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
 							</form>
 						</div>
 					</div>
-					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl
-flex flex-col">
-						<div 
- class="p-6 border-b border-white/10">
-							<h3 class="text-lg 
- font-semibold text-white">Logs Tự Động Check Live</h3>
+					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
+						<div class="p-6 border-b border-white/10">
+							<h3 class="text-lg font-semibold text-white">Logs Tự Động Check Live</h3>
 						</div>
-						<div id="ac-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px;
- max-height: 400px;">
+						<div id="ac-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px; max-height: 400px;">
 							<div class="text-gray-500">Connecting to stream...<span class="blinking-cursor">_</span></div>
 						</div>
 					</div>
@@ -441,47 +342,34 @@ flex flex-col">
 			</div>
 			<div id="tab-autoproxycheck" role="tabpanel" class="tab-pane hidden">
 				<div class="grid grid-cols-1 gap-8">
-					<div class="bg-white/5 backdrop-blur-lg
-						border border-white/10 rounded-xl">
-						<div class="p-6
-							border-b border-white/10">
+					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+						<div class="p-6 border-b border-white/10">
 							<h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Check Proxy</h3>
 						</div>
 						<div class="p-6">
 							<form id="apc-settings-form" class="space-y-6">
 								<div>
-									<h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều
-										khiển
-									</h4>
-									<div class="flex items-center justify-between p-4 bg-gray-900/50
-										rounded-lg border border-white/10">
+									<h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
+									<div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
 										<div>
 											<strong class="text-sm">Trạng thái: </strong>
-											<span id="apc-status-badge" class="px-2
-												py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
+											<span id="apc-status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
 											<div id="apc-next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
-												<i class="ri-time-line"></i> Lần chạy
-												kế tiếp: <strong id="apc-next-run-time" class="text-white"></strong>
+												<i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="apc-next-run-time" class="text-white"></strong>
 											</div>
 										</div>
 										<div class="flex items-center gap-2">
 											<button id="apc-start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
-											<button id="apc-stop-btn" type="button" class="px-3 py-1.5 text-xs
-												bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
+											<button id="apc-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
 										</div>
 									</div>
 								</div>
 								<div>
-									<h4
-class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
-									<div class="grid grid-cols-1 
-
- md:grid-cols-3 gap-4">
+									<h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
+									<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 										<div>
-											<label for="apc-intervalMinutes" class="block
-												text-sm text-gray-300 mb-1">Chạy lại sau (phút)</label>
-											<input type="number" id="apc-intervalMinutes" name="intervalMinutes" class="form-input text-sm" value="<%=
-												settings.autoProxyCheck.intervalMinutes %>" min="1">
+											<label for="apc-intervalMinutes" class="block text-sm text-gray-300 mb-1">Chạy lại sau (phút)</label>
+											<input type="number" id="apc-intervalMinutes" name="intervalMinutes" class="form-input text-sm" value="<%= settings.autoProxyCheck.intervalMinutes %>" min="1">
 										</div>
 										<div>
 											<label for="apc-concurrency" class="block text-sm text-gray-300 mb-1">Số luồng đồng thời</label>
@@ -489,34 +377,25 @@ class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
 										</div>
 										<div>
 											<label for="apc-batchSize" class="block text-sm text-gray-300 mb-1">Số proxy mỗi lượt</label>
-											<input type="number"
-												id="apc-batchSize" name="batchSize" class="form-input text-sm" value="<%= settings.autoProxyCheck.batchSize %>" min="0">
+											<input type="number" id="apc-batchSize" name="batchSize" class="form-input text-sm" value="<%= settings.autoProxyCheck.batchSize %>" min="0">
 											<p class="text-xs text-gray-500 mt-1">Nhập 0 để không giới hạn.</p>
 										</div>
 										<div>
-											<label for="apc-delay" class="block text-sm text-gray-300 mb-1">Delay giữa
-											các task (ms)</label>
-											<input type="number" id="apc-delay" name="delay" class="form-input text-sm" value="<%= settings.autoProxyCheck.delay %>"
-												min="0">
+											<label for="apc-delay" class="block text-sm text-gray-300 mb-1">Delay giữa các task (ms)</label>
+											<input type="number" id="apc-delay" name="delay" class="form-input text-sm" value="<%= settings.autoProxyCheck.delay %>" min="0">
 										</div>
 										<div>
-											<label for="apc-timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi task
-											(ms)</label>
-											<input type="number" id="apc-timeout" name="timeout" class="form-input text-sm" value="<%= settings.autoProxyCheck.timeout
-												%>" min="1000">
+											<label for="apc-timeout" class="block text-sm text-gray-300 mb-1">Timeout mỗi task (ms)</label>
+											<input type="number" id="apc-timeout" name="timeout" class="form-input text-sm" value="<%= settings.autoProxyCheck.timeout %>" min="1000">
 										</div>
 										<div>
-											<label for="apc-retries"
-class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
-											<input type="number" id="apc-retries" name="retries" 
- class="form-input text-sm" value="<%= settings.autoProxyCheck.retries %>" min="0">
-											<p class="text-xs 
- text-gray-500 mt-1">Số lần thử lại nếu proxy thất bại.</p>
+											<label for="apc-retries" class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
+											<input type="number" id="apc-retries" name="retries" class="form-input text-sm" value="<%= settings.autoProxyCheck.retries %>" min="0">
+											<p class="text-xs text-gray-500 mt-1">Số lần thử lại nếu proxy thất bại.</p>
 										</div>
 									</div>
 								</div>
-								<div class="pt-6
-									border-t border-white/10">
+								<div class="pt-6 border-t border-white/10">
 									<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
 								</div>
 							</form>
@@ -526,8 +405,7 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
 						<div class="p-6 border-b border-white/10">
 							<h3 class="text-lg font-semibold text-white">Logs Tự Động Check Proxy</h3>
 						</div>
-						<div id="apc-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px;
- max-height: 400px;">
+						<div id="apc-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px; max-height: 400px;">
 							<div class="text-gray-500">Connecting to stream...<span class="blinking-cursor">_</span></div>
 						</div>
 					</div>
@@ -537,80 +415,110 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
                 <div class="grid grid-cols-1 gap-8">
                     <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
                         <div class="p-6 border-b border-white/10">
-        
                            <h3 class="text-lg font-semibold text-white">Cài Đặt Tự Động Lấy Số Điện Thoại</h3>
                         </div>
                         <div class="p-6">
-                     
-                       <form id="ap-settings-form" class="space-y-6">
+                            <form id="ap-settings-form" class="space-y-6">
                                 <div>
                                     <h4 class="font-semibold text-gray-200 mb-2">Trạng thái & Điều khiển</h4>
-                
-                                   <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
+                                    <div class="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-white/10">
                                         <div>
-                                
-                                           <strong class="text-sm">Trạng thái: </strong>
+                                            <strong class="text-sm">Trạng thái: </strong>
                                             <span id="ap-status-badge" class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-700 text-gray-300">Đang tải...</span>
-                                
-                                           <div id="ap-next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
+                                            <div id="ap-next-run-container" class="mt-2 text-sm text-gray-400" style="display: none;">
                                                 <i class="ri-time-line"></i> Lần chạy kế tiếp: <strong id="ap-next-run-time" class="text-white"></strong>
-                          
-                                             </div>
+                                            </div>
                                         </div>
-                                        <div class="flex 
- items-center gap-2">
+                                        <div class="flex items-center gap-2">
                                             <button id="ap-start-btn" type="button" class="px-3 py-1.5 text-xs bg-green-600/80 hover:bg-green-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Start</button>
-                                           
                                             <button id="ap-stop-btn" type="button" class="px-3 py-1.5 text-xs bg-red-600/80 hover:bg-red-600 rounded-md transition disabled:opacity-50 font-semibold text-white">Stop</button>
                                         </div>
                                     </div>
-           
-                                     </div>
+                                </div>
                                 <div>
                                     <h4 class="font-semibold text-gray-200 mb-2">Cấu hình chi tiết</h4>
-     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                         
-                                           <label for="ap-intervalMinutes" class="block text-sm text-gray-300 mb-1">Lấy lại sau (phút)</label>
-                                            <input type="number" id="ap-intervalMinutes" name="intervalMinutes" class="form-input text-sm" value="<%= settings.autoPhone && settings.autoPhone.intervalMinutes ||
- 60 %>" min="1">
+                                            <label for="ap-intervalMinutes" class="block text-sm text-gray-300 mb-1">Lấy lại sau (phút)</label>
+                                            <input type="number" id="ap-intervalMinutes" name="intervalMinutes" class="form-input text-sm" value="<%= settings.autoPhone && settings.autoPhone.intervalMinutes || 60 %>" min="1">
                                         </div>
                                          <div>
-                 
-                                           <label for="ap-countries" class="block text-sm text-gray-300 mb-1">Quốc gia (cách nhau bởi dấu phẩy)</label>
+                                            <label for="ap-countries" class="block text-sm text-gray-300 mb-1">Quốc gia (cách nhau bởi dấu phẩy)</label>
                                             <input type="text" id="ap-countries" name="countries" class="form-input text-sm" value="<%= settings.autoPhone && settings.autoPhone.countries.join(',') %>" placeholder="USA,UK,Ukraine">
-       
-                                                 </div>
-                                         <div class="md:col-span-2">
-                         
-                                           <label for="ap-sources" class="block text-sm text-gray-300 mb-1">Nguồn (cách nhau bởi dấu phẩy, để trống để lấy tất cả)</label>
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="ap-sources" class="block text-sm text-gray-300 mb-1">Nguồn (cách nhau bởi dấu phẩy, để trống để lấy tất cả)</label>
                                             <input type="text" id="ap-sources" name="sources" class="form-input text-sm" value="<%= settings.autoPhone && settings.autoPhone.sources.join(',') %>" placeholder="quackr.io,smstome.com">
-          
-                                             </div>
+                                        </div>
                                     </div>
                                 </div>
-  
-                                 <div class="pt-6 border-t border-white/10">
-                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
-             
-                                   </div>
+                                <div class="pt-6 border-t border-white/10">
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình Tự Động</button>
+                                </div>
                             </form>
                         </div>
                     </div>
-         
-                   <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
+
+					<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
+						<div class="p-6 border-b border-white/10">
+							<h3 class="text-lg font-semibold text-white">Cấu Hình Trình Duyệt (Browser)</h3>
+							<p class="text-xs text-gray-500 mt-1">Các cài đặt này ảnh hưởng đến hiệu suất của tác vụ lấy SĐT tự động.</p>
+						</div>
+						<div class="p-6">
+							<form id="browser-settings-form" class="space-y-6">
+								<div>
+									<h4 class="font-semibold text-gray-200 mb-2">Hiệu suất & Proxy</h4>
+									<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+										<div>
+											<label for="bm-maxBrowsers" class="block text-sm text-gray-300 mb-1">Số trình duyệt tối đa</label>
+											<input type="number" id="bm-maxBrowsers" name="maxBrowsers" class="form-input text-sm" value="<%= settings.browserManager.maxBrowsers %>" min="1">
+										</div>
+										<div>
+											<label for="bm-maxPagesPerBrowser" class="block text-sm text-gray-300 mb-1">Số tab tối đa / trình duyệt</label>
+											<input type="number" id="bm-maxPagesPerBrowser" name="maxPagesPerBrowser" class="form-input text-sm" value="<%= settings.browserManager.maxPagesPerBrowser %>" min="1">
+										</div>
+										<div>
+											<label for="bm-respawnDelayMs" class="block text-sm text-gray-300 mb-1">Delay khởi động lại (ms)</label>
+											<input type="number" id="bm-respawnDelayMs" name="respawnDelayMs" class="form-input text-sm" value="<%= settings.browserManager.respawnDelayMs %>" min="1000">
+										</div>
+										<div class="md:col-span-3 pt-4">
+											<div class="flex items-center">
+												<input id="bm-useProxies" name="useProxies" type="checkbox" class="form-checkbox h-5 w-5 rounded text-blue-600 transition duration-150 ease-in-out bg-slate-800 border-slate-600 focus:ring-blue-500" <%= settings.browserManager.useProxies ? 'checked' : '' %>>
+												<label for="bm-useProxies" class="ml-3 block text-sm text-gray-300">
+													Sử dụng proxy từ <a href="/admin/proxies" class="text-blue-400 hover:underline" target="_blank">danh sách proxy</a> khi khởi chạy trình duyệt
+												</label>
+											</div>
+											<p class="text-xs text-gray-500 mt-1 pl-8">Khi được bật, hệ thống sẽ tự động lấy các proxy có trạng thái LIVE và chưa bị xóa để sử dụng. Proxy lỗi sẽ tự động bị chuyển vào thùng rác.</p>
+										</div>
+									</div>
+								</div>
+								<div>
+									<h4 class="font-semibold text-gray-200 mb-2">Quản lý SĐT</h4>
+									<div>
+										<label for="pm-stalePhoneTimeoutMinutes" class="block text-sm text-gray-300 mb-1">Timeout trả SĐT về AVAILABLE (phút)</label>
+										<input type="number" id="pm-stalePhoneTimeoutMinutes" name="stalePhoneTimeoutMinutes" class="form-input text-sm" value="<%= settings.phoneManager.stalePhoneTimeoutMinutes %>" min="1">
+										<p class="text-xs text-gray-500 mt-1">Nếu một SĐT bị kẹt ở trạng thái "IN_USE" quá thời gian này, nó sẽ tự động được trả về "AVAILABLE".</p>
+									</div>
+								</div>
+								<div class="pt-6 border-t border-white/10">
+									<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition">
+										<i class="ri-save-line -ml-1 mr-2"></i>
+										<span>Lưu Cấu Hình Trình Duyệt</span>
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+                    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl flex flex-col">
                         <div class="p-6 border-b border-white/10">
                             <h3 class="text-lg font-semibold text-white">Logs</h3>
-                        
- </div>
-                        <div id="ap-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px;
- max-height: 400px;">
+                        </div>
+                        <div id="ap-logs" class="terminal-style p-4 flex-grow overflow-y-auto" style="min-height: 200px; max-height: 400px;">
                             <div class="text-gray-500">Connecting...</div>
                         </div>
                     </div>
                 </div>
-          
            </div>
 			<div id="tab-processor" role="tabpanel" class="tab-pane hidden">
 				<div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl">
@@ -620,16 +528,11 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
 					<div class="p-6">
 						<form id="processor-settings-form" class="space-y-6">
 							<div>
-								<h4 class="font-semibold
-									text-gray-200 mb-2">Trạng thái</h4>
-								<div class="p-4
-									bg-gray-900/50 rounded-lg border border-white/10">
-									<strong class="text-sm">Trạng thái:
-									</strong>
+								<h4 class="font-semibold text-gray-200 mb-2">Trạng thái</h4>
+								<div class="p-4 bg-gray-900/50 rounded-lg border border-white/10">
+									<strong class="text-sm">Trạng thái: </strong>
 									<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-300">Luôn Chạy</span>
-									<p class="text-xs text-gray-400 mt-2">Tiến trình xử lý
-										đơn hàng sẽ luôn chạy cùng với server để đảm bảo không bỏ lỡ bất kỳ item nào.
- </p>
+									<p class="text-xs text-gray-400 mt-2">Tiến trình xử lý đơn hàng sẽ luôn chạy cùng với server để đảm bảo không bỏ lỡ bất kỳ item nào. </p>
 								</div>
 							</div>
 							<div>
@@ -651,24 +554,17 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
 									<div>
 										<label for="proc-maxSuccess" class="block text-sm text-gray-300 mb-1">Max Success / Account</label>
 										<input type="number" id="proc-maxSuccess" name="maxSuccess" class="form-input text-sm" value="<%= settings.itemProcessor.maxSuccess %>" min="0">
-										<p class="text-xs text-gray-500 mt-1">Số item thành công tối 
- đa trước khi account
-"nghỉ".
- Nhập 0 để không giới hạn.
- </p>
+										<p class="text-xs text-gray-500 mt-1">Số item thành công tối đa trước khi account "nghỉ". Nhập 0 để không giới hạn. </p>
 									</div>
 									<div>
 										<label for="proc-maxError" class="block text-sm text-gray-300 mb-1">Max Error / Account</label>
 										<input type="number" id="proc-maxError" name="maxError" class="form-input text-sm" value="<%= settings.itemProcessor.maxError %>" min="0">
-										<p class="text-xs text-gray-500 mt-1">Số item lỗi tối đa trước khi account "nghỉ".
- Nhập 0 để không giới hạn.
-										</p>
+										<p class="text-xs text-gray-500 mt-1">Số item lỗi tối đa trước khi account "nghỉ". Nhập 0 để không giới hạn. </p>
 									</div>
 								</div>
 							</div>
 							<div class="pt-6 border-t border-white/10">
-								<button type="submit" class="inline-flex
-									items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
+								<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition"><i class="ri-save-line mr-2"></i>Lưu Cấu Hình</button>
 							</div>
 						</form>
 					</div>
@@ -679,7 +575,7 @@ class="block text-sm text-gray-300 mb-1">Số lần thử lại</label>
 </div>
 <script>
 	document.body.dataset.initialState = JSON.stringify(<%- JSON.stringify(initialState) %>);
- document.body.dataset.settings = JSON.stringify(<%- JSON.stringify(settings) %>);
+    document.body.dataset.settings = JSON.stringify(<%- JSON.stringify(settings) %>);
 </script>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/admin/settings.js"></script>

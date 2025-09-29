@@ -488,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupLogHandler('apc-logs', initialState.autoProxyCheck?.logs, 'autoProxyCheck:log');
     }
     
-    // <<< LOGIC MỚI CHO TỰ ĐỘNG LẤY SĐT >>>
+    // --- Auto Phone Fetcher ---
     const autoPhoneForm = document.getElementById('ap-settings-form');
     if (autoPhoneForm) {
         const intervalInput = document.getElementById('ap-intervalMinutes');
@@ -561,7 +561,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         socket.on('autoPhone:statusUpdate', (state) => updateAutoPhoneUI(state));
     }
-    // <<< KẾT THÚC LOGIC MỚI >>>
+    
+    // START: THÊM MỚI
+    const browserSettingsForm = document.getElementById('browser-settings-form');
+    if(browserSettingsForm) {
+        browserSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(browserSettingsForm);
+            const data = Object.fromEntries(formData.entries());
+             try {
+                const response = await fetch('/admin/settings/browser/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast(result.message, 'Thành công!', 'success');
+                } else {
+                    showToast(result.message, 'Lỗi!', 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối server', 'Lỗi', 'error');
+            }
+        });
+    }
+    // END: THÊM MỚI
 
     // --- Item Processor ---
     const procForm = document.getElementById('processor-settings-form');

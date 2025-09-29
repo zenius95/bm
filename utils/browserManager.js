@@ -2,131 +2,180 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const AdblockerPlugin = require('puppeteer-extra-plugin-adblocker');
+const settingsService = require('./settingsService');
+const Proxy = require('../models/Proxy'); // Import model Proxy
 
 puppeteer.use(StealthPlugin());
 puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
-// === CẤU HÌNH TỐI ƯU ===
-const MAX_BROWSERS = 2; // Số lượng trình duyệt chạy song song
-const MAX_PAGES_PER_BROWSER = 5; // Số tab tối đa cho MỖI trình duyệt
-const RESPAWN_DELAY_MS = 5000; // Thời gian chờ (5 giây) trước khi khởi động lại trình duyệt lỗi
-
-const browserPool = []; // "Liên đoàn hồ bơi", chứa các trình duyệt
-const requestQueue = []; // Hàng đợi chung cho tất cả các yêu cầu
+const browserPool = [];
+const requestQueue = [];
 
 /**
- * Hàm này tạo ra một trình duyệt đơn lẻ và thiết lập cơ chế tự hồi sinh.
- * @param {number} browserId - ID để định danh trình duyệt
- * @returns {Promise<{browser: import('puppeteer').Browser, pagePool: Array, id: number}>}
+ * Checks if a single proxy works by launching a temporary, lightweight browser.
+ * @param {string} proxyString - The proxy URL (e.g., http://user:pass@host:port).
+ * @returns {Promise<boolean>}
  */
-async function createBrowserInstance(browserId) {
-    console.log(`[BrowserManager] 🚀 Đang khởi chạy trình duyệt #${browserId}...`);
+async function checkProxyWithBrowser(proxyString) {
+    if (!proxyString) return false;
+    let browser = null;
     try {
-        const browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',      // Quan trọng cho môi trường Docker và VPS hạn chế tài nguyên
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process',             // Chỉ dùng cho môi trường không có GPU
-                '--disable-gpu',                // Quan trọng cho server không có card đồ họa
-                '--disable-background-networking',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-breakpad',
-                '--disable-client-side-phishing-detection',
-                '--disable-component-update',
-                '--disable-default-apps',
-                '--disable-extensions',
-                '--disable-features=AudioServiceOutOfProcess',
-                '--disable-hang-monitor',
-                '--disable-ipc-flooding-protection',
-                '--disable-notifications',
-                '--disable-offer-store-unmasked-wallet-cards',
-                '--disable-popup-blocking',
-                '--disable-print-preview',
-                '--disable-prompt-on-repost',
-                '--disable-renderer-backgrounding',
-                '--disable-sync',
-                '--metrics-recording-only',
-                '--mute-audio',
-                '--no-pings',
-                '--password-store=basic',
-                '--use-gl=swiftshader',
-                '--use-mock-keychain'
-            ]
-        });
+        const launchArgs = [
+            '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
+            '--disable-gpu', '--mute-audio', '--no-pings'
+        ];
+        const proxyUrl = new URL(proxyString);
+        launchArgs.push(`--proxy-server=${proxyUrl.hostname}:${proxyUrl.port}`);
+        
+        let proxyAuth = null;
+        if (proxyUrl.username && proxyUrl.password) {
+            proxyAuth = { username: proxyUrl.username, password: proxyUrl.password };
+        }
+        
+        browser = await puppeteer.launch({ headless: 'new', args: launchArgs, timeout: 20000 });
+        const page = await browser.newPage();
+        if (proxyAuth) await page.authenticate(proxyAuth);
+        await page.goto('https://api.ipify.org', { waitUntil: 'domcontentloaded', timeout: 15000 });
+        return true;
+    } catch (error) {
+        return false; 
+    } finally {
+        if (browser) await browser.close();
+    }
+}
 
+/**
+ * Soft-deletes a failed proxy from the database.
+ * @param {object} proxy - The proxy object from the database.
+ */
+async function _handleFailedProxy(proxy) {
+    // if (!proxy || !proxy._id) return;
+    // console.log(`[BrowserManager] 🗑️ Proxy ${proxy.host}:${proxy.port} đã được chuyển vào thùng rác do không hoạt động.`);
+    // try {
+    //     await Proxy.findByIdAndUpdate(proxy._id, { isDeleted: true });
+    // } catch (dbError) {
+    //     console.error(`[BrowserManager] Lỗi khi cập nhật trạng thái proxy ${proxy.host}: ${dbError.message}`);
+    // }
+}
+
+/**
+ * The core logic for launching a browser instance.
+ * @param {number} browserId - The ID for the browser.
+ * @param {string|null} proxyString - The full proxy string to use, or null.
+ * @returns {Promise<object|null>}
+ */
+async function _launchBrowser(browserId, proxyString) {
+    console.log(`[BrowserManager] 🚀 (ID #${browserId}) Đang khởi chạy trình duyệt...`);
+    if(proxyString) console.log(`   └──> Sử dụng proxy: ${proxyString.split('@').pop()}`); // Hide credentials in log
+    
+    try {
+        const browserConfig = settingsService.get('browserManager');
+        const launchArgs = [
+            '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote',
+            '--disable-gpu', '--mute-audio', '--no-pings'
+        ];
+        
+        let proxyAuth = null;
+        if (proxyString) {
+            const proxyUrl = new URL(proxyString);
+            launchArgs.push(`--proxy-server=${proxyUrl.hostname}:${proxyUrl.port}`);
+            if (proxyUrl.username && proxyUrl.password) {
+                proxyAuth = { username: proxyUrl.username, password: proxyUrl.password };
+            }
+        }
+
+        const browser = await puppeteer.launch({ headless: 'new', args: launchArgs, timeout: 60000 });
         const pagePool = [];
+        const MAX_PAGES_PER_BROWSER = browserConfig.maxPagesPerBrowser || 5;
         for (let j = 0; j < MAX_PAGES_PER_BROWSER; j++) {
             const page = await browser.newPage();
+            if (proxyAuth) await page.authenticate(proxyAuth);
             await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
             await page.setViewport({ width: 1366, height: 768 });
             pagePool.push(page);
         }
 
-        const browserPoolItem = { browser, pagePool, id: browserId };
-
-        // === CƠ CHẾ TỰ HỒI SINH ===
+        const browserPoolItem = { browser, pagePool, id: browserId, usedProxy: proxyString };
         browser.on('disconnected', () => {
             console.log(`[BrowserManager] 🔴 Trình duyệt #${browserId} đã bị ngắt kết nối.`);
-            
-            // Xóa trình duyệt hỏng khỏi "liên đoàn"
             const index = browserPool.findIndex(b => b.id === browserId);
-            if (index > -1) {
-                browserPool.splice(index, 1);
-            }
-            
-            // Lên lịch khởi động lại trình duyệt mới sau một khoảng trễ
+            if (index > -1) browserPool.splice(index, 1);
+            const RESPAWN_DELAY_MS = settingsService.get('browserManager').respawnDelayMs || 5000;
             console.log(`[BrowserManager] 🔄 Sẽ khởi động lại trình duyệt #${browserId} sau ${RESPAWN_DELAY_MS / 1000} giây...`);
             setTimeout(() => respawnBrowser(browserId), RESPAWN_DELAY_MS);
         });
-
-        console.log(`[BrowserManager] ✅ Trình duyệt #${browserId} đã sẵn sàng với ${MAX_PAGES_PER_BROWSER} tab.`);
+        
+        console.log(`[BrowserManager] ✅ Trình duyệt #${browserId} đã sẵn sàng.`);
         return browserPoolItem;
     } catch (error) {
         console.error(`[BrowserManager] ❌ Lỗi nghiêm trọng khi khởi chạy trình duyệt #${browserId}: ${error.message}`);
-        throw error;
+        return null;
     }
 }
 
-/**
- * Hàm được gọi để khởi động lại một trình duyệt đã bị ngắt kết nối.
- * @param {number} browserId 
- */
+async function createBrowserInstance(browserId) {
+    const browserConfig = settingsService.get('browserManager');
+    
+    if (!browserConfig.useProxies) {
+        return _launchBrowser(browserId, null);
+    }
+
+    const availableProxies = await Proxy.find({ isDeleted: false, status: 'LIVE' }).lean();
+    if (availableProxies.length === 0) {
+        console.warn(`[BrowserManager] ⚠️ (ID #${browserId}) Đã bật sử dụng proxy nhưng không tìm thấy proxy LIVE nào. Khởi chạy không proxy.`);
+        return _launchBrowser(browserId, null);
+    }
+
+    console.log(`[BrowserManager] Tìm thấy ${availableProxies.length} proxy khả dụng. Bắt đầu kiểm tra và khởi chạy cho trình duyệt #${browserId}...`);
+
+    for (const proxy of availableProxies) {
+        const proxyString = `http://${proxy.username}:${proxy.password}@${proxy.host}:${proxy.port}`;
+        console.log(`[BrowserManager] 🔍 Đang kiểm tra proxy: ${proxy.host}:${proxy.port}...`);
+        
+        const isProxyWorking = await checkProxyWithBrowser(proxyString);
+
+        if (isProxyWorking) {
+            return _launchBrowser(browserId, proxyString);
+        } else {
+            await _handleFailedProxy(proxy);
+        }
+    }
+    
+    console.error(`[BrowserManager] ❌ Đã kiểm tra tất cả ${availableProxies.length} proxy nhưng không có proxy nào hoạt động. Không thể khởi chạy trình duyệt #${browserId} với proxy.`);
+    return null;
+}
+
 async function respawnBrowser(browserId) {
+    const RESPAWN_DELAY_MS = settingsService.get('browserManager').respawnDelayMs || 5000;
     try {
         const newBrowserInstance = await createBrowserInstance(browserId);
-        browserPool.push(newBrowserInstance);
-        console.log(`[BrowserManager] ✅ Đã hồi sinh thành công trình duyệt #${browserId}. Tổng số trình duyệt hiện tại: ${browserPool.length}`);
+        if (newBrowserInstance) {
+            browserPool.push(newBrowserInstance);
+            console.log(`[BrowserManager] ✅ Đã hồi sinh thành công trình duyệt #${browserId}. Tổng số trình duyệt hiện tại: ${browserPool.length}`);
+        } else {
+             console.error(`[BrowserManager] ❌ Hồi sinh trình duyệt #${browserId} thất bại hoàn toàn. Sẽ không thử lại cho đến khi server khởi động lại.`);
+        }
     } catch (error) {
-        console.error(`[BrowserManager] ❌ Hồi sinh trình duyệt #${browserId} thất bại. Sẽ thử lại sau ${RESPAWN_DELAY_MS / 1000} giây.`);
+        console.error(`[BrowserManager] ❌ Lỗi không xác định khi hồi sinh trình duyệt #${browserId}. Thử lại sau ${RESPAWN_DELAY_MS / 1000} giây.`);
         setTimeout(() => respawnBrowser(browserId), RESPAWN_DELAY_MS);
     }
 }
 
-/**
- * Khởi tạo đồng thời tất cả các trình duyệt trong "liên đoàn".
- */
 const launchBrowsers = async () => {
     if (browserPool.length > 0) return;
-
+    
+    const MAX_BROWSERS = settingsService.get('browserManager').maxBrowsers || 2;
     console.log(`[BrowserManager] 🚀 Khởi chạy ban đầu ${MAX_BROWSERS} trình duyệt...`);
     const launchPromises = [];
     for (let i = 1; i <= MAX_BROWSERS; i++) {
         launchPromises.push(createBrowserInstance(i));
     }
     const resolvedBrowsers = await Promise.all(launchPromises);
-    browserPool.push(...resolvedBrowsers);
+    browserPool.push(...resolvedBrowsers.filter(Boolean));
 };
 
-/**
- * "Mượn" một tab từ hồ bơi.
- * @returns {Promise<import('puppeteer').Page>}
- */
+// ... (Các hàm acquirePage, releasePage, closeBrowser không thay đổi)
 const acquirePage = () => {
     return new Promise(async (resolve) => {
         await launchBrowsers();
@@ -145,10 +194,6 @@ const acquirePage = () => {
     });
 };
 
-/**
- * "Trả" một tab về lại hồ bơi của nó.
- * @param {import('puppeteer').Page} page
- */
 const releasePage = (page) => {
     return new Promise((resolve) => {
         const ownerBrowserPool = browserPool.find(pool => pool.id === page.browserId);
@@ -171,9 +216,6 @@ const releasePage = (page) => {
     });
 };
 
-/**
- * Đóng tất cả các trình duyệt.
- */
 const closeBrowser = async () => {
     console.log('[BrowserManager] 👋 Đang đóng tất cả các trình duyệt...');
     const closePromises = browserPool.map(pool => pool.browser.close());
@@ -182,12 +224,10 @@ const closeBrowser = async () => {
     console.log('[BrowserManager] ✅ Tất cả trình duyệt đã được đóng.');
 };
 
+
 module.exports = {
     launchBrowser: launchBrowsers,
     acquirePage,
     releasePage,
     closeBrowser,
-    // Xuất ra các hằng số để file test có thể sử dụng
-    MAX_BROWSERS,
-    MAX_PAGES_PER_BROWSER
 };

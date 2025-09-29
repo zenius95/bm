@@ -84,7 +84,8 @@ router.post('/settings/deposit/config', settingController.updateDepositConfig);
 router.post('/settings/auto-deposit/config', settingController.updateAutoDepositConfig);
 router.post('/settings/auto-check/config', settingController.updateAutoCheckConfig);
 router.post('/settings/auto-proxy-check/config', settingController.updateAutoProxyCheckConfig);
-router.post('/settings/auto-phone/config', settingController.updateAutoPhoneConfig); // <<< THÊM DÒNG NÀY
+router.post('/settings/auto-phone/config', settingController.updateAutoPhoneConfig);
+router.post('/settings/browser/config', settingController.updateBrowserSettings); // <<< THÊM DÒNG NÀY
 router.get('/settings/auto-check/status', settingController.getAutoCheckStatus);
 router.post('/settings/item-processor/config', settingController.updateItemProcessorConfig);
 router.post('/settings/services/config', settingController.updateServicesConfig);

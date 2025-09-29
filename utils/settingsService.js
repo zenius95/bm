@@ -44,14 +44,21 @@ const DEFAULT_SETTINGS = {
         batchSize: 100,
         retries: 2
     },
-    // <<< THÊM KHỐI NÀY
     autoPhone: {
         isEnabled: false,
         intervalMinutes: 60,
         countries: [],
         sources: []
     },
-    // >>>>>>>>>>>>>>>>>>>>
+    browserManager: {
+        maxBrowsers: 2,
+        maxPagesPerBrowser: 5,
+        respawnDelayMs: 5000,
+        useProxies: false
+    },
+    phoneManager: {
+        stalePhoneTimeoutMinutes: 10
+    },
     itemProcessor: {
         isEnabled: false,
         concurrency: 10,
@@ -92,7 +99,9 @@ class SettingsService extends EventEmitter {
                 autoDeposit: { ...DEFAULT_SETTINGS.autoDeposit, ...(fileData.autoDeposit || {}) },
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
-                autoPhone: { ...DEFAULT_SETTINGS.autoPhone, ...(fileData.autoPhone || {}) }, // <<< THÊM DÒNG NÀY
+                autoPhone: { ...DEFAULT_SETTINGS.autoPhone, ...(fileData.autoPhone || {}) },
+                browserManager: { ...DEFAULT_SETTINGS.browserManager, ...(fileData.browserManager || {}) },
+                phoneManager: { ...DEFAULT_SETTINGS.phoneManager, ...(fileData.phoneManager || {}) },
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) },
                 services: {
                     ...DEFAULT_SETTINGS.services,
