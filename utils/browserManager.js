@@ -38,7 +38,7 @@ async function checkProxyWithBrowser(proxyString) {
         }
         
         browser = await puppeteer.launch({
-            headless: false,
+            headless: 'new',
             args: launchArgs,
             timeout: 20000 // 20-second timeout for launch
         });
@@ -110,7 +110,7 @@ async function createBrowser(excludedProxies = []) {
             }
         }
 
-        const browser = await puppeteer.launch({ headless: false, args: launchArgs, timeout: 60000 });
+        const browser = await puppeteer.launch({ headless: 'new', args: launchArgs, timeout: 60000 });
         
         // This is a workaround to attach authentication to all pages
         if (proxyAuth) {

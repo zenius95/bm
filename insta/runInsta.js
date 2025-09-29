@@ -275,7 +275,7 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
 
                         try {
                             // Lưu lại thông tin SĐT và mã vào DB cho account này
-                            log(`Lưu SĐT ${phone} vào DB cho tài khoản ${account.username}`);
+                            log(`Lưu SĐT ${phone} vào DB cho tài khoản ${account.uid}`);
                             await Account.findByIdAndUpdate(account.id, {
                                 $set: {
                                     lastUsedPhone: phone,

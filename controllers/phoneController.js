@@ -2,7 +2,7 @@
 const PhoneNumber = require('../models/PhoneNumber');
 const CrudService = require('../utils/crudService');
 const createCrudController = require('./crudController');
-const { getCodeFromPhonePage } = require('../utils/phoneScraper'); // Thêm import này
+const { getCodeFromPhonePage } = require('../utils/phoneScraper');
 
 const phoneService = new CrudService(PhoneNumber, {
     searchableFields: ['phoneNumber', 'country', 'source']
@@ -39,7 +39,7 @@ phoneController.handleGetAll = async (req, res) => {
     }
 };
 
-// --- START: THÊM HÀM MỚI ---
+// --- START: SỬA LỖI ---
 /**
  * Lấy tin nhắn cho một số điện thoại cụ thể.
  */
@@ -54,7 +54,7 @@ phoneController.getMessagesForPhone = async (req, res) => {
         }
 
         // Chuyển đổi maxAge thành số giây
-        const timeMatch = maxAge.match(/^(\d+)([smhd])$/);
+        const timeMatch = maxAge.match(/^(\d+)([smhdM])$/); // Thêm 'M' để hỗ trợ tháng
         let maxAgeInSeconds = 300; // Mặc định 5 phút
         if (timeMatch) {
             const value = parseInt(timeMatch[1], 10);
@@ -63,6 +63,7 @@ phoneController.getMessagesForPhone = async (req, res) => {
             if (unit === 'm') maxAgeInSeconds = value * 60;
             if (unit === 'h') maxAgeInSeconds = value * 3600;
             if (unit === 'd') maxAgeInSeconds = value * 86400;
+            if (unit === 'M') maxAgeInSeconds = value * 2592000; // Thêm logic cho tháng
         }
         
         const result = await getCodeFromPhonePage(phone.country, phone.phoneNumber, service, maxAgeInSeconds);
@@ -74,6 +75,6 @@ phoneController.getMessagesForPhone = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-// --- END: THÊM HÀM MỚI ---
+// --- END: SỬA LỖI ---
 
 module.exports = phoneController;
