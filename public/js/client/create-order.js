@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const userBalance = parseInt(document.body.dataset.userBalance, 10);
     const maxItems = parseInt(document.body.dataset.maxItems, 10);
     const itemLimitWarning = document.getElementById('item-limit-warning');
+    // START: THÊM MỚI
+    const itemFormatWarning = document.getElementById('item-format-warning');
+    const validIdRegex = /^\d+$/;
+    // END: THÊM MỚI
 
 
     userBalanceEl.textContent = userBalance.toLocaleString('vi-VN') + 'đ';
@@ -63,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentPrice = getPriceForQuantity(count);
         const totalCost = count * currentPrice;
 
+        // START: CẬP NHẬT LOGIC KIỂM TRA
         let isOverLimit = false;
         if (maxItems > 0 && count > maxItems) {
             isOverLimit = true;
@@ -74,25 +79,37 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemLimitWarning) itemLimitWarning.classList.add('hidden');
         }
 
+        let hasInvalidFormat = false;
+        if (count > 0) {
+            hasInvalidFormat = lines.some(line => !validIdRegex.test(line.trim()));
+        }
+
+        if (itemFormatWarning) {
+            itemFormatWarning.classList.toggle('hidden', !hasInvalidFormat);
+        }
+        // END: CẬP NHẬT LOGIC KIỂM TRA
+
         itemCountEl.textContent = count;
         pricePerItemEl.textContent = currentPrice.toLocaleString('vi-VN') + 'đ';
         totalCostEl.textContent = totalCost.toLocaleString('vi-VN') + 'đ';
 
-        if (totalCost > userBalance) {
-            totalCostEl.classList.add('text-red-400');
-            totalCostEl.classList.remove('text-yellow-400');
-            balanceWarning.classList.remove('hidden');
-            createOrderBtn.disabled = true;
+        // START: CẬP NHẬT ĐIỀU KIỆN VÔ HIỆU HÓA NÚT BẤM
+        const isBalanceInsufficient = totalCost > userBalance;
+        balanceWarning.classList.toggle('hidden', !isBalanceInsufficient);
+        
+        if (isBalanceInsufficient || isOverLimit || hasInvalidFormat) {
             summaryCard.classList.add('border-red-500/50');
             summaryCard.classList.remove('border-slate-800');
         } else {
-            totalCostEl.classList.remove('text-red-400');
-            totalCostEl.classList.add('text-yellow-400');
-            balanceWarning.classList.add('hidden');
-            createOrderBtn.disabled = count === 0 || isOverLimit;
             summaryCard.classList.remove('border-red-500/50');
             summaryCard.classList.add('border-slate-800');
         }
+        
+        totalCostEl.classList.toggle('text-red-400', isBalanceInsufficient);
+        totalCostEl.classList.toggle('text-yellow-400', !isBalanceInsufficient);
+        
+        createOrderBtn.disabled = count === 0 || isOverLimit || isBalanceInsufficient || hasInvalidFormat;
+        // END: CẬP NHẬT ĐIỀU KIỆN VÔ HIỆU HÓA NÚT BẤM
     }
 
     itemsData.addEventListener('input', updateCost);

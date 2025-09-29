@@ -283,10 +283,11 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
                                     lastUsedPhoneCode: phoneCode
                                 }
                             });
-                            break; 
 
                         } catch {}
-                        
+
+                        break; 
+
                     } else {
                         log(`Xác minh SĐT mới lần ${i + 1} thất bại, thử lại...`);
 

@@ -3,16 +3,16 @@
     "order": {
         "pricingTiers": [
             {
-                "quantity": 50,
-                "price": 10000
+                "quantity": 1,
+                "price": 15000
             },
             {
                 "quantity": 20,
                 "price": 13000
             },
             {
-                "quantity": 1,
-                "price": 15000
+                "quantity": 50,
+                "price": 10000
             }
         ],
         "maxItemsPerOrder": 0
@@ -23,7 +23,7 @@
         "accountNumber": "19036903216011"
     },
     "autoDeposit": {
-        "isEnabled": true,
+        "isEnabled": false,
         "intervalMinutes": 1,
         "apiKey": "",
         "prefix": "NAPTIEN"
@@ -37,7 +37,7 @@
         "batchSize": 50
     },
     "autoProxyCheck": {
-        "isEnabled": true,
+        "isEnabled": false,
         "intervalMinutes": 60,
         "concurrency": 10,
         "delay": 500,
@@ -62,10 +62,14 @@
     "services": {
         "selectedImageCaptchaService": "omocaptcha_image.json",
         "selectedRecaptchaService": "",
-        "selectedPhoneService": "",
+        "selectedPhoneService": "default.json",
         "apiKeys": {
-            "captcha": {},
-            "phone": {}
+            "captcha": {
+                "omocaptcha_image.json": "OMO_TIE6WYBY5SU7UTQTZT73UZ5TVRRQRVW3L2V3NWA4LVIIKMDLW6HJRYESFZSVYA1758012085"
+            },
+            "phone": {
+                "default.json": "4a50e52b66383fd19c8e0264a38c9dc5ef93c87bf493a68e0aa58bf8e3209966"
+            }
         },
         "userAgents": [
             "Instagram 361.0.0.46.88 Android (29/10; 560dpi; 1440x2792; samsung; SM-G960N; starlteks; samsungexynos9810; en_US; 674675098)"

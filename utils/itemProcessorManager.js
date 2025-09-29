@@ -120,9 +120,12 @@ class ItemProcessorManager extends EventEmitter {
 
             runner.on('task:complete', async ({ result, taskWrapper }) => {
                 try {
-                    const { account, item } = result;
-                    await this.updateAccountOnFinish(account, true);
-                    await this.updateOrderProgress(item.orderId, 'completed', item);
+                    // Kiểm tra xem result có tồn tại và hợp lệ không
+                    if (result && result.item && result.account !== undefined) {
+                        const { account, item } = result;
+                        await this.updateAccountOnFinish(account, true);
+                        await this.updateOrderProgress(item.orderId, 'completed', item);
+                    }
                 } catch (e) {
                     console.error(`[ItemProcessor] CRITICAL ERROR while handling 'task:complete' for item ${taskWrapper.id}: ${e.message}`, e.stack);
                 }
@@ -140,11 +143,11 @@ class ItemProcessorManager extends EventEmitter {
                     let logMessage;
                     if (error.code === 'ETIMEOUT') {
                         logMessage = `Xử lý item quá thời gian cho phép (${itemProcessingTimeout / 1000}s).`;
-                    } else {
+                    } else if (!error.message.includes("không hợp lệ")) {
                         logMessage = `Xử lý item thất bại (lỗi nghiêm trọng): ${error.message}`;
+                        await this.writeLog(itemData.orderId, itemData._id, 'ERROR', logMessage);
                     }
                     
-                    await this.writeLog(itemData.orderId, itemData._id, 'ERROR', logMessage);
                     await Item.findByIdAndUpdate(itemData._id, { status: 'failed' });
                     await this.updateOrderProgress(itemData.orderId, 'failed', itemData);
                 } catch (e) {
@@ -170,15 +173,12 @@ class ItemProcessorManager extends EventEmitter {
             this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
         }
         
-        const bmIdMatch = item.data.trim().match(/^\d+/);
+        const bmIdMatch = item.data.trim().match(/^\d+$/);
         const bmId = bmIdMatch ? bmIdMatch[0] : null;
 
         if (!bmId) {
             const errorMessage = `Xử lý thất bại: BM ID "${item.data}" không hợp lệ. Vui lòng chỉ nhập ID là số.`;
             await this.writeLog(item.orderId, item._id, 'ERROR', errorMessage);
-            await Item.findByIdAndUpdate(item._id, { status: 'failed' });
-            // Cập nhật tiến trình ngay lập tức và ném lỗi để dừng xử lý
-            await this.updateOrderProgress(item.orderId, 'failed', item);
             throw new Error(errorMessage);
         }
 

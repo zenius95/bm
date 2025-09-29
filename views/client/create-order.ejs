@@ -10,6 +10,7 @@
     <% if (error) { %>
         <div class="max-w-4xl mx-auto bg-red-900/50 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
         
+
      <%= error %>
         </div>
     <% } %>
@@ -21,7 +22,8 @@
         <i class="ri-lightbulb-flash-line text-xl flex-shrink-0 mt-0.5"></i>
         <div>
             <h4 class="font-bold">Lưu Ý Quan Trọng:</h4>
-            <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+            
+<ul class="list-disc list-inside text-sm mt-1 space-y-1">
                 <li>Chỉ kháng BM <strong>có nút</strong>, BM mất nút tỉ lệ random.</li>
                 <li>BM die ngày <strong>20, 21, 22 tháng 9</strong> tỉ lệ cao xanh vỏ đỏ lòng, không về.</li>
             </ul>
@@ -29,75 +31,95 @@
     </div>
 
     <form action="/create-order" method="POST" class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-        
+  
+      
         <div class="lg:col-span-3 space-y-8">
 
             <div class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20">
                
  <div class="p-6">
                     <div class="flex justify-between items-center mb-3">
-                        <label for="itemsData" class="block font-medium text-white">
+                        
+<label for="itemsData" class="block font-medium text-white">
                             <i class="ri-file-list-3-line mr-1 align-bottom"></i>
                
              Danh sách Items
                         </label>
-                        <button type="button" id="clear-btn" class="text-xs text-slate-400 hover:text-white transition flex items-center gap-1">
+           
+             <button type="button" id="clear-btn" class="text-xs text-slate-400 hover:text-white transition flex items-center gap-1">
                             
  <i class="ri-delete-bin-line"></i>Xóa hết
                         </button>
                     </div>
-                    <textarea name="itemsData" id="itemsData" rows="12" required class="form-input font-mono text-sm resize-y" placeholder="Dán danh sách của bạn vào đây, mỗi item một dòng..."></textarea>
+   
+                 <textarea name="itemsData" id="itemsData" rows="12" required class="form-input font-mono text-sm resize-y" placeholder="Dán danh sách của bạn vào đây, mỗi item một dòng..."></textarea>
                
  </div>
             </div>
         </div>
 
         <div class="lg:col-span-2 lg:sticky top-8">
-            <div id="summary-card" class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20 transition-all duration-300">
+            <div id="summary-card" class="bg-slate-900/50 backdrop-blur-lg border 
+border-slate-800 rounded-xl shadow-2xl shadow-black/20 transition-all duration-300">
                 <div class="p-5">
                     <h3 class="text-lg font-bold text-white text-center mb-4">Tóm Tắt Giao Dịch</h3>
  
                     
                     <div class="bg-slate-800/50 p-4 rounded-lg mb-4">
-                        <div class="flex items-center justify-between text-sm">
+     
+                   <div class="flex items-center justify-between text-sm">
                             <span class="text-slate-400 flex items-center gap-2"><i class="ri-wallet-3-line"></i>Số dư của bạn</span>
                             <span class="font-bold text-green-400" id="user-balance">0đ</span>
-                        </div>
+          
+              </div>
                     </div>
 
                   
    <div class="space-y-3 text-sm">
                         <div class="flex items-center justify-between">
-                            <span class="text-slate-400">Số items đã nhập</span>
+                
+            <span class="text-slate-400">Số items đã nhập</span>
                             <span id="item-count" class="font-semibold text-white bg-slate-700/50 px-2 py-0.5 rounded">0</span>
   
                        </div>
-                        <div class="flex items-center justify-between">
+                        
+<div class="flex items-center justify-between">
                             <span class="text-slate-400">Đơn giá áp dụng</span>
                    
          <span id="price-per-item" class="font-semibold text-white">0đ</span>
                         </div>
-                    </div>
+          
+          </div>
                     
                     <div class="my-4 border-t border-dashed border-slate-700"></div>
 
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-white">Tổng Chi Phí</span>
+                       
+ <span class="font-bold text-white">Tổng Chi Phí</span>
                         <span id="total-cost" class="font-bold text-2xl text-yellow-400 transition-colors duration-300">0đ</span>
                    
  </div>
 
                     <div id="balance-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all">
-                        <i class="ri-error-warning-line mr-1"></i> Số dư của bạn không đủ để thực hiện giao dịch này.
- </div>
+            
+            <i class="ri-error-warning-line mr-1"></i> Số dư của bạn không đủ để thực hiện giao dịch này.
+</div>
                     <div id="item-limit-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all">
                     </div>
                     
-                    <button type="submit" id="create-order-btn" class="w-full mt-5 inline-flex items-center justify-center px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border border-transparent rounded-lg font-semibold text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none disabled:from-slate-600 disabled:to-slate-700">
+                    <%# START: THÊM MỚI %>
+                    <div id="item-format-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all">
+                        <i class="ri-error-warning-line mr-1"></i> Một hoặc nhiều item không hợp lệ. Vui lòng chỉ nhập ID là số.
+                    </div>
+                    <%# END: THÊM MỚI %>
+                    
+                    <button type="submit" id="create-order-btn" class="w-full mt-5 inline-flex items-center 
+justify-center px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border border-transparent rounded-lg font-semibold text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none disabled:from-slate-600 disabled:to-slate-700">
                         <i class="ri-send-plane-2-line -ml-1 mr-2"></i>
  
                         <span>Xác Nhận & Tạo Đơn</span>
-                    </button>
+                   
+ </button>
                 </div>
             </div>
         </div>
@@ -107,7 +129,8 @@
 <script>
     // Truyền dữ liệu từ EJS sang Javascript
   
-   document.body.dataset.pricingTiers = JSON.stringify(<%- JSON.stringify(pricingTiers || []) %>);
+   document.body.dataset.pricingTiers = JSON.stringify(<%- JSON.stringify(pricingTiers ||
+[]) %>);
     document.body.dataset.userBalance = "<%= user.balance %>";
     document.body.dataset.maxItems = "<%= settings.order.maxItemsPerOrder || 0 %>";
 </script>
