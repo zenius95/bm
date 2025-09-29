@@ -5,15 +5,12 @@ const Order = require('../models/Order');
 const Item = require('../models/Item');
 const Account = require('../models/Account');
 const Log = require('../models/Log');
-const User = require('../models/User');
-const { logActivity } = require('./activityLogService');
 const { runAppealProcess } = require('../insta/runInsta');
 const ProcessRunner = require('./processRunner');
 
 // --- Hằng số cấu hình ---
 const MAX_ITEM_RETRIES = 3;
 const DELAY_BETWEEN_ACCOUNTS = 1000;
-const LOG_BATCH_INTERVAL = 2000;
 const SIMULATION_KEYWORDS = ['success', 'error'];
 
 class ItemProcessorManager extends EventEmitter {
@@ -21,69 +18,61 @@ class ItemProcessorManager extends EventEmitter {
         super();
         this.io = null;
         this.timer = null;
-        this.config = {};
-        this.status = 'STOPPED';
         this.isProcessingBatch = false;
-        this.logBuffer = new Map();
-        this.logSenderInterval = null;
+        // <<< START: THÊM THUỘC TÍNH THEO DÕI TRẠNG THÁI >>>
+        this.activeTasks = 0;
+        this.queuedTasks = 0;
+        // <<< END: THÊM THUỘC TÍNH THEO DÕI TRẠNG THÁI >>>
     }
 
     initialize(io) {
         this.io = io;
         console.log('🔄 Initializing Item Processor Manager (Autonomous Mode)...');
-        this.config = settingsService.get('itemProcessor');
         this.start();
     }
     
     async updateConfig(newConfig) {
-        this.config = { ...this.config, ...newConfig };
-        await settingsService.update('itemProcessor', this.config);
-        console.log(`[ItemProcessor] Config updated: ${JSON.stringify(this.config)}`);
+        await settingsService.update('itemProcessor', newConfig);
+        console.log(`[ItemProcessor] Config updated.`);
         this.emitStatus();
     }
 
     start() {
         if (this.timer) clearInterval(this.timer);
-        const intervalMs = (settingsService.get('itemProcessor').pollingInterval || 5) * 1000;
+        const intervalMs = (settingsService.get('itemProcessor')?.pollingInterval || 5) * 1000;
         console.log(`[ItemProcessor] Service started. Polling every ${intervalMs / 1000}s.`);
-        this.status = 'RUNNING';
         
         this.timer = setInterval(() => this.processQueuedItems(), intervalMs);
-        this.processQueuedItems();
-        this.emitStatus();
-
-        if (this.logSenderInterval) clearInterval(this.logSenderInterval);
-        this.logSenderInterval = setInterval(() => this.sendBufferedLogs(), LOG_BATCH_INTERVAL);
+        this.processQueuedItems(); // Run immediately on start
     }
 
     stop() {
         if (this.timer) clearInterval(this.timer);
-        if (this.logSenderInterval) clearInterval(this.logSenderInterval);
         this.timer = null;
-        this.logSenderInterval = null;
-        this.status = 'STOPPED';
         console.log('[ItemProcessor] Service stopped.');
-        this.emitStatus();
     }
 
-    restart() {
-        console.log('[ItemProcessor] Restarting service...');
-        this.stop();
-        setTimeout(() => this.start(), 200);
+    // <<< START: THÊM HÀM GETSTATUS VÀ EMITSTATUS >>>
+    /**
+     * Lấy trạng thái hiện tại của tiến trình.
+     * @returns {{activeTasks: number, queuedTasks: number}}
+     */
+    getStatus() {
+        return {
+            activeTasks: this.activeTasks,
+            queuedTasks: this.queuedTasks,
+        };
     }
 
-    sendBufferedLogs() {
-        if (this.logBuffer.size === 0) return;
-        for (const [itemId, logs] of this.logBuffer.entries()) {
-            if (logs.length > 0) {
-                this.io.to(`item_${itemId}`).emit('order:new_logs_batch', logs);
-            }
+    emitStatus() {
+        if (this.io) {
+            this.io.emit('itemProcessor:statusUpdate', this.getStatus());
         }
-        this.logBuffer.clear();
     }
-    
+    // <<< END: THÊM HÀM GETSTATUS VÀ EMITSTATUS >>>
+
     async processQueuedItems() {
-        if (this.status !== 'RUNNING' || this.isProcessingBatch) return;
+        if (this.isProcessingBatch) return;
 
         this.isProcessingBatch = true;
         try {
@@ -91,103 +80,91 @@ class ItemProcessorManager extends EventEmitter {
             const maxConcurrency = currentConfig.concurrency || 10;
             const itemProcessingTimeout = currentConfig.timeout || 180000;
             
+            // Cập nhật số lượng item trong hàng đợi
+            this.queuedTasks = await Item.countDocuments({ status: 'queued' });
+
             const items = await Item.find({ status: 'queued' })
                                     .sort({ createdAt: 1 })
                                     .limit(maxConcurrency)
                                     .lean();
             
-            if (items.length === 0) return;
+            if (items.length === 0) {
+                this.activeTasks = 0;
+                this.emitStatus();
+                return;
+            }
             
             console.log(`[ItemProcessor] Found ${items.length} items to process.`);
+            this.activeTasks = items.length;
+            this.emitStatus();
             
             const itemIds = items.map(i => i._id);
             await Item.updateMany({ _id: { $in: itemIds } }, { $set: { status: 'processing' } });
 
+            const orderIds = [...new Set(items.map(i => i.orderId.toString()))];
+            await Order.updateMany({ _id: { $in: orderIds }, status: 'pending' }, { $set: { status: 'processing' } });
+            
             const runner = new ProcessRunner({
                 concurrency: maxConcurrency,
-                delay: 100,
                 timeout: itemProcessingTimeout,
-                retries: 0
             });
 
             const tasks = items.map(item => ({
                 id: item._id.toString(),
-                itemData: item,
                 task: () => this.runSingleItemTask(item)
             }));
 
             runner.addTasks(tasks);
 
-            runner.on('task:complete', async ({ result, taskWrapper }) => {
-                try {
-                    // Kiểm tra xem result có tồn tại và hợp lệ không
-                    if (result && result.item && result.account !== undefined) {
-                        const { account, item } = result;
-                        await this.updateAccountOnFinish(account, true);
-                        await this.updateOrderProgress(item.orderId, 'completed', item);
-                    }
-                } catch (e) {
-                    console.error(`[ItemProcessor] CRITICAL ERROR while handling 'task:complete' for item ${taskWrapper.id}: ${e.message}`, e.stack);
-                }
+            runner.on('task:complete', async ({ result }) => {
+                const { account } = result;
+                await this.updateAccountOnFinish(account, true);
             });
 
             runner.on('task:error', async ({ error, taskWrapper }) => {
-                try {
-                    const itemData = taskWrapper.itemData;
-                    if (error.lastUsedAccount) {
-                        await this.updateAccountOnFinish(error.lastUsedAccount, false);
-                    }
-                    
-                    console.error(`[ItemProcessor] Task for item ${itemData._id} failed: ${error.message}`);
+                const item = await Item.findById(taskWrapper.id);
+                if (!item) return;
 
-                    let logMessage;
-                    if (error.code === 'ETIMEOUT') {
-                        logMessage = `Xử lý item quá thời gian cho phép (${itemProcessingTimeout / 1000}s).`;
-                    } else if (!error.message.includes("không hợp lệ")) {
-                        logMessage = `Xử lý item thất bại (lỗi nghiêm trọng): ${error.message}`;
-                        await this.writeLog(itemData.orderId, itemData._id, 'ERROR', logMessage);
-                    }
-                    
-                    await Item.findByIdAndUpdate(itemData._id, { status: 'failed' });
-                    await this.updateOrderProgress(itemData.orderId, 'failed', itemData);
-                } catch (e) {
-                    console.error(`[ItemProcessor] CRITICAL ERROR while handling 'task:error' for item ${taskWrapper.id}: ${e.message}`, e.stack);
+                if (error.lastUsedAccount) {
+                    await this.updateAccountOnFinish(error.lastUsedAccount, false);
                 }
+                
+                console.error(`[ItemProcessor] Task for item ${item._id} failed: ${error.message}`);
+                await this.writeLog(item.orderId, item._id, 'ERROR', `Xử lý thất bại: ${error.message}`);
+                item.status = 'failed';
+                await item.save();
             });
             
+            runner.on('end', async () => {
+                // Khi một lô hoàn thành, cập nhật lại trạng thái
+                this.activeTasks = 0;
+                this.queuedTasks = await Item.countDocuments({ status: 'queued' });
+                this.emitStatus();
+            });
+
             runner.start();
 
         } catch (err) {
             console.error('[ItemProcessor] Critical error during item processing batch:', err);
+            this.activeTasks = 0; // Reset on critical error
+            this.emitStatus();
         } finally {
             this.isProcessingBatch = false;
         }
     }
     
     async runSingleItemTask(item) {
-        const parentOrder = await Order.findById(item.orderId);
-        if (parentOrder && parentOrder.status === 'pending') {
-            parentOrder.status = 'processing';
-            await parentOrder.save();
-            this.io.to(`order_${parentOrder._id.toString()}`).emit('order:update', { id: parentOrder._id.toString(), status: 'processing' });
-            this.addLogToUI(`Đơn hàng <strong class="text-blue-400">#${parentOrder.shortId}</strong> bắt đầu được xử lý.`);
-        }
-        
         const bmIdMatch = item.data.trim().match(/^\d+$/);
         const bmId = bmIdMatch ? bmIdMatch[0] : null;
 
         if (!bmId) {
-            const errorMessage = `Xử lý thất bại: BM ID "${item.data}" không hợp lệ. Vui lòng chỉ nhập ID là số.`;
-            await this.writeLog(item.orderId, item._id, 'ERROR', errorMessage);
-            throw new Error(errorMessage);
+            throw new Error(`BM ID "${item.data}" không hợp lệ.`);
         }
 
-        const itemDataLowerCase = item.data.toLowerCase().trim();
-        if (SIMULATION_KEYWORDS.includes(itemDataLowerCase)) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            if (itemDataLowerCase === 'success') {
+        if (SIMULATION_KEYWORDS.includes(item.data.toLowerCase().trim())) {
+             await new Promise(resolve => setTimeout(resolve, 2000));
+            if (item.data.toLowerCase().trim() === 'success') {
                 await Item.findByIdAndUpdate(item._id, { status: 'completed' });
-                await this.writeLog(item.orderId, item._id, 'INFO', `Item giả lập thành công.`);
                 return { item, account: null };
             } else {
                 throw new Error("Item giả lập thất bại.");
@@ -206,7 +183,7 @@ class ItemProcessorManager extends EventEmitter {
             lastUsedAccount = account;
             
             if (!account) {
-                await this.writeLog(item.orderId, item._id, 'ERROR', `Không tìm thấy account khả dụng (lần thử ${attemptCount}).`);
+                await this.writeLog(item.orderId, item._id, 'ERROR', `Hết account khả dụng (lần thử ${attemptCount}).`);
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 continue;
             }
@@ -214,8 +191,6 @@ class ItemProcessorManager extends EventEmitter {
             usedAccountIds.push(account._id);
 
             const logCallback = (message) => {
-                const formattedMessage = `[<strong class="text-green-400">${account.uid}</strong>] ${message}`;
-                this.addLogToUI(formattedMessage);
                 this.writeLog(item.orderId, item._id, 'INFO', `[${account.uid}] ${message}`);
             };
 
@@ -227,16 +202,12 @@ class ItemProcessorManager extends EventEmitter {
                     success = true;
                     finalAccount = account;
                 } else {
-                    throw new Error("Quy trình kháng không hoàn tất hoặc không trả về true.");
+                    throw new Error("Quy trình kháng không hoàn tất.");
                 }
 
             } catch (error) {
-                await this.writeLog(item.orderId, item._id, 'ERROR', `Thất bại với account ${account.uid}. Lý do: ${error.message}`);
-                try {
-                    await this.updateAccountOnFinish(account, false);
-                } catch (releaseError) {
-                    console.error(`[ItemProcessor] Lỗi nghiêm trọng khi giải phóng account ${account.uid} sau thất bại: ${releaseError.message}`);
-                }
+                await this.writeLog(item.orderId, item._id, 'ERROR', `Lỗi với account ${account.uid}: ${error.message}`);
+                await this.updateAccountOnFinish(account, false);
                 await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_ACCOUNTS));
             }
         }
@@ -278,7 +249,6 @@ class ItemProcessorManager extends EventEmitter {
         const { maxSuccess, maxError } = settingsService.get('itemProcessor');
         if ((maxSuccess > 0 && updatedAccount.successCount >= maxSuccess) || (maxError > 0 && updatedAccount.errorCount >= maxError)) {
             updatedAccount.status = 'RESTING';
-            this.addLogToUI(`Account <strong class="text-blue-400">${updatedAccount.uid}</strong> đã đạt ngưỡng và chuyển sang trạng thái nghỉ.`);
         } else {
             updatedAccount.status = 'LIVE';
         }
@@ -287,127 +257,9 @@ class ItemProcessorManager extends EventEmitter {
         return updatedAccount;
     }
 
-    async updateOrderProgress(orderId, lastItemStatus, item) {
-        // *** BẮT ĐẦU THAY ĐỔI: Không dùng $inc nữa ***
-        const order = await Order.findById(orderId).populate('user');
-        if (!order) return;
-
-        // Đếm lại số lượng từ DB để đảm bảo chính xác
-        const [completedCount, failedCount] = await Promise.all([
-            Item.countDocuments({ orderId: orderId, status: 'completed' }),
-            Item.countDocuments({ orderId: orderId, status: 'failed' })
-        ]);
-        
-        // Cập nhật lại bộ đếm trong order (chủ yếu để hiển thị)
-        order.completedItems = completedCount;
-        order.failedItems = failedCount;
-        await order.save();
-        // *** KẾT THÚC THAY ĐỔI ***
-        
-        const updatedItem = await Item.findById(item._id).lean();
-        const orderRoom = `order_${orderId}`;
-        const userRoom = `user_${order.user._id.toString()}`;
-        
-        this.io.to(orderRoom).to(userRoom).emit('order:item_update', {
-            id: order._id.toString(),
-            completedItems: order.completedItems,
-            failedItems: order.failedItems,
-            totalItems: order.totalItems,
-            item: updatedItem
-        });
-        
-        if ((order.completedItems + order.failedItems) >= order.totalItems) {
-            await this.checkOrderCompletion(orderId);
-        }
-    }
-
-    async checkOrderCompletion(orderId) {
-        // *** BẮT ĐẦU THAY ĐỔI: Lấy orderId thay vì object, truy vấn lại để có dữ liệu mới nhất ***
-        const order = await Order.findById(orderId).populate('user');
-        if (!order) return;
-        if (order.status !== 'processing') {
-            console.log(`[ItemProcessor] Order #${order.shortId} đã ở trạng thái cuối cùng, bỏ qua quyết toán.`);
-            return;
-        }
-
-        // Đếm lại một lần nữa để chắc chắn 100%
-        const [finalCompletedCount, finalFailedCount] = await Promise.all([
-            Item.countDocuments({ orderId: orderId, status: 'completed' }),
-            Item.countDocuments({ orderId: orderId, status: 'failed' })
-        ]);
-
-        const initialCost = order.pricePerItem * order.totalItems;
-        const finalPricePerItem = settingsService.calculatePricePerItem(finalCompletedCount);
-        const finalCost = finalCompletedCount * finalPricePerItem;
-        const refundAmount = initialCost - finalCost;
-        
-        order.status = 'completed';
-        order.totalCost = finalCost;
-        order.completedItems = finalCompletedCount;
-        order.failedItems = finalFailedCount;
-        // *** KẾT THÚC THAY ĐỔI ***
-
-        let user = await User.findById(order.user._id);
-        const balanceBefore = user.balance;
-
-        if (refundAmount > 0) {
-            user.balance += refundAmount;
-            const logDetails = `Hoàn tiền chênh lệch ${refundAmount.toLocaleString('vi-VN')}đ cho đơn hàng #${order.shortId} sau khi quyết toán.`;
-            await logActivity(user._id, 'ORDER_REFUND', {
-                details: logDetails,
-                context: 'Admin',
-                metadata: {
-                    balanceBefore: balanceBefore,
-                    balanceAfter: user.balance,
-                    change: refundAmount
-                }
-            });
-            this.addLogToUI(`💰 Hoàn tiền chênh lệch ${refundAmount.toLocaleString('vi-VN')}đ cho user <strong class="text-white">${user.username}</strong> (đơn hàng ...${order.shortId})`);
-        }
-        await Promise.all([order.save(), user.save()]);
-        const orderRoom = `order_${order._id.toString()}`;
-        const userRoom = `user_${order.user._id.toString()}`;
-        this.io.to(orderRoom).to(userRoom).emit('order:update', { id: order._id.toString(), status: 'completed' });
-        const [ totalOrderCount, processingOrderCount, completedOrderCount, failedOrderCount ] = await Promise.all([
-             Order.countDocuments({ isDeleted: false }),
-             Order.countDocuments({ status: 'processing', isDeleted: false }),
-             Order.countDocuments({ status: 'completed', isDeleted: false }),
-             Order.countDocuments({ status: 'failed', isDeleted: false })
-        ]);
-        this.io.emit('dashboard:stats:update', { 
-            orderStats: { total: totalOrderCount, processing: processingOrderCount, completed: completedOrderCount, failed: failedOrderCount }
-        });
-        const logMessage = `🎉 Đơn hàng ${order.shortId} đã HOÀN THÀNH!`;
-        this.addLogToUI(logMessage);
-    }
-
-    getStatus() {
-        return {
-            status: this.status,
-            config: this.config,
-            activeTasks: this.isProcessingBatch ? (this.config.concurrency || 10) : 0,
-            queuedTasks: 0,
-        };
-    }
-
-    emitStatus() {
-        if (this.io) {
-            this.io.emit('itemProcessor:statusUpdate', this.getStatus());
-        }
-    }
-
-    addLogToUI(message) {
-        if (this.io) {
-            this.io.emit('itemProcessor:log', message);
-        }
-    }
-
     async writeLog(orderId, itemId, level, message) {
-        try {
-            const newLog = await Log.create({ orderId, itemId, level, message });
-            if (this.io) {
-                this.io.to(`order_${orderId}`).emit('order:new_log', newLog);
-            }
+         try {
+            await Log.create({ orderId, itemId, level, message });
         } catch (error) {
             console.error(`Failed to write log for item ${itemId}:`, error);
         }

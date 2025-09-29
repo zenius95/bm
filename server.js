@@ -31,6 +31,8 @@ const phoneApiRoutes = require('./routes/phoneApi');
 
 const autoCheckManager = require('./utils/autoCheckManager');
 const itemProcessorManager = require('./utils/itemProcessorManager');
+const orderCompletionManager = require('./utils/orderCompletionManager'); // <<< THÊM DÒNG NÀY
+
 const workerMonitor = require('./utils/workerMonitor');
 const autoDepositManager = require('./utils/autoDepositManager');
 const autoProxyCheckManager = require('./utils/autoProxyCheckManager');
@@ -195,6 +197,7 @@ async function startServer() {
         console.log(`   - Admin Dashboard is available at http://localhost:${config.server.port}/admin`);
         
         autoCheckManager.initialize(io);
+        orderCompletionManager.initialize(io);
         itemProcessorManager.initialize(io);
         workerMonitor.initialize(io);
         autoDepositManager.initialize(io);
