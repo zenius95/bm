@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- Auto Deposit ---
-    const autoDepositForm = document.getElementById('autodeposit-settings-form');
+    const autoDepositForm = document.getElementById('ad-settings-form');
     if (autoDepositForm) {
         const apiKeyInput = document.getElementById('ad-apiKey');
         const intervalInput = document.getElementById('ad-intervalMinutes');
@@ -345,11 +345,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateAutoDepositUI(initialState.autoDeposit);
         socket.on('autoDeposit:statusUpdate', (state) => updateAutoDepositUI(state));
-        setupLogHandler('autodeposit-logs', initialState.autoDeposit?.logs, 'autoDeposit:log');
+        setupLogHandler('ad-logs', initialState.autoDeposit?.logs, 'autoDeposit:log');
     }
     
     // --- Auto Check Live ---
-    const autoCheckForm = document.getElementById('autocheck-settings-form');
+    const autoCheckForm = document.getElementById('ac-settings-form');
     if (autoCheckForm) {
         const intervalInput = document.getElementById('ac-intervalMinutes');
         const concurrencyInput = document.getElementById('ac-concurrency');
@@ -410,11 +410,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateAutoCheckUI(initialState.autoCheck);
         socket.on('autoCheck:statusUpdate', (state) => updateAutoCheckUI(state));
-        setupLogHandler('autocheck-logs', initialState.autoCheck?.logs, 'autoCheck:log');
+        setupLogHandler('ac-logs', initialState.autoCheck?.logs, 'autoCheck:log');
     }
     
     // --- Auto Proxy Check ---
-    const autoProxyCheckForm = document.getElementById('autoproxycheck-settings-form');
+    const autoProxyCheckForm = document.getElementById('apc-settings-form');
     if (autoProxyCheckForm) {
         const intervalInput = document.getElementById('apc-intervalMinutes');
         const concurrencyInput = document.getElementById('apc-concurrency');
@@ -485,9 +485,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateAutoProxyCheckUI(initialState.autoProxyCheck);
         socket.on('autoProxyCheck:statusUpdate', (state) => updateAutoProxyCheckUI(state));
-        setupLogHandler('autoproxycheck-logs', initialState.autoProxyCheck?.logs, 'autoProxyCheck:log');
+        setupLogHandler('apc-logs', initialState.autoProxyCheck?.logs, 'autoProxyCheck:log');
     }
-
+    
     // <<< LOGIC MỚI CHO TỰ ĐỘNG LẤY SĐT >>>
     const autoPhoneForm = document.getElementById('ap-settings-form');
     if (autoPhoneForm) {

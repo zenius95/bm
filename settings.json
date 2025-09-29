@@ -23,7 +23,7 @@
         "accountNumber": "19036903216011"
     },
     "autoDeposit": {
-        "isEnabled": false,
+        "isEnabled": true,
         "intervalMinutes": 1,
         "apiKey": "",
         "prefix": "NAPTIEN"
@@ -37,7 +37,7 @@
         "batchSize": 50
     },
     "autoProxyCheck": {
-        "isEnabled": false,
+        "isEnabled": true,
         "intervalMinutes": 60,
         "concurrency": 10,
         "delay": 500,
