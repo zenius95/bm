@@ -1748,6 +1748,36 @@ class InstagramAPIFlow {
             throw e;
         }
     }
+
+    async api2_start_xfac_actor_appeal() {
+
+        const url = 'https://i.instagram.com/api/v1/bloks/apps/com.bloks.www.ixt.cds.triggers.screen.xfac_actor_appeal/';
+        const headers = this.get_common_headers();
+
+        const data = new URLSearchParams({
+            'params': JSON.stringify({
+                "server_params": {
+                    "xfac_id": this.appeal_id,
+                    "xfac_use_fallback_schema": 1,
+                    "INTERNAL_INFRA_screen_id": "q6f95c:100",
+                    "trigger_event_type": "xfac_actor_appeal_entry",
+                    "ufac_design_system": "XMDS",
+                    "trigger_session_id": uuidv4(),
+                    "ixt_initial_screen_id": "q6f95c:100"
+                }
+            }),
+            '_uuid': this.device_id,
+            'bk_client_context': JSON.stringify({
+                "bloks_version": this.bloks_version,
+                "styles_id": "instagram"
+            }),
+            'bloks_versioning_id': this.bloks_version
+        });
+        
+        
+        const response = await this.session(url, { method: 'POST', headers, body: data.toString() });
+        return await response.text();
+    }
  
     extract_serialized_state_from_api9(data) {
         const raw_string = typeof data === 'string' ? data : JSON.stringify(data);

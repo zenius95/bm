@@ -147,7 +147,11 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
     await flow.wait_between_requests(3);
 
     const appeal_flow_response = await flow.api2_start_appeal_flow();
+
+    console.log(await flow.api2_start_xfac_actor_appeal())
+
     flow.extract_challenge_ids_from_api2(appeal_flow_response);
+
     await flow.wait_between_requests(3);
     
     let state = appeal_flow_response;
