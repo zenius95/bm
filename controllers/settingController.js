@@ -1,4 +1,3 @@
-// controllers/settingController.js
 const autoCheckManager = require('../utils/autoCheckManager');
 const itemProcessorManager = require('../utils/itemProcessorManager');
 const settingsService = require('../utils/settingsService');
@@ -152,33 +151,50 @@ settingController.updateOrderConfig = async (req, res) => {
     try {
         const { pricingTiers, maxItemsPerOrder } = req.body;
         
-        if (!Array.isArray(pricingTiers) || pricingTiers.length === 0) {
+        // Kiểm tra pricingTiers là một object chứa BM và TKQC
+        if (typeof pricingTiers !== 'object' || !pricingTiers.BM || !pricingTiers.TKQC) {
             return res.status(400).json({ success: false, message: 'Dữ liệu bậc giá không hợp lệ.' });
         }
-        const maxItems = parseInt(maxItemsPerOrder, 10);
-        if (isNaN(maxItems) || maxItems < 0) {
+
+        if (typeof maxItemsPerOrder !== 'object' || maxItemsPerOrder.BM === undefined || maxItemsPerOrder.TKQC === undefined) {
+            return res.status(400).json({ success: false, message: 'Dữ liệu giới hạn đơn hàng không hợp lệ.' });
+        }
+        const maxItemsBM = parseInt(maxItemsPerOrder.BM, 10);
+        const maxItemsTKQC = parseInt(maxItemsPerOrder.TKQC, 10);
+        if (isNaN(maxItemsBM) || maxItemsBM < 0 || isNaN(maxItemsTKQC) || maxItemsTKQC < 0) {
             return res.status(400).json({ success: false, message: 'Số items tối đa không hợp lệ.' });
         }
 
+        // Hàm helper để làm sạch và sắp xếp các bậc giá
+        const cleanAndSortTiers = (tiers) => {
+            if (!Array.isArray(tiers)) return [];
+            const cleaned = tiers.map(tier => ({
+                quantity: parseInt(tier.quantity, 10),
+                price: parseInt(tier.price, 10)
+            })).filter(tier => !isNaN(tier.quantity) && tier.quantity > 0 && !isNaN(tier.price) && tier.price >= 0);
 
-        const cleanedTiers = pricingTiers.map(tier => ({
-            quantity: parseInt(tier.quantity, 10),
-            price: parseInt(tier.price, 10)
-        })).filter(tier => !isNaN(tier.quantity) && tier.quantity > 0 && !isNaN(tier.price) && tier.price >= 0);
+            if (cleaned.length !== tiers.length) {
+                throw new Error('Một số bậc giá có giá trị không hợp lệ.');
+            }
+            return cleaned.sort((a, b) => a.quantity - b.quantity);
+        };
 
-        if (cleanedTiers.length !== pricingTiers.length) {
-            return res.status(400).json({ success: false, message: 'Một số bậc giá có giá trị không hợp lệ.' });
-        }
+        const cleanedTiers = {
+            BM: cleanAndSortTiers(pricingTiers.BM),
+            TKQC: cleanAndSortTiers(pricingTiers.TKQC)
+        };
         
-        cleanedTiers.sort((a, b) => a.quantity - b.quantity);
-
-        await settingsService.update('order', { pricingTiers: cleanedTiers, maxItemsPerOrder: maxItems });
+        await settingsService.update('order', { 
+            pricingTiers: cleanedTiers, 
+            maxItemsPerOrder: { BM: maxItemsBM, TKQC: maxItemsTKQC } 
+        });
         res.json({ success: true, message: 'Cập nhật cài đặt đơn hàng thành công.' });
     } catch (error) {
         console.error("Error updating order config:", error.message);
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
 
 settingController.updateDepositConfig = async (req, res) => {
     try {

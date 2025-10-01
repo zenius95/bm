@@ -4,28 +4,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const createOrderBtn = document.getElementById('create-order-btn');
         const itemsData = document.getElementById('itemsData');
         const userSelect = document.getElementById('userSelect');
+        const orderTypeSelect = document.getElementById('orderType');
         const userBalanceEl = document.getElementById('user-balance');
         const itemCountEl = document.getElementById('item-count');
         const totalCostEl = document.getElementById('total-cost');
         const pricePerItemEl = document.getElementById('price-per-item');
-        const pricingTiers = JSON.parse(document.body.dataset.pricingTiers || '[]').sort((a, b) => b.quantity - a.quantity);
-        const adminBalance = parseInt(document.body.dataset.adminBalance, 10);
-        const maxItems = parseInt(document.body.dataset.maxItems, 10);
         
-        const getPriceForQuantity = (count) => {
-            if (pricingTiers.length === 0) return 0;
-            const applicableTier = pricingTiers.find(tier => count >= tier.quantity);
-            return applicableTier ? applicableTier.price : (pricingTiers[pricingTiers.length - 1]?.price || 0);
+        const allPricingTiers = JSON.parse(document.body.dataset.pricingTiers || '{}');
+        const adminBalance = parseInt(document.body.dataset.adminBalance, 10);
+        const maxItemsPerOrder = JSON.parse(document.body.dataset.maxItems || '{}');
+        
+        const getPriceForQuantity = (count, orderType) => {
+            const pricingTiersForCalc = (allPricingTiers[orderType] || []).sort((a, b) => b.quantity - a.quantity);
+            if (pricingTiersForCalc.length === 0) return 0;
+            const applicableTier = pricingTiersForCalc.find(tier => count >= tier.quantity);
+            return applicableTier ? applicableTier.price : (pricingTiersForCalc[pricingTiersForCalc.length - 1]?.price || 0);
         };
         
         const updateCost = () => {
             const lines = itemsData.value.trim().split('\n').filter(line => line.trim() !== '');
             const count = lines.length;
-            const currentPrice = getPriceForQuantity(count);
+            const currentOrderType = orderTypeSelect.value;
+            const currentPrice = getPriceForQuantity(count, currentOrderType);
             const total = count * currentPrice;
             
+            const currentMaxItems = maxItemsPerOrder[currentOrderType] || 0;
             let isOverLimit = false;
-            if (maxItems > 0 && count > maxItems) {
+            if (currentMaxItems > 0 && count > currentMaxItems) {
                 isOverLimit = true;
             }
 
@@ -54,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         itemsData.addEventListener('input', updateCost);
         userSelect.addEventListener('change', updateCost);
+        orderTypeSelect.addEventListener('change', updateCost);
         updateCost();
         
         createOrderForm.addEventListener('submit', async (e) => {
@@ -66,7 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         itemsData: itemsData.value,
-                        userId: userSelect.value 
+                        userId: userSelect.value,
+                        orderType: orderTypeSelect.value
                     })
                 });
                 const result = await response.json();

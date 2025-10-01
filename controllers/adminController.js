@@ -272,11 +272,15 @@ adminOrderController.getDashboard = async (req, res) => {
 
 adminOrderController.handleGetAll = async (req, res) => {
     try {
-        const { page = 1, limit = 20, search, status, inTrash } = req.query;
+        const { page = 1, limit = 20, search, status, inTrash, orderType } = req.query;
         let query = { isDeleted: inTrash === 'true' };
 
         if (status) {
             query.status = status;
+        }
+
+        if (orderType) {
+            query.orderType = orderType;
         }
 
         if (search) {
@@ -365,7 +369,7 @@ adminOrderController.getItemLogs = async (req, res) => {
 
 adminOrderController.handleCreate = async (req, res) => {
     try {
-        const { itemsData, userId } = req.body;
+        const { itemsData, userId, orderType } = req.body;
         const adminUserId = req.session.user.id;
 
         if (!itemsData || itemsData.trim() === '') {
@@ -403,7 +407,8 @@ adminOrderController.handleCreate = async (req, res) => {
             user: targetUser._id, 
             totalCost, 
             pricePerItem, 
-            totalItems: itemLines.length 
+            totalItems: itemLines.length,
+            orderType: orderType // Thêm orderType vào đơn hàng mới
         });
 
         const itemsToInsert = itemLines.map(line => ({

@@ -1,21 +1,28 @@
 {
     "masterApiKey": "4a50e52b66383fd19c8e0264a38c9dc5ef93c87bf493a68e0aa58bf8e3209966",
     "order": {
-        "pricingTiers": [
-            {
-                "quantity": 1,
-                "price": 15000
-            },
-            {
-                "quantity": 20,
-                "price": 13000
-            },
-            {
-                "quantity": 50,
-                "price": 10000
-            }
-        ],
-        "maxItemsPerOrder": 0
+        "pricingTiers": {
+            "BM": [
+                {
+                    "quantity": 1,
+                    "price": 100
+                }
+            ],
+            "TKQC": [
+                {
+                    "quantity": 1,
+                    "price": 100
+                },
+                {
+                    "quantity": 2,
+                    "price": 200
+                }
+            ]
+        },
+        "maxItemsPerOrder": {
+            "BM": 0,
+            "TKQC": 0
+        }
     },
     "deposit": {
         "bankName": "TCB",

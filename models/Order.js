@@ -19,6 +19,13 @@ const OrderSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    // === START: THÊM TRƯỜNG MỚI ĐỂ PHÂN LOẠI ĐƠN HÀNG ===
+    orderType: {
+        type: String,
+        enum: ['BM', 'TKQC'],
+        default: 'BM'
+    },
+    // === END: THÊM TRƯỜNG MỚI ===
     totalCost: {
         type: Number,
         required: true,

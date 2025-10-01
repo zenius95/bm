@@ -1,137 +1,142 @@
-<%# Remove full-page structure and styles that are in the main layout %>
-
 <div class="space-y-8">
 
+    <%# Phần Form Tạo Đơn Hàng - Giữ Nguyên %>
     <div>
-        <h1 class="text-3xl font-bold text-white">Tạo Đơn Hàng Mới</h1>
+        <h1 class="text-3xl font-bold text-white">Tạo Đơn Hàng <%= orderType %></h1>
         <p class="mt-1 text-gray-400">Nền tảng tự động hoá quy trình, giúp bạn tiết kiệm thời gian và tối ưu chi phí.</p>
     </div>
-    
     <% if (error) { %>
-        <div class="max-w-4xl mx-auto bg-red-900/50 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm">
-        
-
-     <%= error %>
-        </div>
+        <div class="max-w-4xl mx-auto bg-red-900/50 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg text-sm"><%= error %></div>
     <% } %>
-
-    <div id="pricing-tiers-container" class="grid grid-cols-1 sm:grid-cols-7 gap-4">
-    </div>
-
+    <div id="pricing-tiers-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4"></div>
     <div id="order-notification-banner" class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-4 py-3 rounded-lg relative flex items-start gap-4 transition-opacity duration-300">
         <i class="ri-lightbulb-flash-line text-xl flex-shrink-0 mt-0.5"></i>
         <div>
-            <h4 class="font-bold">Lưu Ý Quan Trọng:</h4>
-            
-<ul class="list-disc list-inside text-sm mt-1 space-y-1">
-                <li>Chỉ kháng BM <strong>có nút</strong>, BM mất nút tỉ lệ random.</li>
-                <li>BM die ngày <strong>20, 21, 22 tháng 9</strong> tỉ lệ cao xanh vỏ đỏ lòng, không về.</li>
+            <h4 class="font-bold">Lưu Ý Quan Trọng (<%= orderType %>):</h4>
+            <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+                <% if (orderType === 'BM') { %>
+                    <li>Chỉ kháng BM <strong>có nút</strong>, BM mất nút tỉ lệ random.</li>
+                    <li>BM die ngày <strong>20, 21, 22 tháng 9</strong> tỉ lệ cao xanh vỏ đỏ lòng, không về.</li>
+                <% } else { %>
+                    <li>Dịch vụ kháng TKQC đang trong giai đoạn thử nghiệm.</li>
+                    <li>Vui lòng chỉ gửi các TKQC đã xác minh danh tính.</li>
+                <% } %>
             </ul>
         </div>
     </div>
-
     <form action="/create-order" method="POST" class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-  
-      
+        <input type="hidden" name="orderType" value="<%= orderType %>">
         <div class="lg:col-span-3 space-y-8">
-
             <div class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20">
-               
- <div class="p-6">
+                <div class="p-6">
                     <div class="flex justify-between items-center mb-3">
-                        
-<label for="itemsData" class="block font-medium text-white">
-                            <i class="ri-file-list-3-line mr-1 align-bottom"></i>
-               
-             Danh sách Items
-                        </label>
-           
-             <button type="button" id="clear-btn" class="text-xs text-slate-400 hover:text-white transition flex items-center gap-1">
-                            
- <i class="ri-delete-bin-line"></i>Xóa hết
-                        </button>
+                        <label for="itemsData" class="block font-medium text-white"><i class="ri-file-list-3-line mr-1 align-bottom"></i>Danh sách Items</label>
+                        <button type="button" id="clear-btn" class="text-xs text-slate-400 hover:text-white transition flex items-center gap-1"><i class="ri-delete-bin-line"></i>Xóa hết</button>
                     </div>
-   
-                 <textarea name="itemsData" id="itemsData" rows="12" required class="form-input font-mono text-sm resize-y" placeholder="Dán danh sách của bạn vào đây, mỗi item một dòng..."></textarea>
-               
- </div>
+                    <textarea name="itemsData" id="itemsData" rows="12" required class="form-input font-mono text-sm resize-y" placeholder="Dán danh sách của bạn vào đây, mỗi item một dòng..."></textarea>
+                </div>
             </div>
         </div>
-
         <div class="lg:col-span-2 lg:sticky top-8">
-            <div id="summary-card" class="bg-slate-900/50 backdrop-blur-lg border 
-border-slate-800 rounded-xl shadow-2xl shadow-black/20 transition-all duration-300">
+            <div id="summary-card" class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20 transition-all duration-300">
                 <div class="p-5">
                     <h3 class="text-lg font-bold text-white text-center mb-4">Tóm Tắt Giao Dịch</h3>
- 
-                    
                     <div class="bg-slate-800/50 p-4 rounded-lg mb-4">
-     
-                   <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center justify-between text-sm">
                             <span class="text-slate-400 flex items-center gap-2"><i class="ri-wallet-3-line"></i>Số dư của bạn</span>
                             <span class="font-bold text-green-400" id="user-balance">0đ</span>
-          
-              </div>
-                    </div>
-
-                  
-   <div class="space-y-3 text-sm">
-                        <div class="flex items-center justify-between">
-                
-            <span class="text-slate-400">Số items đã nhập</span>
-                            <span id="item-count" class="font-semibold text-white bg-slate-700/50 px-2 py-0.5 rounded">0</span>
-  
-                       </div>
-                        
-<div class="flex items-center justify-between">
-                            <span class="text-slate-400">Đơn giá áp dụng</span>
-                   
-         <span id="price-per-item" class="font-semibold text-white">0đ</span>
                         </div>
-          
-          </div>
-                    
+                    </div>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Số items đã nhập</span>
+                            <span id="item-count" class="font-semibold text-white bg-slate-700/50 px-2 py-0.5 rounded">0</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Đơn giá áp dụng</span>
+                            <span id="price-per-item" class="font-semibold text-white">0đ</span>
+                        </div>
+                    </div>
                     <div class="my-4 border-t border-dashed border-slate-700"></div>
-
                     <div class="flex items-center justify-between">
-                       
- <span class="font-bold text-white">Tổng Chi Phí</span>
+                        <span class="font-bold text-white">Tổng Chi Phí</span>
                         <span id="total-cost" class="font-bold text-2xl text-yellow-400 transition-colors duration-300">0đ</span>
-                   
- </div>
-
-                    <div id="balance-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all">
-            
-            <i class="ri-error-warning-line mr-1"></i> Số dư của bạn không đủ để thực hiện giao dịch này.
-</div>
-                    <div id="item-limit-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all">
                     </div>
-                    
-                    <%# START: THÊM MỚI %>
-                    <div id="item-format-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all">
-                        <i class="ri-error-warning-line mr-1"></i> Một hoặc nhiều item không hợp lệ. Vui lòng chỉ nhập ID là số.
-                    </div>
-                    <%# END: THÊM MỚI %>
-                    
-                    <button type="submit" id="create-order-btn" class="w-full mt-5 inline-flex items-center 
-justify-center px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border border-transparent rounded-lg font-semibold text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none disabled:from-slate-600 disabled:to-slate-700">
+                    <div id="balance-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all"><i class="ri-error-warning-line mr-1"></i> Số dư của bạn không đủ để thực hiện giao dịch này.</div>
+                    <div id="item-limit-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all"></div>
+                    <div id="item-format-warning" class="bg-red-900/50 border border-red-500/30 text-red-300 px-3 py-2 rounded-lg text-xs text-center hidden mt-4 transition-all"><i class="ri-error-warning-line mr-1"></i> Một hoặc nhiều item không hợp lệ. Vui lòng chỉ nhập ID là số.</div>
+                    <button type="submit" id="create-order-btn" class="w-full mt-5 inline-flex items-center justify-center px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border border-transparent rounded-lg font-semibold text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none disabled:from-slate-600 disabled:to-slate-700">
                         <i class="ri-send-plane-2-line -ml-1 mr-2"></i>
- 
                         <span>Xác Nhận & Tạo Đơn</span>
-                   
- </button>
+                    </button>
                 </div>
             </div>
         </div>
     </form>
-</div>
+    
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold text-white mb-4">Lịch Sử Đơn Hàng <%= orderType %></h2>
+        <div class="bg-slate-900/50 backdrop-blur-lg border border-slate-800 rounded-xl shadow-2xl shadow-black/20 overflow-hidden">
+             <% if (orders && orders.length > 0) { %>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-300">
+                        <thead class="text-xs text-gray-400 uppercase bg-slate-800/50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Order ID</th>
+                                <th scope="col" class="px-6 py-3">Ngày tạo</th>
+                                <th scope="col" class="px-6 py-3">Trạng thái</th>
+                                <th scope="col" class="px-6 py-3 text-center">Items (Tổng/OK/Lỗi)</th>
+                                <th scope="col" class="px-6 py-3 text-right">Tổng tiền</th>
+                                <th scope="col" class="px-6 py-3 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% orders.forEach(order => { %>
+                                <% 
+                                    let statusClass = 'bg-slate-700 text-slate-300';
+                                    if (order.status === 'processing') statusClass = 'bg-yellow-500/20 text-yellow-400';
+                                    if (order.status === 'completed') statusClass = 'bg-green-500/20 text-green-400';
+                                    if (order.status === 'failed') statusClass = 'bg-red-500/20 text-red-400';
+                                %>
+                                <tr class="border-b border-slate-800 hover:bg-slate-800/50">
+                                    <td class="px-6 py-4 font-mono font-medium text-white">#<%= order.shortId %></td>
+                                    <td class="px-6 py-4 text-gray-400"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>"><%= order.status %></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="font-bold text-white"><%= order.totalItems %></span> /
+                                        <span class="text-green-400"><%= order.completedItems %></span> /
+                                        <span class="text-red-400"><%= order.failedItems %></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right font-mono text-yellow-400"><%= order.totalCost.toLocaleString('vi-VN') %>đ</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <a href="/orders/<%= order._id %>" class="font-medium text-blue-500 hover:underline">Xem chi tiết</a>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+                <% if (pagination && pagination.totalPages > 1) { %>
+                    <div class="p-4 border-t border-slate-800">
+                        <%- include('../partials/_pagination', { pagination, currentQuery }) %>
+                    </div>
+                <% } %>
+            <% } else { %>
+                 <div class="text-center py-16 px-6">
+                    <i class="ri-file-search-line text-6xl text-slate-700"></i>
+                    <h4 class="mt-4 text-xl font-semibold text-white">Chưa có đơn hàng nào</h4>
+                    <p class="mt-2 text-slate-400">Các đơn hàng <%= orderType %> bạn tạo sẽ xuất hiện ở đây.</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+    </div>
 
 <script>
-    // Truyền dữ liệu từ EJS sang Javascript
-  
-   document.body.dataset.pricingTiers = JSON.stringify(<%- JSON.stringify(pricingTiers ||
-[]) %>);
+    document.body.dataset.pricingTiers = JSON.stringify(<%- JSON.stringify(pricingTiers || []) %>);
     document.body.dataset.userBalance = "<%= user.balance %>";
-    document.body.dataset.maxItems = "<%= settings.order.maxItemsPerOrder || 0 %>";
+    document.body.dataset.maxItems = "<%= maxItemsPerOrder || 0 %>";
 </script>
 <script src="/js/client/create-order.js"></script>

@@ -92,33 +92,47 @@ Worker cục bộ sẽ tự động dùng key này.
 					<div class="p-6">
 						<form id="order-settings-form">
 							<div class="space-y-4">
-								<div>
-									<h4 class="font-semibold text-gray-200 mb-2">Bậc Giá Đơn Hàng</h4>
-									<div class="space-y-3" id="pricing-tiers-container">
-									</div>
-									<div class="mt-4">
-										<button
-											type="button" id="add-tier-btn" class="inline-flex items-center px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-md font-semibold text-sm text-green-300 hover:bg-green-500/20 transition">
-										<i class="ri-add-line mr-2"></i>Thêm Bậc Giá
-										</button>
-									</div>
-									<p class="text-xs text-gray-500 mt-4">Hệ thống sẽ tự động áp dụng mức giá tương ứng với bậc thấp nhất mà số lượng
-item đạt 
+                                <div>
+                                    <h4 class="font-semibold text-gray-200 mb-2">Bậc Giá Đơn Hàng</h4>
+                                    <div class="border-b border-gray-700 mb-4">
+                                        <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+                                            <a href="#" data-order-type="BM" class="order-type-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">
+                                                Bảng giá BM
+                                            </a>
+                                            <a href="#" data-order-type="TKQC" class="order-type-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500">
+                                                Bảng giá TKQC
+                                            </a>
+                                        </nav>
+                                    </div>
 
-
- được.
- Ví dụ: Nếu có bậc 1, 20, 50 và người dùng đặt 30 items, giá của bậc 20 sẽ được áp dụng.
- </p>
-								</div>
-								<div class="pt-4 border-t border-white/10">
-									<h4 class="font-semibold text-gray-200 mb-2">Giới Hạn</h4>
-									<div>
-										<label for="maxItemsPerOrder" class="block text-sm text-gray-300 mb-1">Số items tối đa mỗi đơn hàng</label>
-										<input type="number" id="maxItemsPerOrder" name="maxItemsPerOrder" class="form-input text-sm" value="<%= settings.order.maxItemsPerOrder %>" min="0">
-										<p class="text-xs text-gray-500 mt-1">Nhập 0 để không giới hạn.</p>
-									</div>
-								</div>
-							</div>
+                                    <div id="pricing-tiers-container-BM" class="space-y-3 pricing-tiers-container"></div>
+                                    <div id="pricing-tiers-container-TKQC" class="space-y-3 pricing-tiers-container hidden"></div>
+                                    
+                                    <div class="mt-4">
+                                        <button type="button" id="add-tier-btn" class="inline-flex items-center px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-md font-semibold text-sm text-green-300 hover:bg-green-500/20 transition">
+                                            <i class="ri-add-line mr-2"></i>Thêm Bậc Giá
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-4">Hệ thống sẽ tự động áp dụng mức giá tương ứng với bậc thấp nhất mà số lượng item đạt được. Ví dụ: Nếu có bậc 1, 20, 50 và người dùng đặt 30 items, giá của bậc 20 sẽ được áp dụng.</p>
+                                </div>
+                                
+                                <%# === START: THAY ĐỔI GIAO DIỆN GIỚI HẠN ĐƠN HÀNG === %>
+                                <div class="pt-4 border-t border-white/10">
+                                    <h4 class="font-semibold text-gray-200 mb-2">Giới Hạn</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label for="maxItemsPerOrderBM" class="block text-sm text-gray-300 mb-1">Số items tối đa / đơn hàng BM</label>
+                                            <input type="number" id="maxItemsPerOrderBM" name="maxItemsPerOrderBM" class="form-input text-sm" value="<%= settings.order.maxItemsPerOrder.BM %>" min="0">
+                                        </div>
+                                        <div>
+                                            <label for="maxItemsPerOrderTKQC" class="block text-sm text-gray-300 mb-1">Số items tối đa / đơn hàng TKQC</label>
+                                            <input type="number" id="maxItemsPerOrderTKQC" name="maxItemsPerOrderTKQC" class="form-input text-sm" value="<%= settings.order.maxItemsPerOrder.TKQC %>" min="0">
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-2">Nhập 0 để không giới hạn.</p>
+                                </div>
+                                <%# === END: THAY ĐỔI GIAO DIỆN GIỚI HẠN ĐƠN HÀNG === %>
+                            </div>
 							<div class="pt-6 mt-4 border-t border-white/10">
 								<button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-blue-700 transition">
 								<i class="ri-save-line -ml-1 mr-2"></i>

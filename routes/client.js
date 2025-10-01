@@ -15,17 +15,18 @@ router.get('/', clientController.getDashboard);
 router.get('/profile', clientController.getProfilePage);
 router.post('/profile', clientController.updateProfile);
 
-router.get('/create-order', clientController.getCreateOrderPage);
+// === START: THAY ĐỔI ROUTE ===
 router.post('/create-order', clientController.postCreateOrder);
+router.get('/create-order/bm', clientController.getCreateOrderBmPage);
+router.get('/create-order/tkqc', clientController.getCreateOrderTkqcPage);
 
-router.get('/orders', clientController.getOrderListPage);
-router.get('/orders/:id', clientController.getOrderDetailPage);
+// Xóa route /orders cũ
+// router.get('/orders', clientController.getOrderListPage); 
+router.get('/orders/:id', clientController.getOrderDetailPage); // Giữ lại route chi tiết
+// === END: THAY ĐỔI ROUTE ===
 
 router.get('/deposit', clientController.getDepositPage);
 
-// === START: THÊM ROUTE MỚI ===
 router.get('/transactions', clientController.getTransactionListPage);
-// === END ===
-
 
 module.exports = router;

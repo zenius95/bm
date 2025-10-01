@@ -83,12 +83,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Order Settings ---
     const orderSettingsForm = document.getElementById('order-settings-form');
     if (orderSettingsForm) {
-        const container = document.getElementById('pricing-tiers-container');
+        const orderTypeTabs = document.querySelectorAll('.order-type-tab');
         const addBtn = document.getElementById('add-tier-btn');
-        const maxItemsInput = document.getElementById('maxItemsPerOrder');
-        let initialTiers = settings.order.pricingTiers || [];
+        const maxItemsInputBM = document.getElementById('maxItemsPerOrderBM');
+        const maxItemsInputTKQC = document.getElementById('maxItemsPerOrderTKQC');
+        let currentOrderType = 'BM';
 
-        const createTierRow = (tier = { quantity: 1, price: 100 }) => {
+        const createTierRow = (tier = { quantity: 1, price: 100 }, container) => {
             const row = document.createElement('div');
             row.className = 'flex items-center gap-3 p-2 bg-gray-900/50 rounded-lg tier-row';
             row.innerHTML = `
@@ -105,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             `;
             container.appendChild(row);
-
             row.querySelector('.remove-tier-btn').addEventListener('click', () => {
                 if (container.querySelectorAll('.tier-row').length > 1) {
                     row.remove();
@@ -115,31 +115,67 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
-        const renderInitialTiers = () => {
+        const renderTiers = (orderType) => {
+            const container = document.getElementById(`pricing-tiers-container-${orderType}`);
             container.innerHTML = '';
-            const sortedTiers = [...initialTiers].sort((a, b) => a.quantity - b.quantity);
+            const tiers = settings.order.pricingTiers[orderType] || [];
+            const sortedTiers = [...tiers].sort((a, b) => a.quantity - b.quantity);
             if (sortedTiers.length === 0) {
-                createTierRow();
+                createTierRow(undefined, container);
             } else {
-                sortedTiers.forEach(createTierRow);
+                sortedTiers.forEach(tier => createTierRow(tier, container));
             }
         };
 
-        addBtn.addEventListener('click', () => createTierRow());
-        orderSettingsForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const tiers = [];
-            container.querySelectorAll('.tier-row').forEach(row => {
-                const quantity = parseInt(row.querySelector('.tier-quantity').value, 10);
-                const price = parseInt(row.querySelector('.tier-price').value, 10);
-                if (!isNaN(quantity) && !isNaN(price)) {
-                    tiers.push({ quantity, price });
+        const switchTab = (orderType) => {
+            currentOrderType = orderType;
+            orderTypeTabs.forEach(tab => {
+                if (tab.dataset.orderType === orderType) {
+                    tab.classList.add('border-blue-500', 'text-white');
+                    tab.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-200', 'hover:border-gray-500');
+                } else {
+                    tab.classList.remove('border-blue-500', 'text-white');
+                    tab.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-200', 'hover:border-gray-500');
                 }
             });
+            document.querySelectorAll('.pricing-tiers-container').forEach(container => {
+                container.classList.toggle('hidden', container.id !== `pricing-tiers-container-${orderType}`);
+            });
+        };
+
+        orderTypeTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchTab(tab.dataset.orderType);
+            });
+        });
+
+        addBtn.addEventListener('click', () => {
+            const container = document.getElementById(`pricing-tiers-container-${currentOrderType}`);
+            createTierRow(undefined, container);
+        });
+
+        orderSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pricingTiers = { BM: [], TKQC: [] };
+            
+            for (const type of ['BM', 'TKQC']) {
+                const container = document.getElementById(`pricing-tiers-container-${type}`);
+                container.querySelectorAll('.tier-row').forEach(row => {
+                    const quantity = parseInt(row.querySelector('.tier-quantity').value, 10);
+                    const price = parseInt(row.querySelector('.tier-price').value, 10);
+                    if (!isNaN(quantity) && !isNaN(price)) {
+                        pricingTiers[type].push({ quantity, price });
+                    }
+                });
+            }
 
             const payload = {
-                pricingTiers: tiers,
-                maxItemsPerOrder: maxItemsInput.value
+                pricingTiers,
+                maxItemsPerOrder: {
+                    BM: maxItemsInputBM.value,
+                    TKQC: maxItemsInputTKQC.value
+                }
             };
 
             try {
@@ -158,7 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Lỗi kết nối server.', 'Lỗi mạng!', 'error');
             }
         });
-        renderInitialTiers();
+        
+        renderTiers('BM');
+        renderTiers('TKQC');
+        switchTab('BM'); // Activate BM tab by default
     }
 
     // --- Services Settings ---

@@ -21,6 +21,13 @@ const AccountSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    // === START: THÊM TRƯỜNG MỚI ĐỂ PHÂN LOẠI ACCOUNT ===
+    accountType: {
+        type: String,
+        enum: ['BM', 'TKQC'],
+        default: 'BM'
+    },
+    // === END: THÊM TRƯỜNG MỚI ===
     proxy: {
         type: String,
         default: ''

@@ -1,3 +1,4 @@
+// public/js/admin/accounts.js
 document.addEventListener('DOMContentLoaded', () => {
     const addAccountsForm = document.getElementById('add-accounts-form');
     if (addAccountsForm) {
@@ -11,7 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch('/admin/accounts/add-multiple', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accountsData: document.getElementById('accountsData').value })
+                    body: JSON.stringify({ 
+                        accountsData: document.getElementById('accountsData').value,
+                        accountType: document.getElementById('accountType').value 
+                    })
                 });
                 const result = await response.json();
                 if (response.ok && result.success) {

@@ -7,7 +7,7 @@ const settingsService = require('../utils/settingsService');
 const { logActivity } = require('../utils/activityLogService');
 
 const accountService = new CrudService(Account, {
-    searchableFields: ['uid', 'proxy'],
+    searchableFields: ['uid', 'proxy', 'accountType'],
     additionalSoftDeleteFields: { status: 'UNCHECKED' },
     defaultSort: { lastCheckedAt: -1 }
 });
@@ -18,7 +18,7 @@ const accountController = createCrudController(accountService, 'accounts', {
 });
 
 accountController.addMultiple = async (req, res) => {
-    const { accountsData } = req.body;
+    const { accountsData, accountType } = req.body;
     if (!accountsData || accountsData.trim() === '') {
         return res.status(400).json({ success: false, message: "Dữ liệu account trống." });
     }
@@ -34,7 +34,8 @@ accountController.addMultiple = async (req, res) => {
                 password: parts[1], 
                 twofa: parts[2], 
                 email: parts[3] || '',
-                proxy: ''
+                proxy: '',
+                accountType: accountType
             });
         }
     });

@@ -10,7 +10,7 @@
         <div class="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg relative" role="alert">
             <strong class="font-bold">Đã xảy ra lỗi!</strong>
             <span class="block sm:inline"><%= decodeURIComponent(currentQuery.error) %></span>
-        </div>
+      </div>
     <% } %>
     <% if (currentQuery.success) { %>
          <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg relative" role="alert">
@@ -30,6 +30,15 @@
                     <label for="accountsData" class="block text-sm font-medium text-gray-300 mb-2">Nhập danh sách account (mỗi account một dòng)</label>
                     <textarea class="form-input font-mono" id="accountsData" name="accountsData" rows="6" placeholder="uid|password|2fa|email (email không bắt buộc)"></textarea>
                 </div>
+                <%# === START: THÊM LỰA CHỌN LOẠI ACCOUNT === %>
+                <div class="mb-4 max-w-xs">
+                    <label for="accountType" class="block text-sm font-medium text-gray-300 mb-2">Loại Account</label>
+                    <select id="accountType" name="accountType" class="form-select">
+                        <option value="BM" selected>BM (Business Manager)</option>
+                        <option value="TKQC">TKQC (Tài khoản Quảng cáo)</option>
+                    </select>
+                </div>
+                <%# === END: THÊM LỰA CHỌN LOẠI ACCOUNT === %>
                 <button type="submit" id="add-accounts-btn" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 border border-transparent rounded-md font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-950 transition-transform duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span class="btn-text"><i class="ri-add-line -ml-1 mr-2"></i>Thêm Accounts</span>
                     <span class="spinner hidden"><i class="ri-loader-4-line animate-spin mr-2"></i>Đang xử lý...</span>
@@ -43,6 +52,13 @@
         <form method="GET" action="/admin/accounts" class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <% if (inTrash) { %><input type="hidden" name="inTrash" value="true"><% } %>
             <input type="text" name="search" class="form-input" placeholder="Tìm theo Username, Proxy..." value="<%= currentQuery.search || '' %>">
+            <%# === START: THÊM BỘ LỌC LOẠI ACCOUNT === %>
+            <select name="accountType" class="form-select">
+                <option value="">-- Tất cả các loại --</option>
+                <option value="BM" <%= currentQuery.accountType === 'BM' ? 'selected' : '' %>>BM</option>
+                <option value="TKQC" <%= currentQuery.accountType === 'TKQC' ? 'selected' : '' %>>TKQC</option>
+            </select>
+            <%# === END: THÊM BỘ LỌC LOẠI ACCOUNT === %>
             <select name="status" class="form-select">
                 <option value="">-- Lọc theo trạng thái --</option>
                 <option value="UNCHECKED" <%= currentQuery.status === 'UNCHECKED' ? 'selected' : '' %>>Unchecked</option>
@@ -90,6 +106,7 @@
                     <tr>
                         <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></th>
                         <th scope="col" class="px-6 py-3">Username</th>
+                        <th scope="col" class="px-6 py-3">Loại</th>
                         <th scope="col" class="px-6 py-3">Mật khẩu</th>
                         <th scope="col" class="px-6 py-3">Proxy</th>
                         <th scope="col" class="px-6 py-3">Trạng Thái</th>
@@ -111,6 +128,13 @@
                         <tr id="account-row-<%= account._id %>" class="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                             <td class="p-4"><input type="checkbox" value="<%= account._id %>" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-600 focus:ring-2"></td>
                             <td class="px-6 py-4 font-medium text-white"><%= account.uid %></td>
+                            <%# === START: HIỂN THỊ LOẠI ACCOUNT === %>
+                            <td class="px-6 py-4">
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full <%= account.accountType === 'BM' ? 'bg-purple-500/20 text-purple-400' : 'bg-sky-500/20 text-sky-400' %>">
+                                    <%= account.accountType %>
+                                </span>
+                            </td>
+                            <%# === END: HIỂN THỊ LOẠI ACCOUNT === %>
                             <td class="px-6 py-4 font-medium text-white"><%= account.password %></td>
                             <td id="proxy-cell-<%= account._id %>" class="px-6 py-4 text-gray-400 font-mono"><%= account.proxy || 'N/A' %></td>
                             <td class="px-6 py-4">
@@ -122,7 +146,7 @@
                                         <span id="status-<%= account._id %>" class="px-2.5 py-1 text-xs font-semibold rounded-full <%= statusClass %>" style="display: <%= account.status === 'CHECKING' ? 'none' : 'inline-block' %>;">
                                             <%= account.status %>
                                         </span>
-                                     <% } %>
+                                    <% } %>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center font-semibold text-green-400"><%= account.successCount || 0 %></td>

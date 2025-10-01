@@ -9,12 +9,22 @@ const SETTINGS_FILE_PATH = path.join(__dirname, '..', 'settings.json');
 const DEFAULT_SETTINGS = {
     masterApiKey: '',
     order: {
-        pricingTiers: [
-            { quantity: 50, price: 10000 },
-            { quantity: 20, price: 13000 },
-            { quantity: 1, price: 15000 }
-        ],
-        maxItemsPerOrder: 0
+        pricingTiers: {
+            BM: [
+                { quantity: 50, price: 10000 },
+                { quantity: 20, price: 13000 },
+                { quantity: 1, price: 15000 }
+            ],
+            TKQC: [
+                { quantity: 1, price: 20000 }
+            ]
+        },
+        // === START: THAY ĐỔI CẤU TRÚC GIỚI HẠN ===
+        maxItemsPerOrder: {
+            BM: 0,
+            TKQC: 0
+        }
+        // === END: THAY ĐỔI CẤU TRÚC GIỚI HẠN ===
     },
     deposit: {
         bankName: "TCB",
@@ -50,7 +60,6 @@ const DEFAULT_SETTINGS = {
         countries: [],
         sources: []
     },
-    // START: THÊM MỚI
     browserManager: {
         maxBrowsers: 2,
         maxPagesPerBrowser: 5,
@@ -60,7 +69,6 @@ const DEFAULT_SETTINGS = {
     phoneManager: {
         stalePhoneTimeoutMinutes: 10
     },
-    // END: THÊM MỚI
     itemProcessor: {
         isEnabled: false,
         concurrency: 10,
@@ -102,10 +110,8 @@ class SettingsService extends EventEmitter {
                 autoCheck: { ...DEFAULT_SETTINGS.autoCheck, ...(fileData.autoCheck || {}) },
                 autoProxyCheck: { ...DEFAULT_SETTINGS.autoProxyCheck, ...(fileData.autoProxyCheck || {}) },
                 autoPhone: { ...DEFAULT_SETTINGS.autoPhone, ...(fileData.autoPhone || {}) },
-                // START: THÊM MỚI
                 browserManager: { ...DEFAULT_SETTINGS.browserManager, ...(fileData.browserManager || {}) },
                 phoneManager: { ...DEFAULT_SETTINGS.phoneManager, ...(fileData.phoneManager || {}) },
-                // END: THÊM MỚI
                 itemProcessor: { ...DEFAULT_SETTINGS.itemProcessor, ...(fileData.itemProcessor || {}) },
                 services: {
                     ...DEFAULT_SETTINGS.services,
@@ -117,6 +123,12 @@ class SettingsService extends EventEmitter {
                     userAgents: fileData.services?.userAgents || DEFAULT_SETTINGS.services.userAgents
                 }
             };
+            // Đảm bảo maxItemsPerOrder là object
+            if (typeof this._data.order.maxItemsPerOrder !== 'object') {
+                this._data.order.maxItemsPerOrder = DEFAULT_SETTINGS.order.maxItemsPerOrder;
+            }
+
+
             console.log('[SettingsService] Loaded config from settings.json');
 
             if (!this._data.masterApiKey) {
@@ -167,13 +179,13 @@ class SettingsService extends EventEmitter {
         await this._save();
     }
 
-    getSortedTiers() {
-        const tiers = this.get('order', {}).pricingTiers || [];
+    getSortedTiers(orderType = 'BM') {
+        const tiers = this.get('order', {}).pricingTiers?.[orderType] || [];
         return [...tiers].sort((a, b) => b.quantity - a.quantity);
     }
 
-    calculatePricePerItem(itemCount) {
-        const sortedTiers = this.getSortedTiers();
+    calculatePricePerItem(itemCount, orderType = 'BM') {
+        const sortedTiers = this.getSortedTiers(orderType);
 
         if (sortedTiers.length === 0) {
             return 0;
