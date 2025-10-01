@@ -1754,11 +1754,13 @@ class InstagramAPIFlow {
         const url = 'https://i.instagram.com/api/v1/bloks/apps/com.bloks.www.ixt.cds.triggers.screen.xfac_actor_appeal/';
         const headers = this.get_common_headers();
 
+        console.log(headers)
+
         const data = new URLSearchParams({
             'params': JSON.stringify({
                 "server_params": {
                     "xfac_id": this.appeal_id,
-                    "xfac_use_fallback_schema": 1,
+                    "xfac_use_fallback_schema": "1",
                     "INTERNAL_INFRA_screen_id": "q6f95c:100",
                     "trigger_event_type": "xfac_actor_appeal_entry",
                     "ufac_design_system": "XMDS",
@@ -1773,6 +1775,8 @@ class InstagramAPIFlow {
             }),
             'bloks_versioning_id': this.bloks_version
         });
+
+        console.log(data)
         
         
         const response = await this.session(url, { method: 'POST', headers, body: data.toString() });
