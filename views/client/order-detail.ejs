@@ -23,7 +23,7 @@ const pendingItems = totalItems - completedItems - failedItems;
                 <span id="order-status-badge" class="px-3 py-1 text-sm font-semibold rounded-full bg-<%= statusConfig.color %>-500/20 text-<%= statusConfig.color %>-300"><%= statusConfig.text %></span>
             </div>
             <div class="flex items-center gap-2">
-                <span class="font-mono text-sm text-gray-500">ID: <span id="order-id-text"><%= order.shortId %></span></span>
+                <span class="font-mono text-sm text-gray-500">ID: <span id="order-id-text"><%= order._id %></span></span>
                 <button id="copy-order-id-btn" class="p-2 rounded-md hover:bg-white/10 text-gray-400 transition" title="Copy ID">
                     <i class="ri-file-copy-line"></i>
                 </button>
