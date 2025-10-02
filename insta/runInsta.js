@@ -146,11 +146,20 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
     flow.extract_appeal_id_from_api1(restriction_details);
     await flow.wait_between_requests(3);
 
-    const appeal_flow_response = await flow.api2_start_appeal_flow();
+    let appeal_flow_response = await flow.api2_start_appeal_flow();
 
-    console.log(await flow.api2_start_xfac_actor_appeal())
+    try {
 
-    flow.extract_challenge_ids_from_api2(appeal_flow_response);
+        flow.extract_challenge_ids_from_api2(appeal_flow_response);
+
+    } catch {
+
+        await flow.api2_graphql_www()
+
+        appeal_flow_response = await flow.api2_start_xfac_actor_appeal()
+        flow.extract_challenge_ids_from_api2(appeal_flow_response);
+
+    }
 
     await flow.wait_between_requests(3);
     

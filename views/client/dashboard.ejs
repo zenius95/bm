@@ -11,6 +11,13 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
     }
+    /* Style cho tab bảng giá */
+    .price-tab.active {
+        @apply border-blue-500 text-white;
+    }
+    .price-tab:not(.active) {
+        @apply border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500;
+    }
 </style>
 
 <div class="max-w-screen-2xl mx-auto">
@@ -25,7 +32,7 @@
                 <i class="ri-wallet-3-line mr-2 align-middle"></i>
                 <span>Nạp Tiền</span>
             </a>
-            <a href="/create-order" class="px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-semibold text-white hover:bg-blue-500 transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5 whitespace-nowrap">
+            <a href="/create-order/bm" class="px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-semibold text-white hover:bg-blue-500 transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transform hover:-translate-y-0.5 whitespace-nowrap">
                 <i class="ri-add-line mr-2 align-middle"></i>
                 <span>Tạo Đơn Hàng Mới</span>
             </a>
@@ -57,17 +64,17 @@
             <div class="bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6">
                 <h3 class="text-lg font-semibold text-white mb-4">Quick Actions</h3>
                 <div class="grid grid-cols-2 gap-4">
-                    <a href="/create-order" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
-                        <i class="ri-add-circle-line text-3xl text-blue-400 mb-2"></i><span class="text-sm font-medium">Tạo Đơn</span>
+                    <a href="/create-order/bm" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
+                        <i class="ri-add-circle-line text-3xl text-blue-400 mb-2"></i><span class="text-sm font-medium">Tạo Đơn BM</span>
+                    </a>
+                     <a href="/create-order/tkqc" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
+                        <i class="ri-add-circle-line text-3xl text-sky-400 mb-2"></i><span class="text-sm font-medium">Tạo Đơn TKQC</span>
                     </a>
                     <a href="/deposit" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
                         <i class="ri-bank-card-line text-3xl text-green-400 mb-2"></i><span class="text-sm font-medium">Nạp Tiền</span>
                     </a>
                     <a href="/transactions" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
                         <i class="ri-history-line text-3xl text-purple-400 mb-2"></i><span class="text-sm font-medium">Lịch Sử GD</span>
-                    </a>
-                    <a href="/profile" class="flex flex-col items-center justify-center p-4 bg-gray-800/80 rounded-lg hover:bg-gray-700/80 transition-colors">
-                        <i class="ri-user-line text-3xl text-yellow-400 mb-2"></i><span class="text-sm font-medium">Hồ Sơ</span>
                     </a>
                 </div>
             </div>
@@ -90,11 +97,31 @@
             </div>
 
             <div class="bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl p-6 flex flex-col">
-                <h3 class="text-lg font-semibold text-white mb-4 flex-shrink-0">Bảng Giá Hiện Tại</h3>
+                <div class="flex-shrink-0 mb-4">
+                     <h3 class="text-lg font-semibold text-white">Bảng Giá Hiện Tại</h3>
+                     <div class="border-b border-gray-700 mt-2">
+                        <nav class="-mb-px flex space-x-4" id="pricing-tabs">
+                            <a href="#" data-target="pricing-bm" class="price-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">Kháng BM</a>
+                            <a href="#" data-target="pricing-tkqc" class="price-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">Kháng TKQC</a>
+                        </nav>
+                    </div>
+                </div>
                 <div class="flex-grow overflow-y-auto pr-2 min-h-0">
-                    <div class="space-y-2 text-sm">
-                        <% if (pricingTiers && pricingTiers.length > 0) { %>
-                            <% pricingTiers.forEach((tier, index) => { %>
+                    <div id="pricing-bm" class="price-content space-y-2 text-sm">
+                        <% if (pricingTiersBM && pricingTiersBM.length > 0) { %>
+                            <% pricingTiersBM.forEach((tier, index) => { %>
+                                <div class="flex justify-between p-2 rounded <%= index % 2 === 0 ? 'bg-gray-800/50' : '' %>">
+                                    <span class="text-gray-400">Từ <%= tier.quantity %> items</span>
+                                    <strong class="font-mono text-white"><%= tier.price.toLocaleString('vi-VN') %>đ</strong>
+                                </div>
+                            <% }); %>
+                        <% } else { %>
+                            <p class="text-gray-500 text-center">Chưa có thông tin bảng giá.</p>
+                        <% } %>
+                    </div>
+                    <div id="pricing-tkqc" class="price-content space-y-2 text-sm hidden">
+                         <% if (pricingTiersTKQC && pricingTiersTKQC.length > 0) { %>
+                            <% pricingTiersTKQC.forEach((tier, index) => { %>
                                 <div class="flex justify-between p-2 rounded <%= index % 2 === 0 ? 'bg-gray-800/50' : '' %>">
                                     <span class="text-gray-400">Từ <%= tier.quantity %> items</span>
                                     <strong class="font-mono text-white"><%= tier.price.toLocaleString('vi-VN') %>đ</strong>
@@ -105,7 +132,7 @@
                         <% } %>
                     </div>
                 </div>
-            </div>
+                </div>
         </div>
 
         <div class="bg-gray-900/70 backdrop-blur-xl border border-white/10 rounded-xl">
@@ -118,6 +145,7 @@
                     <thead class="text-xs text-gray-400 uppercase">
                         <tr>
                             <th class="px-6 py-3">Order ID</th>
+                            <th class="px-6 py-3">Loại</th>
                             <th class="px-6 py-3 text-center">Số Lượng (OK/Lỗi/Tổng)</th>
                             <th class="px-6 py-3 text-center">Trạng Thái</th>
                             <th class="px-6 py-3 text-right">Chi Phí</th>
@@ -130,6 +158,11 @@
                                     <td class="px-6 py-4">
                                         <a href="/orders/<%= order._id %>" class="font-mono text-white hover:text-blue-400">#<%= order.shortId %></a>
                                         <p class="text-xs text-gray-500"><%= new Date(order.createdAt).toLocaleString('vi-VN') %></p>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-0.5 text-xs font-semibold rounded-full <%= order.orderType === 'BM' ? 'bg-purple-500/20 text-purple-400' : 'bg-sky-500/20 text-sky-400' %>">
+                                            <%= order.orderType || 'N/A' %>
+                                        </span>
                                     </td>
                                     <td class="px-6 py-4 text-center font-mono">
                                         <span class="text-green-400 font-semibold"><%= order.completedItems %></span> / 
@@ -149,7 +182,7 @@
                             <% }); %>
                         <% } else { %>
                             <tr>
-                                <td colspan="4" class="text-center py-8 text-gray-400">Bạn chưa có đơn hàng nào gần đây.</td>
+                                <td colspan="5" class="text-center py-8 text-gray-400">Bạn chưa có đơn hàng nào gần đây.</td>
                             </tr>
                         <% } %>
                     </tbody>
@@ -158,3 +191,38 @@
         </div>
     </section>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Logic cho tab bảng giá
+    const tabs = document.querySelectorAll('.price-tab');
+    
+    function activateTab(activeTab) {
+        tabs.forEach(tab => {
+            const target = tab.dataset.target;
+            const content = document.getElementById(target);
+
+            if (tab === activeTab) {
+                tab.classList.add('border-blue-500', 'text-white');
+                tab.classList.remove('border-transparent', 'text-gray-400');
+                if (content) content.classList.remove('hidden');
+            } else {
+                tab.classList.remove('border-blue-500', 'text-white');
+                tab.classList.add('border-transparent', 'text-gray-400');
+                if (content) content.classList.add('hidden');
+            }
+        });
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            activateTab(tab);
+        });
+    });
+
+    if (tabs.length > 0) {
+        activateTab(tabs[0]);
+    }
+});
+</script>

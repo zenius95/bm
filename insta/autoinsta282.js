@@ -1749,23 +1749,53 @@ class InstagramAPIFlow {
         }
     }
 
+    async api2_graphql_www() {
+
+        const url = 'https://i.instagram.com/graphql_www';
+        const headers = this.get_common_headers();
+
+        const data = new URLSearchParams({
+            'method': 'post',
+            'pretty': 'false',
+            'format': 'json',
+            'server_timestamps': 'true',
+            'locale': 'user',
+            'purpose': 'fetch',
+            'fb_api_req_friendly_name': 'IGBloksAppRootQuery',
+            'client_doc_id': '25336029839814386604447461985',
+            'enable_canonical_naming': 'true',
+            'enable_canonical_variable_overrides': 'true',
+            'enable_canonical_naming_ambiguous_type_prefixing': 'true',
+            'variables': `{"params":{"params":"{\\"params\\":\\"{\\\\\\"server_params\\\\\\":{\\\\\\"session_id\\\\\\":\\\\\\"${this.session_id}\\\\\\",\\\\\\"actor_id\\\\\\":\\\\\\"${this.actor_id}\\\\\\",\\\\\\"source\\\\\\":\\\\\\"actor_business_ale_ig_post_enforcement_notif\\\\\\"}}\\"}","infra_params":{"device_id":"${this.device_id}"},"bloks_versioning_id":"${this.bloks_version}","app_id":"com.bloks.www.accountquality.xmds.actor"},"bk_context":{"is_flipper_enabled":false,"theme_params":[],"debug_tooling_metadata_token":null}}`
+        });
+        
+        const response = await this.session(url, { method: 'POST', headers, body: data.toString() });
+        const responseText = await response.text()
+
+        const xfacIdMatch = responseText.match(/\(bk\.action\.i64\.Const, (\d{17})\)/);
+
+        if (xfacIdMatch && xfacIdMatch[1]) {
+            this.xfac_id = xfacIdMatch[1];
+        }
+
+        return responseText;
+    }
+
     async api2_start_xfac_actor_appeal() {
 
         const url = 'https://i.instagram.com/api/v1/bloks/apps/com.bloks.www.ixt.cds.triggers.screen.xfac_actor_appeal/';
         const headers = this.get_common_headers();
 
-        console.log(headers)
-
         const data = new URLSearchParams({
             'params': JSON.stringify({
                 "server_params": {
-                    "xfac_id": this.appeal_id,
+                    "xfac_id": this.xfac_id,
                     "xfac_use_fallback_schema": "1",
-                    "INTERNAL_INFRA_screen_id": "q6f95c:100",
+                    "INTERNAL_INFRA_screen_id": this.ixt_initial_screen_id,
                     "trigger_event_type": "xfac_actor_appeal_entry",
                     "ufac_design_system": "XMDS",
                     "trigger_session_id": uuidv4(),
-                    "ixt_initial_screen_id": "q6f95c:100"
+                    "ixt_initial_screen_id": this.ixt_initial_screen_id
                 }
             }),
             '_uuid': this.device_id,
@@ -1774,11 +1804,8 @@ class InstagramAPIFlow {
                 "styles_id": "instagram"
             }),
             'bloks_versioning_id': this.bloks_version
-        });
-
-        console.log(data)
-        
-        
+        });       
+                
         const response = await this.session(url, { method: 'POST', headers, body: data.toString() });
         return await response.text();
     }

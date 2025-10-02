@@ -19,10 +19,8 @@ class ItemProcessorManager extends EventEmitter {
         this.io = null;
         this.timer = null;
         this.isProcessingBatch = false;
-        // <<< START: THÊM THUỘC TÍNH THEO DÕI TRẠNG THÁI >>>
         this.activeTasks = 0;
         this.queuedTasks = 0;
-        // <<< END: THÊM THUỘC TÍNH THEO DÕI TRẠNG THÁI >>>
     }
 
     initialize(io) {
@@ -52,11 +50,6 @@ class ItemProcessorManager extends EventEmitter {
         console.log('[ItemProcessor] Service stopped.');
     }
 
-    // <<< START: THÊM HÀM GETSTATUS VÀ EMITSTATUS >>>
-    /**
-     * Lấy trạng thái hiện tại của tiến trình.
-     * @returns {{activeTasks: number, queuedTasks: number}}
-     */
     getStatus() {
         return {
             activeTasks: this.activeTasks,
@@ -69,7 +62,6 @@ class ItemProcessorManager extends EventEmitter {
             this.io.emit('itemProcessor:statusUpdate', this.getStatus());
         }
     }
-    // <<< END: THÊM HÀM GETSTATUS VÀ EMITSTATUS >>>
 
     async processQueuedItems() {
         if (this.isProcessingBatch) return;
@@ -80,7 +72,6 @@ class ItemProcessorManager extends EventEmitter {
             const maxConcurrency = currentConfig.concurrency || 10;
             const itemProcessingTimeout = currentConfig.timeout || 180000;
             
-            // Cập nhật số lượng item trong hàng đợi
             this.queuedTasks = await Item.countDocuments({ status: 'queued' });
 
             const items = await Item.find({ status: 'queued' })
@@ -136,7 +127,6 @@ class ItemProcessorManager extends EventEmitter {
             });
             
             runner.on('end', async () => {
-                // Khi một lô hoàn thành, cập nhật lại trạng thái
                 this.activeTasks = 0;
                 this.queuedTasks = await Item.countDocuments({ status: 'queued' });
                 this.emitStatus();
@@ -153,6 +143,7 @@ class ItemProcessorManager extends EventEmitter {
         }
     }
     
+    // === START: NÂNG CẤP LOGIC XỬ LÝ ITEM ===
     async runSingleItemTask(item) {
         const bmIdMatch = item.data.trim().match(/^\d+$/);
         const bmId = bmIdMatch ? bmIdMatch[0] : null;
@@ -160,6 +151,13 @@ class ItemProcessorManager extends EventEmitter {
         if (!bmId) {
             throw new Error(`BM ID "${item.data}" không hợp lệ.`);
         }
+
+        // Lấy thông tin đơn hàng để biết orderType
+        const order = await Order.findById(item.orderId).lean();
+        if (!order) {
+            throw new Error(`Không tìm thấy đơn hàng cho item ${item._id}.`);
+        }
+        const orderType = order.orderType; // 'BM' or 'TKQC'
 
         if (SIMULATION_KEYWORDS.includes(item.data.toLowerCase().trim())) {
              await new Promise(resolve => setTimeout(resolve, 2000));
@@ -179,11 +177,12 @@ class ItemProcessorManager extends EventEmitter {
 
         while (attemptCount < MAX_ITEM_RETRIES && !success) {
             attemptCount++;
-            const account = await this.acquireAccount(usedAccountIds);
+            // Truyền orderType vào để tìm account tương ứng
+            const account = await this.acquireAccount(usedAccountIds, orderType);
             lastUsedAccount = account;
             
             if (!account) {
-                await this.writeLog(item.orderId, item._id, 'ERROR', `Hết account khả dụng (lần thử ${attemptCount}).`);
+                await this.writeLog(item.orderId, item._id, 'ERROR', `Hết account loại ${orderType} khả dụng (lần thử ${attemptCount}).`);
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 continue;
             }
@@ -221,13 +220,19 @@ class ItemProcessorManager extends EventEmitter {
         }
     }
 
-    async acquireAccount(excludeIds = []) {
+    async acquireAccount(excludeIds = [], orderType = 'BM') { // Thêm orderType, mặc định là BM
         return Account.findOneAndUpdate(
-            { status: 'LIVE', isDeleted: false, _id: { $nin: excludeIds } },
+            { 
+                status: 'LIVE', 
+                isDeleted: false, 
+                accountType: orderType, // Thêm điều kiện lọc theo accountType
+                _id: { $nin: excludeIds } 
+            },
             { $set: { status: 'IN_USE' } },
             { new: true, sort: { lastUsedAt: 1 } }
         );
     }
+    // === END: NÂNG CẤP LOGIC XỬ LÝ ITEM ===
     
     async updateAccountOnFinish(account, wasSuccessful) {
         if (!account) return;
