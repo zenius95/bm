@@ -178,9 +178,22 @@ async function runAppealProcess(account, bmIdToAppeal, logCallback) {
             try {
                 if (attempt > 1) {
                     log("Thất bại, đang yêu cầu captcha mới...");
+
                     const new_appeal_flow_response = await flow.api2_start_appeal_flow();
-                    flow.extract_persisted_data(new_appeal_flow_response);
-                    flow.extract_challenge_ids_from_api2(new_appeal_flow_response);
+
+                    try {
+
+                        flow.extract_challenge_ids_from_api2(new_appeal_flow_response);
+
+                    } catch {
+
+                        await flow.api2_graphql_www()
+
+                        const new_api2_graphql_www_response = await flow.api2_start_xfac_actor_appeal()
+                        flow.extract_challenge_ids_from_api2(new_api2_graphql_www_response);
+
+                    }
+
                     await delayTimeout(2000);
                 }
                 const imageBase64 = await flow.getCaptchaAsBase64();

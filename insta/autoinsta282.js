@@ -554,18 +554,37 @@ class InstagramAPIFlow {
  
     extract_captcha_url_from_response(response_data) {
         try {
+            // Cứ để nó stringify cho chắc
             const response_str = JSON.stringify(response_data);
-            const captcha_patterns = [
-                /https:\/\/www\.facebook\.com\/captcha\/tfbimage\/[^"\']+/,
+
+            // === START: THAY ĐỔI QUAN TRỌNG ===
+            // Regex mới này "khôn" hơn, nó chỉ lấy đến hết captcha_challenge_code
+            const specific_pattern = /(https:\/\/www\.facebook\.com\/captcha\/tfbimage\/[^\?]+\?captcha_challenge_code=[^&\\"']+)/;
+
+            const match = response_str.match(specific_pattern);
+
+            if (match && match[1]) {
+                // Dùng hàm decode có sẵn của Bro để dọn dẹp nốt dấu \ thừa
+                const clean_url = this.decode_multiple_unescapes(match[1]);
+                this.captcha_url = clean_url;
+                
+                console.log(`✅ Found and cleaned captcha URL`);
+                return this.captcha_url;
+            }
+            // === END: THAY ĐỔI QUAN TRỌNG ===
+
+            // Giữ lại các pattern cũ làm dự phòng nếu pattern mới không khớp
+            const fallback_patterns = [
                 /https:\/\/[^"\\]*facebook[^"\\]*captcha[^"\\]*/,
                 /captcha[^"\\]*https:\/\/[^"\\]*/,
             ];
- 
-            for (const pattern of captcha_patterns) {
+
+            for (const pattern of fallback_patterns) {
                 const matches = response_str.match(pattern);
                 if (matches) {
-                    this.captcha_url = matches[0];
-                    console.log(`✅ Found captcha URL`);
+                    const corrected_url = this.decode_multiple_unescapes(matches[0]);
+                    this.captcha_url = corrected_url;
+                    console.log(`✅ Found captcha URL with fallback pattern`);
                     return this.captcha_url;
                 }
             }
@@ -579,6 +598,9 @@ class InstagramAPIFlow {
     }
 
     async getCaptchaAsBase64() {
+
+        console.log(this.captcha_url)
+
         if (!this.captcha_url) {
             console.log("❌ Không có URL captcha để tải ảnh.");
             return null;
@@ -1772,7 +1794,13 @@ class InstagramAPIFlow {
         const response = await this.session(url, { method: 'POST', headers, body: data.toString() });
         const responseText = await response.text()
 
-        const xfacIdMatch = responseText.match(/\(bk\.action\.i64\.Const, (\d{17})\)/);
+        await fs.promises.writeFile('./ttt.txt', responseText)
+
+        const innerContent = responseText.match(/xfac_id([\s\S]*?)xmds_mobile_quality/)?.[1]
+
+        console.log(innerContent)
+
+        const xfacIdMatch = innerContent.match(/\(bk\.action\.i64\.Const, (\d{17})\)/);
 
         if (xfacIdMatch && xfacIdMatch[1]) {
             this.xfac_id = xfacIdMatch[1];

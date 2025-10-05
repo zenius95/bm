@@ -191,8 +191,6 @@ class ImageCaptchaService extends BaseCaptchaService {
             body: JSON.stringify(body),
         });
 
-        console.log(data)
-
         const taskId = this._getValueFromPath(data, taskConfig.taskIdPath);
         if (!taskId) throw new Error("Không thể lấy taskId từ phản hồi API.");
         
