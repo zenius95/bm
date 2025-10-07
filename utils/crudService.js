@@ -36,6 +36,10 @@ class CrudService {
             dbQuery.status = queryParams.status;
         }
 
+        if (queryParams.accountType && queryParams.accountType !== '') {
+            dbQuery.accountType = queryParams.accountType;
+        }
+
         if (queryParams.user && queryParams.user !== '') {
             dbQuery.user = queryParams.user;
         }

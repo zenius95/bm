@@ -170,6 +170,8 @@ accountController.getAllAccounts = async (req, res) => {
         delete dbQuery.search;
         if (filters.status) dbQuery.status = filters.status;
 
+        if (filters.accountType) dbQuery.accountType = filters.accountType;
+
         // Sửa lỗi: Lấy đầy đủ thông tin account thay vì chỉ ID
         const accounts = await Account.find(dbQuery).select('uid password twofa email').lean();
         
