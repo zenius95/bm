@@ -108,7 +108,7 @@ class OrderCompletionManager extends EventEmitter {
 
         const finalCompletedCount = order.completedItems;
         const initialCost = order.pricePerItem * order.totalItems;
-        const finalPricePerItem = settingsService.calculatePricePerItem(finalCompletedCount);
+        const finalPricePerItem = settingsService.calculatePricePerItem(finalCompletedCount, order.orderType);
         const finalCost = finalCompletedCount * finalPricePerItem;
         const refundAmount = initialCost - finalCost;
 
